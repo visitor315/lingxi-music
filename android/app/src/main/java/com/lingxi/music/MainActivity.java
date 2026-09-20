@@ -16,6 +16,7 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.RectF;
 import android.media.session.MediaSession;
+import android.media.session.PlaybackState;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Base64;
@@ -38,9 +39,11 @@ public class MainActivity extends Activity {
     private static final String CHANNEL_ID = "lingxi_music_playback";
     private static final int NOTIFICATION_ID = 1001;
 
-    public static final String ACTION_TOGGLE = "com.lingxi.music.ACTION_TOGGLE";
+    public static final String ACTION_FAV = "com.lingxi.music.ACTION_FAV";
     public static final String ACTION_PREV = "com.lingxi.music.ACTION_PREV";
+    public static final String ACTION_TOGGLE = "com.lingxi.music.ACTION_TOGGLE";
     public static final String ACTION_NEXT = "com.lingxi.music.ACTION_NEXT";
+    public static final String ACTION_PIP = "com.lingxi.music.ACTION_PIP";
 
     private WebView webView;
     private NotificationManager notificationManager;
@@ -168,6 +171,16 @@ public class MainActivity extends Activity {
                 @Override
                 public void run() { webView.evaluateJavascript("playNext()", null); }
             });
+        } else if (ACTION_FAV.equals(action)) {
+            webView.post(new Runnable() {
+                @Override
+                public void run() { webView.evaluateJavascript("toggleFavCurrent()", null); }
+            });
+        } else if (ACTION_PIP.equals(action)) {
+            webView.post(new Runnable() {
+                @Override
+                public void run() { webView.evaluateJavascript("togglePipLyrics()", null); }
+            });
         }
     }
 
@@ -256,7 +269,6 @@ public class MainActivity extends Activity {
                 if (cover == null) {
                     cover = getRoundedDefaultCover();
                 } else {
-                    // Make rounded cover bitmap
                     try {
                         int w = cover.getWidth();
                         int h = cover.getHeight();
@@ -293,6 +305,10 @@ public class MainActivity extends Activity {
         openIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
         PendingIntent contentIntent = PendingIntent.getActivity(this, 0, openIntent, flag);
 
+        Intent favIntent = new Intent(this, MainActivity.class);
+        favIntent.setAction(ACTION_FAV);
+        PendingIntent pFav = PendingIntent.getActivity(this, 10, favIntent, flag);
+
         Intent prevIntent = new Intent(this, MainActivity.class);
         prevIntent.setAction(ACTION_PREV);
         PendingIntent pPrev = PendingIntent.getActivity(this, 1, prevIntent, flag);
@@ -304,6 +320,22 @@ public class MainActivity extends Activity {
         Intent nextIntent = new Intent(this, MainActivity.class);
         nextIntent.setAction(ACTION_NEXT);
         PendingIntent pNext = PendingIntent.getActivity(this, 3, nextIntent, flag);
+
+        Intent pipIntent = new Intent(this, MainActivity.class);
+        pipIntent.setAction(ACTION_PIP);
+        PendingIntent pPip = PendingIntent.getActivity(this, 20, pipIntent, flag);
+
+        // Update PlaybackState in MediaSession so Android knows current state
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && mediaSession != null) {
+            long state = isPlaying ? PlaybackState.STATE_PLAYING : PlaybackState.STATE_PAUSED;
+            long actions = PlaybackState.ACTION_PLAY | PlaybackState.ACTION_PAUSE |
+                    PlaybackState.ACTION_SKIP_TO_PREVIOUS | PlaybackState.ACTION_SKIP_TO_NEXT |
+                    PlaybackState.ACTION_PLAY_PAUSE;
+            mediaSession.setPlaybackState(new PlaybackState.Builder()
+                    .setActions(actions)
+                    .setState(state, PlaybackState.PLAYBACK_POSITION_UNKNOWN, 1.0f)
+                    .build());
+        }
 
         Notification.Builder builder;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -318,9 +350,11 @@ public class MainActivity extends Activity {
                 .setContentIntent(contentIntent)
                 .setOngoing(isPlaying)
                 .setAutoCancel(false)
+                .addAction(R.drawable.ic_btn_fav, "喜欢", pFav)
                 .addAction(R.drawable.ic_btn_prev, "上一曲", pPrev)
                 .addAction(isPlaying ? R.drawable.ic_btn_pause : R.drawable.ic_btn_play, isPlaying ? "暂停" : "播放", pToggle)
-                .addAction(R.drawable.ic_btn_next, "下一曲", pNext);
+                .addAction(R.drawable.ic_btn_next, "下一曲", pNext)
+                .addAction(R.drawable.ic_btn_pip, "小窗", pPip);
 
         if (cover != null) {
             builder.setLargeIcon(cover);
@@ -332,7 +366,8 @@ public class MainActivity extends Activity {
             if (mediaSession != null) {
                 mediaStyle.setMediaSession(mediaSession.getSessionToken());
             }
-            mediaStyle.setShowActionsInCompactView(0, 1, 2);
+            // In compact view, show Prev (1), Play/Pause (2), Next (3)
+            mediaStyle.setShowActionsInCompactView(1, 2, 3);
             builder.setStyle(mediaStyle);
         }
 
@@ -348,6 +383,16 @@ public class MainActivity extends Activity {
         @JavascriptInterface
         public void updateMediaCardWithCover(final String title, final String artist, final String coverUrl, final boolean isPlaying) {
             showPlaybackNotification(title, artist, coverUrl, isPlaying);
+        }
+
+        @JavascriptInterface
+        public void minimizeApp() {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    moveTaskToBack(true);
+                }
+            });
         }
 
         @JavascriptInterface
