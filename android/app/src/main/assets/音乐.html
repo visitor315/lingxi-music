@@ -4158,9 +4158,18 @@ function updateUI() {
       navigator.mediaSession.playbackState = isPlaying ? 'playing' : 'paused';
     } catch(e) {}
   }
-  if (window.AndroidBridge && window.AndroidBridge.updateMediaCard && song) {
+  if (window.AndroidBridge && song) {
     try {
-      if (window.AndroidBridge.updateMediaCardWithCover) { window.AndroidBridge.updateMediaCardWithCover(song.title || '灵犀音乐', song.artist || '随心听', song.cover || '', isPlaying); } else { window.AndroidBridge.updateMediaCard(song.title || '灵犀音乐', song.artist || '随心听', isPlaying); }
+      const curSec = (typeof audioPlayer !== 'undefined' && audioPlayer) ? (audioPlayer.currentTime || 0) : 0;
+      const durSec = song.duration || 180;
+      const isFav = !!song.isFav;
+      if (window.AndroidBridge.updateMediaCardFull) {
+        window.AndroidBridge.updateMediaCardFull(song.title || '灵犀音乐', song.artist || '随心听', song.cover || '', isPlaying, isFav, curSec, durSec);
+      } else if (window.AndroidBridge.updateMediaCardWithCover) {
+        window.AndroidBridge.updateMediaCardWithCover(song.title || '灵犀音乐', song.artist || '随心听', song.cover || '', isPlaying);
+      } else if (window.AndroidBridge.updateMediaCard) {
+        window.AndroidBridge.updateMediaCard(song.title || '灵犀音乐', song.artist || '随心听', isPlaying);
+      }
     } catch(e) {}
   }
 
@@ -4570,7 +4579,7 @@ function renderPlaylistDetailSongsOnly() {
           <div style="font-size: 14.5px; font-weight: 500; margin-bottom: 8px; color: var(--ink-dark);">本地歌曲库暂空</div>
           <div style="font-size: 12px; line-height: 1.5; margin-bottom: 18px; color: var(--ink-gray);">可一键自动扫描手机内音频，或手动选取音频文件</div>
           <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
-            <button onclick="scanDeviceLocalMusic()" style="background:var(--brand-blue); color:#FFFFFF; border:none; padding:8px 20px; border-radius:20px; font-size:12.5px; font-weight:500; cursor:pointer;">一键扫描手机音乐</button>
+            <button onclick="scanDeviceLocalMusic()" style="background:var(--brand-blue); color:#FFFFFF; border:none; padding:8px 18px; border-radius:20px; font-size:12.5px; font-weight:500; cursor:pointer;">扫描手机音乐</button>
             <button onclick="triggerFileImport()" style="background:var(--pinned-bg, #EDEDEB); color:var(--ink-dark); border:none; padding:8px 18px; border-radius:20px; font-size:12.5px; font-weight:500; cursor:pointer;">手动选择文件</button>
           </div>
         </div>
@@ -4702,6 +4711,12 @@ const PRESET_THEME_COLORS = [
 let currentThemeColorId = localStorage.getItem('yyrc_theme_color_id') || 'blue';
 if (currentThemeColorId === 'cinnabar') currentThemeColorId = 'blue';
 
+function getActiveThemeColorHex() {
+  const isNight = document.body && document.body.classList.contains('night');
+  const item = PRESET_THEME_COLORS.find(c => c.id === currentThemeColorId) || PRESET_THEME_COLORS[0];
+  return isNight ? (item.nightColor || item.color) : item.color;
+}
+
 function applyThemeColorStyles() {
   const isNight = document.body.classList.contains('night');
   const item = PRESET_THEME_COLORS.find(c => c.id === currentThemeColorId) || PRESET_THEME_COLORS[0];
@@ -4718,6 +4733,12 @@ function applyThemeColorStyles() {
   body.style.setProperty('--brand-blue', activeColor);
   body.style.setProperty('--brand-blue-press', activeColor);
   body.style.setProperty('--brand-blue-soft', activeSoft);
+
+  if (window.AndroidBridge && window.AndroidBridge.setDesktopThemeColor) {
+    try {
+      window.AndroidBridge.setDesktopThemeColor(activeColor);
+    } catch(e) {}
+  }
 }
 
 function openThemeSettingsSubpage() {
@@ -5542,7 +5563,14 @@ function applyLyricLineChange(activeIdx) {
   if (window.AndroidBridge && window.AndroidBridge.updateDesktopLyric) {
     const curTxt = LYRICS_DATA[activeIdx] ? (LYRICS_DATA[activeIdx].cleanText || LYRICS_DATA[activeIdx].text) : '';
     const nextTxt = LYRICS_DATA[activeIdx + 1] ? (LYRICS_DATA[activeIdx + 1].cleanText || LYRICS_DATA[activeIdx + 1].text) : '';
-    window.AndroidBridge.updateDesktopLyric(curTxt, nextTxt);
+    const curSong = currentPlaybackQueue[currentIndex];
+    const themeHex = (typeof getActiveThemeColorHex === 'function') ? getActiveThemeColorHex() : '#234BB8';
+    const isFav = curSong ? !!curSong.isFav : false;
+    if (window.AndroidBridge.updateDesktopLyricFull) {
+      window.AndroidBridge.updateDesktopLyricFull(curTxt, nextTxt, themeHex, isFav, isPlaying);
+    } else {
+      window.AndroidBridge.updateDesktopLyric(curTxt, nextTxt, themeHex, isFav, isPlaying);
+    }
   }
 }
 
@@ -5813,8 +5841,13 @@ function toggleFavCurrent() {
   if (target) target.isFav = song.isFav;
   persistData();
   updateUI();
+  syncCurrentLyricToDesktop();
   toast(song.isFav ? '已加入我喜欢的音乐' : '已取消收藏');
 }
+
+window.toggleSongFavFromNotification = function() {
+  toggleFavCurrent();
+};
 
 function toggleSongFav(id) {
   const target = ALL_LIBRARY_SONGS.find(s => s.id === id);
@@ -6341,7 +6374,13 @@ function syncCurrentLyricToDesktop() {
         nextTxt = LYRICS_DATA[0].cleanText || LYRICS_DATA[0].text;
       }
     }
-    window.AndroidBridge.updateDesktopLyric(curTxt, nextTxt);
+    const themeHex = (typeof getActiveThemeColorHex === 'function') ? getActiveThemeColorHex() : '#234BB8';
+    const isFav = curSong ? !!curSong.isFav : false;
+    if (window.AndroidBridge.updateDesktopLyricFull) {
+      window.AndroidBridge.updateDesktopLyricFull(curTxt, nextTxt, themeHex, isFav, isPlaying);
+    } else {
+      window.AndroidBridge.updateDesktopLyric(curTxt, nextTxt, themeHex, isFav, isPlaying);
+    }
   }
 }
 

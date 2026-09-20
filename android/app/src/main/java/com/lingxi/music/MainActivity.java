@@ -47,6 +47,9 @@ import android.webkit.URLUtil;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
+import android.os.Handler;
+import android.os.Looper;
+import android.view.ViewGroup;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.LinearLayout;
@@ -63,15 +66,28 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 
 public class MainActivity extends Activity {
-    private static final String CHANNEL_ID = "lingxi_music_playback";
-    private static final int NOTIFICATION_ID = 1001;
+    public static final String CHANNEL_ID = "lingxi_playback_channel_v2";
+    public static final int NOTIFICATION_ID = 1001;
 
     public static final String ACTION_FAV = "com.lingxi.music.ACTION_FAV";
     public static final String ACTION_PREV = "com.lingxi.music.ACTION_PREV";
-    public static final String ACTION_TOGGLE = "com.lingxi.music.ACTION_TOGGLE";
+    public static final String ACTION_TOGGLE = "com.lingxi.music.ACTION_PLAY_PAUSE";
     public static final String ACTION_NEXT = "com.lingxi.music.ACTION_NEXT";
     public static final String ACTION_LYRICS = "com.lingxi.music.ACTION_LYRICS";
     public static final String ACTION_PIP = "com.lingxi.music.ACTION_PIP";
+
+    private static MainActivity sInstance = null;
+    public static MainActivity getInstance() { return sInstance; }
+    public static void dispatchWebAction(final String jsCode) {
+        if (sInstance != null && sInstance.webView != null) {
+            sInstance.webView.post(new Runnable() {
+                @Override
+                public void run() {
+                    sInstance.webView.evaluateJavascript(jsCode, null);
+                }
+            });
+        }
+    }
 
     private WebView webView;
     private NotificationManager notificationManager;
@@ -81,9 +97,27 @@ public class MainActivity extends Activity {
     private WindowManager windowManager;
     private View floatingLyricView;
     private WindowManager.LayoutParams floatingParams;
+    private LinearLayout floatingRootLayout;
+    private LinearLayout floatingHeaderLayout;
+    private LinearLayout floatingControlsLayout;
     private TextView floatingTvCurrent;
     private TextView floatingTvSub;
+    private TextView floatingTvFav;
+    private TextView floatingTvPlay;
     private boolean isFloatingLyricsActive = false;
+    private boolean isControlCardExpanded = false;
+    private String currentFloatingThemeColor = "#234BB8";
+    private String currentFloatingLyricText = "灵犀音乐 · 随心听";
+    private String currentFloatingSubLyricText = "";
+    private boolean isFloatingCurrentFav = false;
+    private boolean isFloatingCurrentPlaying = true;
+    private Handler floatingHandler = new Handler(Looper.getMainLooper());
+    private Runnable autoCollapseRunnable = new Runnable() {
+        @Override
+        public void run() {
+            setFloatingCardExpanded(false);
+        }
+    };
 
     private ValueCallback<Uri[]> uploadMessage;
     private final static int FILE_CHOOSER_RESULT_CODE = 10001;
@@ -91,6 +125,7 @@ public class MainActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        sInstance = this;
 
         // 1. 设置系统状态栏与导航栏完全透明与沉浸式
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
@@ -306,149 +341,29 @@ public class MainActivity extends Activity {
         }
     }
 
-    private void showPlaybackNotification(final String title, final String artist, final String coverUrl, final boolean isPlaying) {
-        if (notificationManager == null) return;
-
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                Bitmap cover = null;
-                if (coverUrl != null && !coverUrl.isEmpty()) {
-                    if (coverUrl.startsWith("data:image/")) {
-                        try {
-                            int comma = coverUrl.indexOf(',');
-                            if (comma != -1) {
-                                byte[] bytes = Base64.decode(coverUrl.substring(comma + 1), Base64.DEFAULT);
-                                cover = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
-                            }
-                        } catch (Exception ignored) {}
-                    } else if (coverUrl.startsWith("http://") || coverUrl.startsWith("https://")) {
-                        try {
-                            URL url = new URL(coverUrl);
-                            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-                            conn.setConnectTimeout(3000);
-                            conn.setReadTimeout(3000);
-                            InputStream is = conn.getInputStream();
-                            cover = BitmapFactory.decodeStream(is);
-                            is.close();
-                        } catch (Exception ignored) {}
-                    }
-                }
-
-                if (cover == null) {
-                    cover = getRoundedDefaultCover();
-                } else {
-                    try {
-                        int w = cover.getWidth();
-                        int h = cover.getHeight();
-                        int dim = Math.min(w, h);
-                        Bitmap rounded = Bitmap.createBitmap(dim, dim, Bitmap.Config.ARGB_8888);
-                        Canvas c = new Canvas(rounded);
-                        Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
-                        RectF r = new RectF(0, 0, dim, dim);
-                        c.drawRoundRect(r, dim * 0.12f, dim * 0.12f, p);
-                        p.setXfermode(new android.graphics.PorterDuffXfermode(android.graphics.PorterDuff.Mode.SRC_IN));
-                        c.drawBitmap(cover, (dim - w) / 2f, (dim - h) / 2f, p);
-                        cover = rounded;
-                    } catch (Exception ignored) {}
-                }
-
-                final Bitmap finalCover = cover;
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        buildAndNotify(title, artist, finalCover, isPlaying);
-                    }
-                });
+    public void updateMediaCardFull(final String title, final String artist, final String coverUrl, final boolean isPlaying, final boolean isFav, final long positionMs, final long durationMs) {
+        Intent intent = new Intent(this, MediaPlaybackService.class);
+        intent.setAction(MediaPlaybackService.ACTION_UPDATE_STATE);
+        intent.putExtra("title", title);
+        intent.putExtra("artist", artist);
+        intent.putExtra("coverUrl", coverUrl);
+        intent.putExtra("isPlaying", isPlaying);
+        intent.putExtra("isFav", isFav);
+        intent.putExtra("positionMs", positionMs);
+        intent.putExtra("durationMs", durationMs);
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                startForegroundService(intent);
+            } else {
+                startService(intent);
             }
-        }).start();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
-    private void buildAndNotify(String title, String artist, Bitmap cover, boolean isPlaying) {
-        int flag = PendingIntent.FLAG_UPDATE_CURRENT;
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            flag |= PendingIntent.FLAG_IMMUTABLE;
-        }
-
-        Intent openIntent = new Intent(this, MainActivity.class);
-        openIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-        PendingIntent contentIntent = PendingIntent.getActivity(this, 0, openIntent, flag);
-
-        Intent favIntent = new Intent(this, MainActivity.class);
-        favIntent.setAction(ACTION_FAV);
-        PendingIntent pFav = PendingIntent.getActivity(this, 10, favIntent, flag);
-
-        Intent prevIntent = new Intent(this, MainActivity.class);
-        prevIntent.setAction(ACTION_PREV);
-        PendingIntent pPrev = PendingIntent.getActivity(this, 1, prevIntent, flag);
-
-        Intent toggleIntent = new Intent(this, MainActivity.class);
-        toggleIntent.setAction(ACTION_TOGGLE);
-        PendingIntent pToggle = PendingIntent.getActivity(this, 2, toggleIntent, flag);
-
-        Intent nextIntent = new Intent(this, MainActivity.class);
-        nextIntent.setAction(ACTION_NEXT);
-        PendingIntent pNext = PendingIntent.getActivity(this, 3, nextIntent, flag);
-
-        Intent lyricsIntent = new Intent(this, MainActivity.class);
-        lyricsIntent.setAction(ACTION_LYRICS);
-        PendingIntent pLyrics = PendingIntent.getActivity(this, 20, lyricsIntent, flag);
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && mediaSession != null) {
-            int state = isPlaying ? PlaybackState.STATE_PLAYING : PlaybackState.STATE_PAUSED;
-            long actions = PlaybackState.ACTION_PLAY | PlaybackState.ACTION_PAUSE |
-                    PlaybackState.ACTION_SKIP_TO_PREVIOUS | PlaybackState.ACTION_SKIP_TO_NEXT |
-                    PlaybackState.ACTION_PLAY_PAUSE | PlaybackState.ACTION_SEEK_TO;
-            mediaSession.setPlaybackState(new PlaybackState.Builder()
-                    .setActions(actions)
-                    .setState(state, PlaybackState.PLAYBACK_POSITION_UNKNOWN, 1.0f)
-                    .build());
-
-            MediaMetadata.Builder mb = new MediaMetadata.Builder()
-                    .putString(MediaMetadata.METADATA_KEY_TITLE, title)
-                    .putString(MediaMetadata.METADATA_KEY_ARTIST, artist)
-                    .putString(MediaMetadata.METADATA_KEY_ALBUM, "灵犀音乐");
-            if (cover != null) {
-                mb.putBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART, cover);
-                mb.putBitmap(MediaMetadata.METADATA_KEY_ART, cover);
-            }
-            mediaSession.setMetadata(mb.build());
-        }
-
-        Notification.Builder builder;
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            builder = new Notification.Builder(this, CHANNEL_ID);
-        } else {
-            builder = new Notification.Builder(this);
-        }
-
-        builder.setContentTitle(title)
-                .setContentText(artist)
-                .setSmallIcon(R.mipmap.ic_launcher)
-                .setContentIntent(contentIntent)
-                .setOngoing(isPlaying)
-                .setAutoCancel(false)
-                .addAction(R.drawable.ic_btn_fav, "喜欢", pFav)
-                .addAction(R.drawable.ic_btn_prev, "上一曲", pPrev)
-                .addAction(isPlaying ? R.drawable.ic_btn_pause : R.drawable.ic_btn_play, isPlaying ? "暂停" : "播放", pToggle)
-                .addAction(R.drawable.ic_btn_next, "下一曲", pNext)
-                .addAction(R.drawable.ic_btn_lyrics, "词", pLyrics);
-
-        if (cover != null) {
-            builder.setLargeIcon(cover);
-        }
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            builder.setVisibility(Notification.VISIBILITY_PUBLIC);
-            Notification.MediaStyle mediaStyle = new Notification.MediaStyle();
-            if (mediaSession != null) {
-                mediaStyle.setMediaSession(mediaSession.getSessionToken());
-            }
-            mediaStyle.setShowActionsInCompactView(1, 2, 3);
-            builder.setStyle(mediaStyle);
-        }
-
-        notificationManager.notify(NOTIFICATION_ID, builder.build());
+    private void showPlaybackNotification(final String title, final String artist, final String coverUrl, final boolean isPlaying) {
+        updateMediaCardFull(title, artist, coverUrl, isPlaying, isFloatingCurrentFav, 0, 180000);
     }
 
     public void downloadFile(final String urlStr, final String filename) {
@@ -554,6 +469,88 @@ public class MainActivity extends Activity {
         });
     }
 
+    private TextView createControlButton(String text, float sp, View.OnClickListener listener) {
+        TextView tv = new TextView(this);
+        tv.setText(text);
+        tv.setTextSize(TypedValue.COMPLEX_UNIT_SP, sp);
+        tv.setTextColor(Color.WHITE);
+        tv.setGravity(Gravity.CENTER);
+        int pad = dp2px(8);
+        tv.setPadding(pad, pad, pad, pad);
+        tv.setClickable(true);
+        tv.setFocusable(true);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            TypedValue outValue = new TypedValue();
+            getTheme().resolveAttribute(android.R.attr.selectableItemBackgroundBorderless, outValue, true);
+            tv.setBackgroundResource(outValue.resourceId);
+        }
+        tv.setOnClickListener(listener);
+        return tv;
+    }
+
+    private void updateFloatingFavState() {
+        if (floatingTvFav != null) {
+            if (isFloatingCurrentFav) {
+                floatingTvFav.setTextColor(Color.parseColor("#BA3B36"));
+            } else {
+                floatingTvFav.setTextColor(Color.parseColor("#B0FFFFFF"));
+            }
+        }
+    }
+
+    private void resetAutoCollapseTimer() {
+        if (floatingHandler != null) {
+            floatingHandler.removeCallbacks(autoCollapseRunnable);
+            floatingHandler.postDelayed(autoCollapseRunnable, 4500);
+        }
+    }
+
+    public void setDesktopThemeColor(final String themeColor) {
+        if (themeColor != null && !themeColor.isEmpty()) {
+            currentFloatingThemeColor = themeColor;
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    if (floatingTvCurrent != null) {
+                        try {
+                            floatingTvCurrent.setTextColor(Color.parseColor(currentFloatingThemeColor));
+                        } catch (Exception ignored) {}
+                    }
+                }
+            });
+        }
+    }
+
+    private void setFloatingCardExpanded(boolean expanded) {
+        isControlCardExpanded = expanded;
+        if (floatingRootLayout == null) return;
+
+        if (expanded) {
+            GradientDrawable cardBg = new GradientDrawable();
+            cardBg.setColor(Color.parseColor("#E61E1E22")); // 典雅深空灰半透明磨砂卡片，绝无突兀白边
+            cardBg.setCornerRadius(dp2px(16));
+            floatingRootLayout.setBackground(cardBg);
+            floatingRootLayout.setPadding(dp2px(14), dp2px(10), dp2px(14), dp2px(10));
+
+            if (floatingHeaderLayout != null) floatingHeaderLayout.setVisibility(View.VISIBLE);
+            if (floatingControlsLayout != null) floatingControlsLayout.setVisibility(View.VISIBLE);
+            resetAutoCollapseTimer();
+        } else {
+            if (floatingHandler != null) floatingHandler.removeCallbacks(autoCollapseRunnable);
+            floatingRootLayout.setBackground(null); // 平时完全透明无边框！
+            floatingRootLayout.setPadding(dp2px(6), dp2px(2), dp2px(6), dp2px(2));
+
+            if (floatingHeaderLayout != null) floatingHeaderLayout.setVisibility(View.GONE);
+            if (floatingControlsLayout != null) floatingControlsLayout.setVisibility(View.GONE);
+        }
+
+        if (windowManager != null && floatingLyricView != null && floatingParams != null) {
+            try {
+                windowManager.updateViewLayout(floatingLyricView, floatingParams);
+            } catch (Exception ignored) {}
+        }
+    }
+
     public void showDesktopLyrics() {
         if (windowManager == null) {
             windowManager = (WindowManager) getSystemService(Context.WINDOW_SERVICE);
@@ -565,35 +562,139 @@ public class MainActivity extends Activity {
             floatingLyricView = null;
         }
 
-        LinearLayout layout = new LinearLayout(this);
-        layout.setOrientation(LinearLayout.VERTICAL);
-        layout.setGravity(Gravity.CENTER_HORIZONTAL);
-        int padH = dp2px(20);
-        int padV = dp2px(11);
-        layout.setPadding(padH, padV, padH, padV);
+        floatingRootLayout = new LinearLayout(this);
+        floatingRootLayout.setOrientation(LinearLayout.VERTICAL);
+        floatingRootLayout.setGravity(Gravity.CENTER_HORIZONTAL);
 
-        GradientDrawable bg = new GradientDrawable();
-        bg.setColor(Color.parseColor("#E618181A"));
-        bg.setCornerRadius(dp2px(22));
-        bg.setStroke(dp2px(1.2f), Color.parseColor("#33FFFFFF"));
-        layout.setBackground(bg);
+        // 1. 顶部栏 (操作态才显示)
+        floatingHeaderLayout = new LinearLayout(this);
+        floatingHeaderLayout.setOrientation(LinearLayout.HORIZONTAL);
+        floatingHeaderLayout.setGravity(Gravity.CENTER_VERTICAL);
+        floatingHeaderLayout.setLayoutParams(new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        floatingHeaderLayout.setPadding(0, 0, 0, dp2px(4));
+
+        TextView tvLogo = new TextView(this);
+        tvLogo.setText("灵犀");
+        tvLogo.setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f);
+        tvLogo.setTextColor(Color.WHITE);
+        tvLogo.setTypeface(Typeface.DEFAULT_BOLD);
+        GradientDrawable logoBg = new GradientDrawable();
+        try {
+            logoBg.setColor(Color.parseColor(currentFloatingThemeColor));
+        } catch (Exception e) {
+            logoBg.setColor(Color.parseColor("#234BB8"));
+        }
+        logoBg.setCornerRadius(dp2px(4));
+        tvLogo.setBackground(logoBg);
+        tvLogo.setPadding(dp2px(5), dp2px(2), dp2px(5), dp2px(2));
+        floatingHeaderLayout.addView(tvLogo);
+
+        View spacer = new View(this);
+        LinearLayout.LayoutParams spParams = new LinearLayout.LayoutParams(0, 1, 1f);
+        floatingHeaderLayout.addView(spacer, spParams);
+
+        TextView tvClose = new TextView(this);
+        tvClose.setText("✕");
+        tvClose.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15f);
+        tvClose.setTextColor(Color.parseColor("#B0FFFFFF"));
+        tvClose.setPadding(dp2px(8), dp2px(2), dp2px(4), dp2px(2));
+        tvClose.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                hideDesktopLyrics();
+            }
+        });
+        floatingHeaderLayout.addView(tvClose);
+        floatingRootLayout.addView(floatingHeaderLayout);
+
+        // 2. 核心歌词区 (始终居中，平时无背景，高亮大字体+立体暗影)
+        LinearLayout lyricsBody = new LinearLayout(this);
+        lyricsBody.setOrientation(LinearLayout.VERTICAL);
+        lyricsBody.setGravity(Gravity.CENTER_HORIZONTAL);
+        lyricsBody.setPadding(dp2px(8), dp2px(2), dp2px(8), dp2px(2));
 
         floatingTvCurrent = new TextView(this);
-        floatingTvCurrent.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15.5f);
-        floatingTvCurrent.setTextColor(Color.WHITE);
+        floatingTvCurrent.setTextSize(TypedValue.COMPLEX_UNIT_SP, 19f);
+        try {
+            floatingTvCurrent.setTextColor(Color.parseColor(currentFloatingThemeColor));
+        } catch (Exception e) {
+            floatingTvCurrent.setTextColor(Color.parseColor("#234BB8"));
+        }
         floatingTvCurrent.setTypeface(Typeface.DEFAULT_BOLD);
         floatingTvCurrent.setGravity(Gravity.CENTER);
-        floatingTvCurrent.setShadowLayer(6, 0, 2, Color.parseColor("#80000000"));
-        floatingTvCurrent.setText("灵犀音乐 · 桌面歌词");
-        layout.addView(floatingTvCurrent);
+        floatingTvCurrent.setShadowLayer(8, 0, 2, Color.parseColor("#B0000000"));
+        floatingTvCurrent.setText(currentFloatingLyricText);
+        lyricsBody.addView(floatingTvCurrent);
 
         floatingTvSub = new TextView(this);
-        floatingTvSub.setTextSize(TypedValue.COMPLEX_UNIT_SP, 11.5f);
-        floatingTvSub.setTextColor(Color.parseColor("#B0FFFFFF"));
+        floatingTvSub.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12.5f);
+        floatingTvSub.setTextColor(Color.parseColor("#D9FFFFFF"));
         floatingTvSub.setGravity(Gravity.CENTER);
-        floatingTvSub.setText("上下滑动切词 · 拖拽移动");
-        floatingTvSub.setPadding(0, dp2px(3), 0, 0);
-        layout.addView(floatingTvSub);
+        floatingTvSub.setShadowLayer(6, 0, 1, Color.parseColor("#80000000"));
+        floatingTvSub.setText(currentFloatingSubLyricText);
+        floatingTvSub.setPadding(0, dp2px(2), 0, 0);
+        if (currentFloatingSubLyricText == null || currentFloatingSubLyricText.isEmpty()) {
+            floatingTvSub.setVisibility(View.GONE);
+        }
+        lyricsBody.addView(floatingTvSub);
+        floatingRootLayout.addView(lyricsBody);
+
+        // 3. 底部播控栏 (操作态才显示)
+        floatingControlsLayout = new LinearLayout(this);
+        floatingControlsLayout.setOrientation(LinearLayout.HORIZONTAL);
+        floatingControlsLayout.setGravity(Gravity.CENTER);
+        floatingControlsLayout.setPadding(0, dp2px(6), 0, 0);
+
+        floatingTvFav = createControlButton("❤", 17f, new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                dispatchWebAction("toggleSongFavFromNotification()");
+                resetAutoCollapseTimer();
+            }
+        });
+        updateFloatingFavState();
+        floatingControlsLayout.addView(floatingTvFav);
+
+        View btnPrev = createControlButton("⏮", 17f, new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                dispatchWebAction("playPrev()");
+                resetAutoCollapseTimer();
+            }
+        });
+        floatingControlsLayout.addView(btnPrev);
+
+        floatingTvPlay = createControlButton(isFloatingCurrentPlaying ? "⏸" : "▶", 19f, new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                dispatchWebAction("togglePlayState()");
+                resetAutoCollapseTimer();
+            }
+        });
+        floatingControlsLayout.addView(floatingTvPlay);
+
+        View btnNext = createControlButton("⏭", 17f, new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                dispatchWebAction("playNext()");
+                resetAutoCollapseTimer();
+            }
+        });
+        floatingControlsLayout.addView(btnNext);
+
+        View btnApp = createControlButton("↗", 17f, new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent appIntent = new Intent(MainActivity.this, MainActivity.class);
+                appIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                startActivity(appIntent);
+                setFloatingCardExpanded(false);
+            }
+        });
+        floatingControlsLayout.addView(btnApp);
+
+        floatingRootLayout.addView(floatingControlsLayout);
 
         int layoutType;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -612,7 +713,8 @@ public class MainActivity extends Activity {
         floatingParams.gravity = Gravity.TOP | Gravity.CENTER_HORIZONTAL;
         floatingParams.y = dp2px(130);
 
-        layout.setOnTouchListener(new View.OnTouchListener() {
+        // 触摸手势：拖动位移；轻击展开/收起控制卡片；上下滑切词
+        floatingRootLayout.setOnTouchListener(new View.OnTouchListener() {
             private int initialX, initialY;
             private float initialTouchX, initialTouchY;
             private boolean isMoving = false;
@@ -632,7 +734,7 @@ public class MainActivity extends Activity {
                     case MotionEvent.ACTION_MOVE:
                         float dx = event.getRawX() - initialTouchX;
                         float dy = event.getRawY() - initialTouchY;
-                        if (Math.abs(dx) > 12 || Math.abs(dy) > 12) {
+                        if (Math.abs(dx) > 10 || Math.abs(dy) > 10) {
                             isMoving = true;
                         }
                         floatingParams.x = initialX + (int) dx;
@@ -645,23 +747,19 @@ public class MainActivity extends Activity {
                         float totalDy = event.getRawY() - initialTouchY;
                         float totalDx = event.getRawX() - initialTouchX;
                         long duration = System.currentTimeMillis() - downTime;
-                        if (!isMoving && duration < 300) {
-                            Intent appIntent = new Intent(MainActivity.this, MainActivity.class);
-                            appIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-                            startActivity(appIntent);
+
+                        // 1. 如果没有明显移动且用时短 -> 点击切换平时态与操作态！
+                        if (!isMoving && duration < 350) {
+                            setFloatingCardExpanded(!isControlCardExpanded);
                             return true;
                         }
+
+                        // 2. 上下滑动切歌词行
                         if (Math.abs(totalDy) > dp2px(24) && Math.abs(totalDy) > Math.abs(totalDx)) {
                             if (totalDy < 0) {
-                                webView.post(new Runnable() {
-                                    @Override
-                                    public void run() { webView.evaluateJavascript("seekToNextLyricLine()", null); }
-                                });
+                                dispatchWebAction("seekToNextLyricLine()");
                             } else {
-                                webView.post(new Runnable() {
-                                    @Override
-                                    public void run() { webView.evaluateJavascript("seekToPrevLyricLine()", null); }
-                                });
+                                dispatchWebAction("seekToPrevLyricLine()");
                             }
                         }
                         return true;
@@ -670,11 +768,14 @@ public class MainActivity extends Activity {
             }
         });
 
+        // 初始设为平时纯净无框态
+        setFloatingCardExpanded(false);
+
         try {
-            windowManager.addView(layout, floatingParams);
-            floatingLyricView = layout;
+            windowManager.addView(floatingRootLayout, floatingParams);
+            floatingLyricView = floatingRootLayout;
             isFloatingLyricsActive = true;
-            Toast.makeText(this, "桌面悬浮歌词已开启，支持上下滑动与拖拽", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "桌面悬浮歌词已开启，点击可呼出播控卡片", Toast.LENGTH_SHORT).show();
             if (webView != null) {
                 webView.evaluateJavascript("if (window.onDesktopLyricsStateChanged) window.onDesktopLyricsStateChanged(true)", null);
             }
@@ -685,6 +786,9 @@ public class MainActivity extends Activity {
     }
 
     public void hideDesktopLyrics() {
+        if (floatingHandler != null) {
+            floatingHandler.removeCallbacks(autoCollapseRunnable);
+        }
         if (windowManager != null && floatingLyricView != null) {
             try {
                 windowManager.removeView(floatingLyricView);
@@ -692,29 +796,47 @@ public class MainActivity extends Activity {
             floatingLyricView = null;
         }
         isFloatingLyricsActive = false;
+        isControlCardExpanded = false;
         Toast.makeText(this, "桌面悬浮歌词已关闭", Toast.LENGTH_SHORT).show();
         if (webView != null) {
             webView.evaluateJavascript("if (window.onDesktopLyricsStateChanged) window.onDesktopLyricsStateChanged(false)", null);
         }
     }
 
-    public void updateDesktopLyric(final String current, final String next) {
+    public void updateDesktopLyric(final String current, final String next, final String themeColor, final boolean isFav, final boolean isPlaying) {
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                if (floatingTvCurrent != null && current != null) {
-                    floatingTvCurrent.setText(current);
+                if (current != null) currentFloatingLyricText = current;
+                if (next != null) currentFloatingSubLyricText = next;
+                if (themeColor != null && !themeColor.isEmpty()) currentFloatingThemeColor = themeColor;
+                isFloatingCurrentFav = isFav;
+                isFloatingCurrentPlaying = isPlaying;
+
+                if (floatingTvCurrent != null) {
+                    floatingTvCurrent.setText(currentFloatingLyricText);
+                    try {
+                        floatingTvCurrent.setTextColor(Color.parseColor(currentFloatingThemeColor));
+                    } catch (Exception ignored) {}
                 }
                 if (floatingTvSub != null) {
-                    if (next != null && !next.isEmpty()) {
-                        floatingTvSub.setText(next);
+                    if (currentFloatingSubLyricText != null && !currentFloatingSubLyricText.isEmpty()) {
+                        floatingTvSub.setText(currentFloatingSubLyricText);
                         floatingTvSub.setVisibility(View.VISIBLE);
                     } else {
                         floatingTvSub.setVisibility(View.GONE);
                     }
                 }
+                updateFloatingFavState();
+                if (floatingTvPlay != null) {
+                    floatingTvPlay.setText(isFloatingCurrentPlaying ? "⏸" : "▶");
+                }
             }
         });
+    }
+
+    public void updateDesktopLyric(final String current, final String next) {
+        updateDesktopLyric(current, next, null, isFloatingCurrentFav, isFloatingCurrentPlaying);
     }
 
     public void scanLocalMusic() {
@@ -807,6 +929,14 @@ public class MainActivity extends Activity {
         }
 
         @JavascriptInterface
+        public void updateMediaCardFull(final String title, final String artist, final String coverUrl, final boolean isPlaying, final boolean isFav, final double currentSec, final double durationSec) {
+            long posMs = (long) (currentSec * 1000);
+            long durMs = (long) (durationSec * 1000);
+            if (durMs <= 0) durMs = 180000;
+            MainActivity.this.updateMediaCardFull(title, artist, coverUrl, isPlaying, isFav, posMs, durMs);
+        }
+
+        @JavascriptInterface
         public void downloadFile(final String url, final String filename) {
             MainActivity.this.downloadFile(url, filename);
         }
@@ -855,6 +985,21 @@ public class MainActivity extends Activity {
         @JavascriptInterface
         public void updateDesktopLyric(final String current, final String next) {
             MainActivity.this.updateDesktopLyric(current, next);
+        }
+
+        @JavascriptInterface
+        public void updateDesktopLyric(final String current, final String next, final String themeColor, final boolean isFav, final boolean isPlaying) {
+            MainActivity.this.updateDesktopLyric(current, next, themeColor, isFav, isPlaying);
+        }
+
+        @JavascriptInterface
+        public void updateDesktopLyricFull(final String current, final String next, final String themeColor, final boolean isFav, final boolean isPlaying) {
+            MainActivity.this.updateDesktopLyric(current, next, themeColor, isFav, isPlaying);
+        }
+
+        @JavascriptInterface
+        public void setDesktopThemeColor(final String themeColor) {
+            MainActivity.this.setDesktopThemeColor(themeColor);
         }
 
         @JavascriptInterface
