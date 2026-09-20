@@ -1,7 +1,7 @@
 {
   "name": "灵犀音乐",
   "short_name": "灵犀音乐",
-  "description": "YYRC 灵犀桌面 · 极简寻音端",
+  "description": "灵犀音乐 · 极简古风沉浸播放器",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
@@ -16,7 +16,7 @@
       "purpose": "any maskable"
     }
   ],
-  "appid": "__UNI__YYRCMUSIC",
+  "appid": "__UNI__LINGXIMUSIC",
   "versionName": "1.0.0",
   "versionCode": "100",
   "transformPx": false,
