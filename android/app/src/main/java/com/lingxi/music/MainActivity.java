@@ -112,6 +112,9 @@ public class MainActivity extends Activity {
     private TextView floatingTvSub;
     private ImageView floatingIvFav;
     private ImageView floatingIvPlay;
+    private ImageView floatingIvLock;
+    private boolean isFloatingLocked = false;
+    private long lastLockClickTime = 0;
     private boolean isFloatingLyricsActive = false;
     private boolean isActivityForeground = false;
     private boolean isControlCardExpanded = false;
@@ -128,6 +131,17 @@ public class MainActivity extends Activity {
     private boolean lastMediaIsFav = false;
     private long lastMediaPosMs = 0;
     private long lastMediaDurMs = 180000;
+
+    public static class NativeLyricLine {
+        public double time;
+        public String text;
+        public NativeLyricLine(double time, String text) {
+            this.time = time;
+            this.text = text;
+        }
+    }
+    private final List<NativeLyricLine> nativeLyricsList = new ArrayList<>();
+
     private Handler floatingHandler = new Handler(Looper.getMainLooper());
     private Runnable autoCollapseRunnable = new Runnable() {
         @Override
@@ -143,6 +157,10 @@ public class MainActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         sInstance = this;
+        windowManager = (WindowManager) getSystemService(Context.WINDOW_SERVICE);
+        try {
+            isFloatingLocked = getSharedPreferences("lingxi_prefs", Context.MODE_PRIVATE).getBoolean("floating_locked", false);
+        } catch (Exception ignored) {}
 
         // 1. 设置系统状态栏与导航栏完全透明与沉浸式
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
@@ -271,11 +289,30 @@ public class MainActivity extends Activity {
         handleIntentNavigation(intent);
     }
 
+    public synchronized void removeFloatingLyricViewInternal() {
+        if (floatingHandler != null) {
+            floatingHandler.removeCallbacks(autoCollapseRunnable);
+            floatingHandler.removeCallbacks(nativeLyricTicker);
+        }
+        if (windowManager == null) {
+            windowManager = (WindowManager) getSystemService(Context.WINDOW_SERVICE);
+        }
+        if (windowManager != null && sFloatingLyricView != null) {
+            try {
+                windowManager.removeView(sFloatingLyricView);
+            } catch (Exception ignored) {}
+            sFloatingLyricView = null;
+        }
+    }
+
     @Override
     protected void onResume() {
         super.onResume();
         isActivityForeground = true;
-        updateFloatingWindowState();
+        if (floatingHandler != null) {
+            floatingHandler.removeCallbacks(updateFloatingStateRunnable);
+        }
+        removeFloatingLyricViewInternal();
         handleIntentNavigation(getIntent());
     }
 
@@ -296,27 +333,15 @@ public class MainActivity extends Activity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        if (windowManager != null && sFloatingLyricView != null) {
-            try {
-                windowManager.removeView(sFloatingLyricView);
-            } catch (Exception ignored) {}
-            sFloatingLyricView = null;
-        }
+        removeFloatingLyricViewInternal();
     }
 
     private final Runnable updateFloatingStateRunnable = new Runnable() {
         @Override
         public void run() {
             if (isActivityForeground) {
-                // 应用位于前台时，严禁在灵犀应用内部显示桌面悬浮歌词遮挡界面
-                if (windowManager != null && sFloatingLyricView != null) {
-                    try {
-                        windowManager.removeView(sFloatingLyricView);
-                    } catch (Exception ignored) {}
-                    sFloatingLyricView = null;
-                }
+                removeFloatingLyricViewInternal();
             } else {
-                // 应用处于后台或用户返回桌面时，若用户开启了桌面歌词，且尚未挂载，则在桌面上呈现
                 if (isFloatingLyricsActive && sFloatingLyricView == null) {
                     showDesktopWindowInternal();
                 }
@@ -638,6 +663,71 @@ public class MainActivity extends Activity {
         }
     }
 
+    private void updateFloatingLockState() {
+        if (floatingIvLock != null) {
+            floatingIvLock.setImageResource(isFloatingLocked ? R.drawable.ic_floating_lock : R.drawable.ic_floating_unlock);
+        }
+    }
+
+    public static void setNativePlaybackState(final boolean playing) {
+        if (sInstance != null) {
+            sInstance.isFloatingCurrentPlaying = playing;
+            sInstance.runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    sInstance.updateFloatingPlayState();
+                }
+            });
+        }
+    }
+
+    private final Runnable nativeLyricTicker = new Runnable() {
+        @Override
+        public void run() {
+            if (sFloatingLyricView != null && isFloatingLyricsActive && !isActivityForeground) {
+                updateFloatingLyricsFromNative();
+                if (floatingHandler != null) {
+                    floatingHandler.postDelayed(this, 250);
+                }
+            }
+        }
+    };
+
+    private void updateFloatingLyricsFromNative() {
+        MediaPlaybackService service = MediaPlaybackService.getInstance();
+        if (service == null) return;
+
+        boolean playing = service.isNativePlaying();
+        if (isFloatingCurrentPlaying != playing) {
+            isFloatingCurrentPlaying = playing;
+            updateFloatingPlayState();
+        }
+
+        if (nativeLyricsList.isEmpty()) return;
+
+        long posMs = service.getCurrentPositionMs();
+        double curSec = Math.max(0, (posMs / 1000.0) - 0.35);
+
+        int matchIdx = -1;
+        for (int i = 0; i < nativeLyricsList.size(); i++) {
+            if (curSec >= nativeLyricsList.get(i).time) {
+                matchIdx = i;
+            } else {
+                break;
+            }
+        }
+
+        if (matchIdx >= 0 && matchIdx < nativeLyricsList.size()) {
+            String text = nativeLyricsList.get(matchIdx).text;
+            if (text != null && !text.isEmpty() && !text.equals(currentFloatingLyricText)) {
+                currentFloatingLyricText = text;
+                if (floatingTvCurrent != null) {
+                    floatingTvCurrent.setText(currentFloatingLyricText);
+                }
+            }
+        }
+    }
+
     private void resetAutoCollapseTimer() {
         if (floatingHandler != null) {
             floatingHandler.removeCallbacks(autoCollapseRunnable);
@@ -710,6 +800,7 @@ public class MainActivity extends Activity {
         if (!isActivityForeground) {
             showDesktopWindowInternal();
         } else {
+            removeFloatingLyricViewInternal();
             Toast.makeText(this, "桌面悬浮歌词已开启，返回桌面即可显示", Toast.LENGTH_SHORT).show();
         }
         if (webView != null) {
@@ -718,15 +809,14 @@ public class MainActivity extends Activity {
     }
 
     private void showDesktopWindowInternal() {
+        if (isActivityForeground) {
+            removeFloatingLyricViewInternal();
+            return;
+        }
         if (windowManager == null) {
             windowManager = (WindowManager) getSystemService(Context.WINDOW_SERVICE);
         }
-        if (sFloatingLyricView != null) {
-            try {
-                windowManager.removeView(sFloatingLyricView);
-            } catch (Exception ignored) {}
-            sFloatingLyricView = null;
-        }
+        removeFloatingLyricViewInternal();
 
         floatingRootLayout = new LinearLayout(this);
         floatingRootLayout.setOrientation(LinearLayout.VERTICAL);
@@ -876,6 +966,18 @@ public class MainActivity extends Activity {
         floatingIvPlay = createSvgButton(isFloatingCurrentPlaying ? R.drawable.ic_floating_pause : R.drawable.ic_floating_play, 42, new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                isFloatingCurrentPlaying = !isFloatingCurrentPlaying;
+                updateFloatingPlayState();
+
+                MediaPlaybackService service = MediaPlaybackService.getInstance();
+                if (service != null) {
+                    if (isFloatingCurrentPlaying) {
+                        service.resumePlayback();
+                    } else {
+                        service.pausePlayback();
+                    }
+                }
+
                 dispatchWebAction("togglePlayState()");
                 resetAutoCollapseTimer();
             }
@@ -889,17 +991,33 @@ public class MainActivity extends Activity {
             }
         });
 
-        ImageView ivSettings = createSvgButton(R.drawable.ic_floating_settings, 34, new View.OnClickListener() {
+        floatingIvLock = createSvgButton(isFloatingLocked ? R.drawable.ic_floating_lock : R.drawable.ic_floating_unlock, 34, new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent appIntent = new Intent(MainActivity.this, MainActivity.class);
-                appIntent.setAction(Intent.ACTION_MAIN);
-                appIntent.addCategory(Intent.CATEGORY_LAUNCHER);
-                appIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
-                appIntent.putExtra("navigate_to", "settings");
-                startActivity(appIntent);
-                setFloatingCardExpanded(false);
-                dispatchWebAction("if (typeof closePlayerFull === 'function') closePlayerFull(); if (typeof switchBottomTab === 'function') switchBottomTab('settings');");
+                long now = System.currentTimeMillis();
+                if (!isFloatingLocked) {
+                    isFloatingLocked = true;
+                    try {
+                        getSharedPreferences("lingxi_prefs", Context.MODE_PRIVATE)
+                                .edit().putBoolean("floating_locked", true).apply();
+                    } catch (Exception ignored) {}
+                    updateFloatingLockState();
+                    Toast.makeText(MainActivity.this, "悬浮歌词已锁定位置，双击锁定按钮可解锁", Toast.LENGTH_SHORT).show();
+                } else {
+                    if (now - lastLockClickTime < 380) {
+                        isFloatingLocked = false;
+                        try {
+                            getSharedPreferences("lingxi_prefs", Context.MODE_PRIVATE)
+                                    .edit().putBoolean("floating_locked", false).apply();
+                        } catch (Exception ignored) {}
+                        updateFloatingLockState();
+                        Toast.makeText(MainActivity.this, "悬浮歌词已解锁，可自由拖动位置", Toast.LENGTH_SHORT).show();
+                        lastLockClickTime = 0;
+                    } else {
+                        lastLockClickTime = now;
+                        Toast.makeText(MainActivity.this, "双击锁定按钮以解锁位置", Toast.LENGTH_SHORT).show();
+                    }
+                }
                 resetAutoCollapseTimer();
             }
         });
@@ -913,7 +1031,7 @@ public class MainActivity extends Activity {
         floatingControlsLayout.addView(createFlexSpacer());
         floatingControlsLayout.addView(ivNext);
         floatingControlsLayout.addView(createFlexSpacer());
-        floatingControlsLayout.addView(ivSettings);
+        floatingControlsLayout.addView(floatingIvLock);
 
         floatingRootLayout.addView(floatingControlsLayout);
 
@@ -979,12 +1097,14 @@ public class MainActivity extends Activity {
                             isDragging = true;
                         }
                         if (isDragging) {
-                            floatingParams.x = 0; // 严格禁止左右移动
-                            floatingParams.y = initialY + (int) dy;
-                            if (windowManager != null && sFloatingLyricView != null) {
-                                try {
-                                    windowManager.updateViewLayout(sFloatingLyricView, floatingParams);
-                                } catch (Exception ignored) {}
+                            if (!isFloatingLocked) {
+                                floatingParams.x = 0; // 严格禁止左右移动
+                                floatingParams.y = initialY + (int) dy;
+                                if (windowManager != null && sFloatingLyricView != null) {
+                                    try {
+                                        windowManager.updateViewLayout(sFloatingLyricView, floatingParams);
+                                    } catch (Exception ignored) {}
+                                }
                             }
                         }
                         return true;
@@ -1014,21 +1134,17 @@ public class MainActivity extends Activity {
         try {
             windowManager.addView(floatingRootLayout, floatingParams);
             sFloatingLyricView = floatingRootLayout;
+            if (floatingHandler != null) {
+                floatingHandler.removeCallbacks(nativeLyricTicker);
+                floatingHandler.post(nativeLyricTicker);
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
     public void hideDesktopLyrics() {
-        if (floatingHandler != null) {
-            floatingHandler.removeCallbacks(autoCollapseRunnable);
-        }
-        if (windowManager != null && sFloatingLyricView != null) {
-            try {
-                windowManager.removeView(sFloatingLyricView);
-            } catch (Exception ignored) {}
-            sFloatingLyricView = null;
-        }
+        removeFloatingLyricViewInternal();
         isFloatingLyricsActive = false;
         isControlCardExpanded = false;
         // 刷新通知栏图标以移除勾标 √
@@ -1224,6 +1340,28 @@ public class MainActivity extends Activity {
         }
 
         @JavascriptInterface
+        public void setNativeLyrics(final String lyricsJson) {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    nativeLyricsList.clear();
+                    if (lyricsJson == null || lyricsJson.isEmpty()) return;
+                    try {
+                        JSONArray arr = new JSONArray(lyricsJson);
+                        for (int i = 0; i < arr.length(); i++) {
+                            JSONObject obj = arr.getJSONObject(i);
+                            double time = obj.optDouble("time", 0.0);
+                            String text = obj.optString("text", "");
+                            nativeLyricsList.add(new NativeLyricLine(time, text));
+                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+            });
+        }
+
+        @JavascriptInterface
         public void setDesktopThemeColor(final String themeColor) {
             MainActivity.this.setDesktopThemeColor(themeColor);
         }
@@ -1239,7 +1377,7 @@ public class MainActivity extends Activity {
                 PackageInfo pInfo = getPackageManager().getPackageInfo(getPackageName(), 0);
                 return pInfo.versionName;
             } catch (Exception e) {
-                return "1.9.0";
+                return "1.9.2";
             }
         }
 

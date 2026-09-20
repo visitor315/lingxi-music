@@ -186,6 +186,7 @@ public class MediaPlaybackService extends Service {
                         durationMs = mp.getDuration();
                         acquireLocks();
                         buildAndPostNotification(currentCoverBitmap != null ? currentCoverBitmap : getRoundedDefaultCover());
+                        MainActivity.setNativePlaybackState(true);
                         MainActivity.dispatchWebAction("if (window.onNativePrepared) window.onNativePrepared(" + (durationMs / 1000.0) + ");");
                     } catch (Exception e) {
                         e.printStackTrace();
@@ -199,6 +200,7 @@ public class MediaPlaybackService extends Service {
                     isPlaying = false;
                     releaseLocks();
                     buildAndPostNotification(currentCoverBitmap != null ? currentCoverBitmap : getRoundedDefaultCover());
+                    MainActivity.setNativePlaybackState(false);
                     MainActivity.dispatchWebAction("if (window.onNativeCompletion) window.onNativeCompletion(); else if (typeof handleTrackEnd === 'function') handleTrackEnd();");
                 }
             });
@@ -210,6 +212,7 @@ public class MediaPlaybackService extends Service {
                     isPreparing = false;
                     isPlaying = false;
                     releaseLocks();
+                    MainActivity.setNativePlaybackState(false);
                     MainActivity.dispatchWebAction("if (window.onNativeError) window.onNativeError(" + what + ", " + extra + ");");
                     return true;
                 }
@@ -237,6 +240,7 @@ public class MediaPlaybackService extends Service {
                 isPlaying = true;
                 acquireLocks();
                 buildAndPostNotification(currentCoverBitmap != null ? currentCoverBitmap : getRoundedDefaultCover());
+                MainActivity.setNativePlaybackState(true);
                 MainActivity.dispatchWebAction("if (window.onNativePlay) window.onNativePlay();");
                 return;
             } catch (Exception ignored) {}
@@ -273,6 +277,7 @@ public class MediaPlaybackService extends Service {
         isPlaying = false;
         releaseLocks();
         buildAndPostNotification(currentCoverBitmap != null ? currentCoverBitmap : getRoundedDefaultCover());
+        MainActivity.setNativePlaybackState(false);
         MainActivity.dispatchWebAction("if (window.onNativePause) window.onNativePause();");
     }
 
@@ -283,6 +288,7 @@ public class MediaPlaybackService extends Service {
                 isPlaying = true;
                 acquireLocks();
                 buildAndPostNotification(currentCoverBitmap != null ? currentCoverBitmap : getRoundedDefaultCover());
+                MainActivity.setNativePlaybackState(true);
                 MainActivity.dispatchWebAction("if (window.onNativePlay) window.onNativePlay();");
                 return;
             } catch (Exception ignored) {}

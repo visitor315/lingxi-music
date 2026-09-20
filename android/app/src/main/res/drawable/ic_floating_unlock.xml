@@ -1,0 +1,24 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="22dp"
+    android:height="22dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!-- 解锁态：开锁锁梁，极简哑光白线框 -->
+    <path
+        android:strokeColor="#CCFFFFFF"
+        android:strokeWidth="1.8"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M 8,11 V 7 A 4,4 0 0,1 16,7 V 4" />
+    <path
+        android:strokeColor="#CCFFFFFF"
+        android:strokeWidth="1.8"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M 6.5,11 H 17.5 A 2,2 0 0,1 19.5,13 V 19 A 2,2 0 0,1 17.5,21 H 6.5 A 2,2 0 0,1 4.5,19 V 13 A 2,2 0 0,1 6.5,11 Z" />
+    <path
+        android:strokeColor="#CCFFFFFF"
+        android:strokeWidth="1.6"
+        android:strokeLineCap="round"
+        android:pathData="M 12,15 V 17.5" />
+</vector>

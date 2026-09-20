@@ -5442,6 +5442,15 @@ function initLyricsList() {
   if (LYRICS_DATA && LYRICS_DATA.length > 0) {
     displayedPreviewIdx = -1;
     updateSimplePreviewLyric(0, true);
+    if (window.AndroidBridge && window.AndroidBridge.setNativeLyrics) {
+      try {
+        const list = LYRICS_DATA.map(l => ({
+          time: l.time,
+          text: l.cleanText || l.text || ''
+        }));
+        window.AndroidBridge.setNativeLyrics(JSON.stringify(list));
+      } catch(e) {}
+    }
   }
 
   const scrollBox = document.getElementById('pureLyricsContainer');
@@ -5632,15 +5641,19 @@ document.addEventListener('visibilitychange', () => {
     }
     // 关键优化：若未开启桌面悬浮歌词，切后台时坚决不运行高频定时器与 DOM 计算，节省 100% CPU 给底层音频解码！
     const needBgLyrics = isDesktopLyricsActive || (window.AndroidBridge && window.AndroidBridge.isDesktopLyricsActive && window.AndroidBridge.isDesktopLyricsActive());
-    if (needBgLyrics && !bgLyricInterval && isPlaying && !isNativeAudioSupported) {
+    if (needBgLyrics && !bgLyricInterval && isPlaying) {
       bgLyricInterval = setInterval(() => {
-        if (isPlaying && audioPlayer && !audioPlayer.paused) {
-          if (!isSeekingAudio && !isNaN(audioPlayer.currentTime) && audioPlayer.currentTime >= 0) {
-            currentSec = audioPlayer.currentTime;
+        if (!isPlaying) return;
+        if (isNativeAudioSupported) {
+          if (window.AndroidBridge && window.AndroidBridge.getNativePosition) {
+            const np = window.AndroidBridge.getNativePosition();
+            if (typeof np === 'number' && np >= 0) currentSec = np;
           }
-          syncCurrentLyricToDesktop();
+        } else if (audioPlayer && !audioPlayer.paused && !isSeekingAudio && !isNaN(audioPlayer.currentTime)) {
+          currentSec = audioPlayer.currentTime;
         }
-      }, 500);
+        syncCurrentLyricToDesktop();
+      }, 300);
     }
   } else {
     if (bgLyricInterval) {
@@ -6715,13 +6728,17 @@ window.onDesktopLyricsStateChanged = function(active) {
     if (isDesktopLyricsActive) {
       if (!bgLyricInterval && isPlaying) {
         bgLyricInterval = setInterval(() => {
-          if (isPlaying && audioPlayer && !audioPlayer.paused) {
-            if (!isSeekingAudio && !isNaN(audioPlayer.currentTime) && audioPlayer.currentTime >= 0) {
-              currentSec = audioPlayer.currentTime;
+          if (!isPlaying) return;
+          if (isNativeAudioSupported) {
+            if (window.AndroidBridge && window.AndroidBridge.getNativePosition) {
+              const np = window.AndroidBridge.getNativePosition();
+              if (typeof np === 'number' && np >= 0) currentSec = np;
             }
-            syncCurrentLyricToDesktop();
+          } else if (audioPlayer && !audioPlayer.paused && !isSeekingAudio && !isNaN(audioPlayer.currentTime)) {
+            currentSec = audioPlayer.currentTime;
           }
-        }, 500);
+          syncCurrentLyricToDesktop();
+        }, 300);
       }
     } else {
       if (bgLyricInterval) {
