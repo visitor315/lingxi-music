@@ -1,0 +1,17 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="22dp"
+    android:height="22dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!-- 极简设置齿轮轮廓矢量图标，完全对标概念版右侧设置键 -->
+    <path
+        android:strokeColor="#CCFFFFFF"
+        android:strokeWidth="1.8"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M 19.4,13 a 7.7,7.7 0 0,0 0.1,-1 a 7.7,7.7 0 0,0 -0.1,-1 l 2.1,-1.6 a 0.5,0.5 0 0,0 0.1,-0.6 l -2,-3.5 a 0.5,0.5 0 0,0 -0.6,-0.2 l -2.5,1 a 7.5,7.5 0 0,0 -1.7,-1 l -0.4,-2.6 A 0.5,0.5 0 0,0 14.4,2 h -4.8 a 0.5,0.5 0 0,0 -0.5,0.4 l -0.4,2.6 a 7.5,7.5 0 0,0 -1.7,1 l -2.5,-1 a 0.5,0.5 0 0,0 -0.6,0.2 l -2,3.5 a 0.5,0.5 0 0,0 0.1,0.6 l 2.1,1.6 a 7.7,7.7 0 0,0 -0.1,1 a 7.7,7.7 0 0,0 0.1,1 l -2.1,1.6 a 0.5,0.5 0 0,0 -0.1,0.6 l 2,3.5 a 0.5,0.5 0 0,0 0.6,0.2 l 2.5,-1 a 7.5,7.5 0 0,0 1.7,1 l 0.4,2.6 a 0.5,0.5 0 0,0 0.5,0.4 h 4.8 a 0.5,0.5 0 0,0 0.5,-0.4 l 0.4,-2.6 a 7.5,7.5 0 0,0 1.7,-1 l 2.5,1 a 0.5,0.5 0 0,0 0.6,-0.2 l 2,-3.5 a 0.5,0.5 0 0,0 -0.1,-0.6 Z" />
+    <path
+        android:strokeColor="#CCFFFFFF"
+        android:strokeWidth="1.8"
+        android:pathData="M 12,9 A 3,3 0 1,1 11.99,9 Z" />
+</vector>

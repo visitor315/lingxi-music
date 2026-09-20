@@ -36,9 +36,14 @@ import android.util.Base64;
 import android.util.Rational;
 import android.util.TypedValue;
 import android.view.Gravity;
+import android.view.GestureDetector;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewConfiguration;
+import android.view.ViewOutlineProvider;
+import android.graphics.Outline;
+import android.animation.LayoutTransition;
 import android.view.Window;
 import android.view.WindowManager;
 import android.webkit.DownloadListener;
@@ -107,6 +112,7 @@ public class MainActivity extends Activity {
     private ImageView floatingIvPlay;
     private boolean isFloatingLyricsActive = false;
     private boolean isControlCardExpanded = false;
+    private long lastCardToggleTime = 0;
     private String currentFloatingThemeColor = "#234BB8";
     private String currentFloatingLyricText = "灵犀音乐 · 随心听";
     private String currentFloatingSubLyricText = "";
@@ -359,6 +365,13 @@ public class MainActivity extends Activity {
         lastMediaDurMs = durationMs;
         isFloatingCurrentFav = isFav;
         isFloatingCurrentPlaying = isPlaying;
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                updateFloatingFavState();
+                updateFloatingPlayState();
+            }
+        });
 
         Intent intent = new Intent(this, MediaPlaybackService.class);
         intent.setAction(MediaPlaybackService.ACTION_UPDATE_STATE);
@@ -491,7 +504,7 @@ public class MainActivity extends Activity {
     private ImageView createSvgButton(int resId, int sizeDp, View.OnClickListener listener) {
         ImageView iv = new ImageView(this);
         iv.setImageResource(resId);
-        int pad = dp2px(6);
+        int pad = (sizeDp > 36) ? dp2px(4) : dp2px(6);
         iv.setPadding(pad, pad, pad, pad);
         int pxSize = dp2px(sizeDp);
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(pxSize, pxSize);
@@ -499,11 +512,26 @@ public class MainActivity extends Activity {
         iv.setLayoutParams(lp);
         iv.setClickable(true);
         iv.setFocusable(true);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            TypedValue outValue = new TypedValue();
-            getTheme().resolveAttribute(android.R.attr.selectableItemBackgroundBorderless, outValue, true);
-            iv.setBackgroundResource(outValue.resourceId);
-        }
+        iv.setBackground(null); // 彻底移除系统默认的圆形选中框/水波纹
+        iv.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                switch (event.getAction()) {
+                    case MotionEvent.ACTION_DOWN:
+                        v.setAlpha(0.55f);
+                        v.setScaleX(0.92f);
+                        v.setScaleY(0.92f);
+                        break;
+                    case MotionEvent.ACTION_UP:
+                    case MotionEvent.ACTION_CANCEL:
+                        v.setAlpha(1.0f);
+                        v.setScaleX(1.0f);
+                        v.setScaleY(1.0f);
+                        break;
+                }
+                return false;
+            }
+        });
         iv.setOnClickListener(listener);
         return iv;
     }
@@ -547,6 +575,13 @@ public class MainActivity extends Activity {
                 }
             });
         }
+    }
+
+    private void toggleFloatingCardExpanded() {
+        long now = System.currentTimeMillis();
+        if (now - lastCardToggleTime < 350) return;
+        lastCardToggleTime = now;
+        setFloatingCardExpanded(!isControlCardExpanded);
     }
 
     private void setFloatingCardExpanded(boolean expanded) {
@@ -606,6 +641,13 @@ public class MainActivity extends Activity {
         floatingRootLayout.setOrientation(LinearLayout.VERTICAL);
         floatingRootLayout.setGravity(Gravity.CENTER_HORIZONTAL);
 
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
+            LayoutTransition transition = new LayoutTransition();
+            transition.enableTransitionType(LayoutTransition.CHANGING);
+            transition.setDuration(200);
+            floatingRootLayout.setLayoutTransition(transition);
+        }
+
         // 1. 顶部栏 (操作态才显示)
         floatingHeaderLayout = new LinearLayout(this);
         floatingHeaderLayout.setOrientation(LinearLayout.HORIZONTAL);
@@ -615,8 +657,17 @@ public class MainActivity extends Activity {
         floatingHeaderLayout.setPadding(0, 0, 0, dp2px(4));
 
         ImageView ivLogo = new ImageView(this);
-        ivLogo.setImageResource(R.drawable.ic_floating_logo);
-        int logoSize = dp2px(18);
+        ivLogo.setImageResource(R.mipmap.ic_launcher);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            ivLogo.setClipToOutline(true);
+            ivLogo.setOutlineProvider(new ViewOutlineProvider() {
+                @Override
+                public void getOutline(View view, Outline outline) {
+                    outline.setRoundRect(0, 0, view.getWidth(), view.getHeight(), dp2px(4));
+                }
+            });
+        }
+        int logoSize = dp2px(20);
         LinearLayout.LayoutParams logoLp = new LinearLayout.LayoutParams(logoSize, logoSize);
         ivLogo.setLayoutParams(logoLp);
         floatingHeaderLayout.addView(ivLogo);
@@ -631,6 +682,18 @@ public class MainActivity extends Activity {
         LinearLayout.LayoutParams closeLp = new LinearLayout.LayoutParams(closeSize, closeSize);
         ivClose.setLayoutParams(closeLp);
         ivClose.setPadding(dp2px(2), dp2px(2), dp2px(2), dp2px(2));
+        ivClose.setBackground(null);
+        ivClose.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                    v.setAlpha(0.55f);
+                } else if (event.getAction() == MotionEvent.ACTION_UP || event.getAction() == MotionEvent.ACTION_CANCEL) {
+                    v.setAlpha(1.0f);
+                }
+                return false;
+            }
+        });
         ivClose.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -647,7 +710,7 @@ public class MainActivity extends Activity {
         lyricsBody.setPadding(dp2px(8), dp2px(4), dp2px(8), dp2px(4));
 
         floatingTvCurrent = new TextView(this);
-        floatingTvCurrent.setTextSize(TypedValue.COMPLEX_UNIT_SP, 17.5f);
+        floatingTvCurrent.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15.5f);
         try {
             floatingTvCurrent.setTextColor(Color.parseColor(currentFloatingThemeColor));
         } catch (Exception e) {
@@ -655,17 +718,17 @@ public class MainActivity extends Activity {
         }
         floatingTvCurrent.setTypeface(Typeface.DEFAULT_BOLD);
         floatingTvCurrent.setGravity(Gravity.CENTER);
-        floatingTvCurrent.setShadowLayer(0, 0, 0, 0); // 坚决不加杂乱阴影，对标概念版纯净现代风
+        floatingTvCurrent.setShadowLayer(0, 0, 0, 0); // 纯净现代风
         floatingTvCurrent.setText(currentFloatingLyricText);
         lyricsBody.addView(floatingTvCurrent);
 
         floatingTvSub = new TextView(this);
-        floatingTvSub.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f);
+        floatingTvSub.setTextSize(TypedValue.COMPLEX_UNIT_SP, 11.5f);
         floatingTvSub.setTextColor(Color.parseColor("#A0FFFFFF"));
         floatingTvSub.setGravity(Gravity.CENTER);
-        floatingTvSub.setShadowLayer(0, 0, 0, 0); // 坚决不加杂乱阴影
+        floatingTvSub.setShadowLayer(0, 0, 0, 0);
         floatingTvSub.setText(currentFloatingSubLyricText);
-        floatingTvSub.setPadding(0, dp2px(3), 0, 0);
+        floatingTvSub.setPadding(0, dp2px(2), 0, 0);
         if (currentFloatingSubLyricText == null || currentFloatingSubLyricText.isEmpty()) {
             floatingTvSub.setVisibility(View.GONE);
         }
@@ -712,13 +775,15 @@ public class MainActivity extends Activity {
             }
         });
 
-        ImageView ivApp = createSvgButton(R.drawable.ic_floating_app, 34, new View.OnClickListener() {
+        ImageView ivSettings = createSvgButton(R.drawable.ic_floating_settings, 34, new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 Intent appIntent = new Intent(MainActivity.this, MainActivity.class);
                 appIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);
                 startActivity(appIntent);
                 setFloatingCardExpanded(false);
+                dispatchWebAction("if (typeof closePlayerFull === 'function') closePlayerFull(); if (typeof switchBottomTab === 'function') switchBottomTab('settings');");
+                resetAutoCollapseTimer();
             }
         });
 
@@ -731,7 +796,7 @@ public class MainActivity extends Activity {
         floatingControlsLayout.addView(createFlexSpacer());
         floatingControlsLayout.addView(ivNext);
         floatingControlsLayout.addView(createFlexSpacer());
-        floatingControlsLayout.addView(ivApp);
+        floatingControlsLayout.addView(ivSettings);
 
         floatingRootLayout.addView(floatingControlsLayout);
 
@@ -753,53 +818,73 @@ public class MainActivity extends Activity {
         floatingParams.x = 0; // 屏幕正中央，严禁左右偏移
         floatingParams.y = dp2px(130);
 
-        // 触摸手势：仅允许上下拖动，严格禁止左右移动；轻击展开/收起控制卡片；上下滑切词
+        final int touchSlop = ViewConfiguration.get(this).getScaledTouchSlop();
+        final GestureDetector gestureDetector = new GestureDetector(this, new GestureDetector.SimpleOnGestureListener() {
+            @Override
+            public boolean onSingleTapConfirmed(MotionEvent e) {
+                toggleFloatingCardExpanded();
+                return true;
+            }
+
+            @Override
+            public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
+                if (e1 == null || e2 == null) return false;
+                float dy = e2.getRawY() - e1.getRawY();
+                if (Math.abs(dy) > dp2px(30) && Math.abs(velocityY) > 800) {
+                    if (dy < 0) {
+                        dispatchWebAction("seekToNextLyricLine()");
+                    } else {
+                        dispatchWebAction("seekToPrevLyricLine()");
+                    }
+                    return true;
+                }
+                return false;
+            }
+        });
+
         floatingRootLayout.setOnTouchListener(new View.OnTouchListener() {
             private int initialY;
             private float initialTouchY;
-            private boolean isMoving = false;
+            private boolean isDragging = false;
             private long downTime = 0;
 
             @Override
             public boolean onTouch(View v, MotionEvent event) {
+                gestureDetector.onTouchEvent(event);
+
                 switch (event.getAction()) {
                     case MotionEvent.ACTION_DOWN:
                         initialY = floatingParams.y;
                         initialTouchY = event.getRawY();
-                        isMoving = false;
+                        isDragging = false;
                         downTime = System.currentTimeMillis();
                         return true;
                     case MotionEvent.ACTION_MOVE:
                         float dy = event.getRawY() - initialTouchY;
-                        if (Math.abs(dy) > 10) {
-                            isMoving = true;
+                        if (!isDragging && Math.abs(dy) > touchSlop) {
+                            isDragging = true;
                         }
-                        // 严格禁止左右移动：x始终固定为 0，仅在竖直方向随手指移动
-                        floatingParams.x = 0;
-                        floatingParams.y = initialY + (int) dy;
-                        if (windowManager != null && floatingLyricView != null) {
-                            windowManager.updateViewLayout(floatingLyricView, floatingParams);
+                        if (isDragging) {
+                            floatingParams.x = 0; // 严格禁止左右移动
+                            floatingParams.y = initialY + (int) dy;
+                            if (windowManager != null && floatingLyricView != null) {
+                                try {
+                                    windowManager.updateViewLayout(floatingLyricView, floatingParams);
+                                } catch (Exception ignored) {}
+                            }
                         }
                         return true;
                     case MotionEvent.ACTION_UP:
-                        float totalDy = event.getRawY() - initialTouchY;
-                        long duration = System.currentTimeMillis() - downTime;
+                    case MotionEvent.ACTION_CANCEL:
                         floatingParams.x = 0;
-
-                        // 1. 如果没有明显竖直拖拽且耗时短 -> 点击切换平时态与操作态
-                        if (!isMoving && duration < 350) {
-                            setFloatingCardExpanded(!isControlCardExpanded);
-                            return true;
-                        }
-
-                        // 2. 上下滑动切歌词行
-                        if (Math.abs(totalDy) > dp2px(24)) {
-                            if (totalDy < 0) {
-                                dispatchWebAction("seekToNextLyricLine()");
-                            } else {
-                                dispatchWebAction("seekToPrevLyricLine()");
+                        if (!isDragging) {
+                            float totalDy = Math.abs(event.getRawY() - initialTouchY);
+                            long duration = System.currentTimeMillis() - downTime;
+                            if (totalDy <= touchSlop && duration < 350) {
+                                toggleFloatingCardExpanded();
                             }
                         }
+                        isDragging = false;
                         return true;
                 }
                 return false;

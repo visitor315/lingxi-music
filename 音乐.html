@@ -4172,6 +4172,9 @@ function updateUI() {
       }
     } catch(e) {}
   }
+  if (typeof syncCurrentLyricToDesktop === 'function') {
+    syncCurrentLyricToDesktop();
+  }
 
   document.getElementById('fullPlayerSongTitle').textContent = song.title;
   document.getElementById('fullPlayerArtist').textContent = song.artist;
