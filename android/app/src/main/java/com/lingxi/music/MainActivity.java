@@ -116,7 +116,7 @@ public class MainActivity extends Activity {
     private ImageView floatingIvPlay;
     private ImageView floatingIvLock;
     private boolean isFloatingLocked = false;
-    private long lastLockClickTime = 0;
+    private long lastLyricClickTime = 0;
     private boolean isFloatingLyricsActive = false;
     private boolean isActivityForeground = false;
     private boolean isControlCardExpanded = false;
@@ -676,7 +676,7 @@ public class MainActivity extends Activity {
 
     private void updateFloatingLockState() {
         if (floatingIvLock != null) {
-            floatingIvLock.setImageResource(isFloatingLocked ? R.drawable.ic_floating_lock : R.drawable.ic_floating_unlock);
+            floatingIvLock.setImageResource(R.drawable.ic_floating_lock);
         }
     }
 
@@ -1004,34 +1004,16 @@ public class MainActivity extends Activity {
             }
         });
 
-        floatingIvLock = createSvgButton(isFloatingLocked ? R.drawable.ic_floating_lock : R.drawable.ic_floating_unlock, 34, new View.OnClickListener() {
+        floatingIvLock = createSvgButton(R.drawable.ic_floating_lock, 34, new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                long now = System.currentTimeMillis();
-                if (!isFloatingLocked) {
-                    isFloatingLocked = true;
-                    try {
-                        getSharedPreferences("lingxi_prefs", Context.MODE_PRIVATE)
-                                .edit().putBoolean("floating_locked", true).apply();
-                    } catch (Exception ignored) {}
-                    updateFloatingLockState();
-                    Toast.makeText(MainActivity.this, "悬浮歌词已锁定位置，双击锁定按钮可解锁", Toast.LENGTH_SHORT).show();
-                } else {
-                    if (now - lastLockClickTime < 380) {
-                        isFloatingLocked = false;
-                        try {
-                            getSharedPreferences("lingxi_prefs", Context.MODE_PRIVATE)
-                                    .edit().putBoolean("floating_locked", false).apply();
-                        } catch (Exception ignored) {}
-                        updateFloatingLockState();
-                        Toast.makeText(MainActivity.this, "悬浮歌词已解锁，可自由拖动位置", Toast.LENGTH_SHORT).show();
-                        lastLockClickTime = 0;
-                    } else {
-                        lastLockClickTime = now;
-                        Toast.makeText(MainActivity.this, "双击锁定按钮以解锁位置", Toast.LENGTH_SHORT).show();
-                    }
-                }
-                resetAutoCollapseTimer();
+                isFloatingLocked = true;
+                try {
+                    getSharedPreferences("lingxi_prefs", Context.MODE_PRIVATE)
+                            .edit().putBoolean("floating_locked", true).apply();
+                } catch (Exception ignored) {}
+                setFloatingCardExpanded(false);
+                Toast.makeText(MainActivity.this, "已锁定歌词，双击歌词可解锁", Toast.LENGTH_SHORT).show();
             }
         });
 
@@ -1127,7 +1109,22 @@ public class MainActivity extends Activity {
                             float totalDy = Math.abs(event.getRawY() - initialTouchY);
                             long duration = System.currentTimeMillis() - downTime;
                             if (totalDy <= touchSlop && duration < 600) {
-                                toggleFloatingCardExpanded();
+                                long now = System.currentTimeMillis();
+                                if (isFloatingLocked) {
+                                    if (now - lastLyricClickTime < 380) {
+                                        isFloatingLocked = false;
+                                        try {
+                                            getSharedPreferences("lingxi_prefs", Context.MODE_PRIVATE)
+                                                    .edit().putBoolean("floating_locked", false).apply();
+                                        } catch (Exception ignored) {}
+                                        lastLyricClickTime = 0;
+                                        Toast.makeText(MainActivity.this, "已解除锁定，可轻点展开卡片或拖动", Toast.LENGTH_SHORT).show();
+                                    } else {
+                                        lastLyricClickTime = now;
+                                    }
+                                } else {
+                                    toggleFloatingCardExpanded();
+                                }
                             }
                         }
                         isDragging = false;
@@ -1395,7 +1392,7 @@ public class MainActivity extends Activity {
                 PackageInfo pInfo = getPackageManager().getPackageInfo(getPackageName(), 0);
                 return pInfo.versionName;
             } catch (Exception e) {
-                return "1.9.3";
+                return "1.9.4";
             }
         }
 

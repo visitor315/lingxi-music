@@ -3,23 +3,22 @@
     android:height="22dp"
     android:viewportWidth="24"
     android:viewportHeight="24">
-    <!-- 锁定态：闭锁锁梁与高亮橙红锁身，形态醒目 -->
+    <!-- 极简纯净白线框闭锁图标，与其他按键风格统一，杜绝橙色 -->
     <path
-        android:strokeColor="#D97757"
-        android:strokeWidth="2.0"
+        android:strokeColor="#CCFFFFFF"
+        android:strokeWidth="1.8"
         android:strokeLineCap="round"
         android:strokeLineJoin="round"
         android:pathData="M 8,11 V 6.5 A 4,4 0 0,1 16,6.5 V 11" />
     <path
-        android:fillColor="#33D97757"
-        android:strokeColor="#D97757"
-        android:strokeWidth="2.0"
+        android:strokeColor="#CCFFFFFF"
+        android:strokeWidth="1.8"
         android:strokeLineCap="round"
         android:strokeLineJoin="round"
         android:pathData="M 6.5,11 H 17.5 A 2,2 0 0,1 19.5,13 V 19 A 2,2 0 0,1 17.5,21 H 6.5 A 2,2 0 0,1 4.5,19 V 13 A 2,2 0 0,1 6.5,11 Z" />
     <path
-        android:strokeColor="#FFFFFF"
-        android:strokeWidth="1.8"
+        android:strokeColor="#CCFFFFFF"
+        android:strokeWidth="1.6"
         android:strokeLineCap="round"
         android:pathData="M 12,14.5 V 17.5" />
 </vector>
