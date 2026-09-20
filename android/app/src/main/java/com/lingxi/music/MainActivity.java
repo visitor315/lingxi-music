@@ -9,6 +9,7 @@ import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.content.pm.PackageInfo;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -112,6 +113,7 @@ public class MainActivity extends Activity {
     private ImageView floatingIvFav;
     private ImageView floatingIvPlay;
     private boolean isFloatingLyricsActive = false;
+    private boolean isActivityForeground = false;
     private boolean isControlCardExpanded = false;
     private long lastCardToggleTime = 0;
     private String currentFloatingThemeColor = "#234BB8";
@@ -185,7 +187,17 @@ public class MainActivity extends Activity {
             settings.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
         }
 
-        webView.setWebViewClient(new WebViewClient());
+        webView.setWebViewClient(new WebViewClient() {
+            @Override
+            public void onPageFinished(WebView view, String url) {
+                super.onPageFinished(view, url);
+                String ver = "1.7.5";
+                try {
+                    ver = getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
+                } catch (Exception ignored) {}
+                webView.evaluateJavascript("if (typeof updateDynamicAppVersion === 'function') updateDynamicAppVersion('" + ver + "');", null);
+            }
+        });
         webView.setWebChromeClient(new WebChromeClient() {
             @Override
             public boolean onShowFileChooser(WebView webView, ValueCallback<Uri[]> filePathCallback, WebChromeClient.FileChooserParams fileChooserParams) {
@@ -278,7 +290,56 @@ public class MainActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
+        isActivityForeground = true;
+        updateFloatingWindowState();
         handleIntentNavigation(getIntent());
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        isActivityForeground = false;
+        updateFloatingWindowState();
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        isActivityForeground = false;
+        updateFloatingWindowState();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (windowManager != null && floatingLyricView != null) {
+            try {
+                windowManager.removeView(floatingLyricView);
+            } catch (Exception ignored) {}
+            floatingLyricView = null;
+        }
+    }
+
+    private void updateFloatingWindowState() {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if (isActivityForeground) {
+                    // 应用位于前台时，严禁在灵犀应用内部显示桌面悬浮歌词遮挡界面
+                    if (windowManager != null && floatingLyricView != null) {
+                        try {
+                            windowManager.removeView(floatingLyricView);
+                        } catch (Exception ignored) {}
+                        floatingLyricView = null;
+                    }
+                } else {
+                    // 应用处于后台或用户返回桌面时，若用户开启了桌面歌词，则在桌面上呈现
+                    if (isFloatingLyricsActive && floatingLyricView == null) {
+                        showDesktopWindowInternal();
+                    }
+                }
+            }
+        });
     }
 
     private void handleIntentNavigation(Intent intent) {
@@ -643,6 +704,19 @@ public class MainActivity extends Activity {
     }
 
     public void showDesktopLyrics() {
+        isFloatingLyricsActive = true;
+        updateMediaCardFull(lastMediaTitle, lastMediaArtist, lastMediaCoverUrl, lastMediaIsPlaying, isFloatingCurrentFav, lastMediaPosMs, lastMediaDurMs);
+        if (!isActivityForeground) {
+            showDesktopWindowInternal();
+        } else {
+            Toast.makeText(this, "桌面悬浮歌词已开启，返回桌面即可显示", Toast.LENGTH_SHORT).show();
+        }
+        if (webView != null) {
+            webView.evaluateJavascript("if (window.onDesktopLyricsStateChanged) window.onDesktopLyricsStateChanged(true)", null);
+        }
+    }
+
+    private void showDesktopWindowInternal() {
         if (windowManager == null) {
             windowManager = (WindowManager) getSystemService(Context.WINDOW_SERVICE);
         }
@@ -743,16 +817,16 @@ public class MainActivity extends Activity {
         floatingHeaderLayout.addView(ivClose);
         floatingRootLayout.addView(floatingHeaderLayout);
 
-        // 2. 核心歌词区 (始终居中，单行防换行，清晰锐利排版)
+        // 2. 核心歌词区 (始终居中，单行防换行，字号放大至 18.5sp，只显示单行，杜绝第二行在白底屏幕看不清)
         LinearLayout lyricsBody = new LinearLayout(this);
         lyricsBody.setOrientation(LinearLayout.VERTICAL);
         lyricsBody.setGravity(Gravity.CENTER_HORIZONTAL);
         lyricsBody.setLayoutParams(new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-        lyricsBody.setPadding(dp2px(4), dp2px(2), dp2px(4), dp2px(4));
+        lyricsBody.setPadding(dp2px(6), dp2px(4), dp2px(6), dp2px(4));
 
         floatingTvCurrent = new TextView(this);
-        floatingTvCurrent.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15.5f);
+        floatingTvCurrent.setTextSize(TypedValue.COMPLEX_UNIT_SP, 18.5f); // 放大字号，清晰醒目！
         try {
             floatingTvCurrent.setTextColor(Color.parseColor(currentFloatingThemeColor));
         } catch (Exception e) {
@@ -762,25 +836,12 @@ public class MainActivity extends Activity {
         floatingTvCurrent.setGravity(Gravity.CENTER);
         floatingTvCurrent.setSingleLine(true);
         floatingTvCurrent.setEllipsize(TextUtils.TruncateAt.END);
-        floatingTvCurrent.setShadowLayer(0, 0, 0, 0); // 纯净现代风
+        // 轻微暗色投影，白底屏幕或浅色壁纸也能极清晰辨识
+        floatingTvCurrent.setShadowLayer(dp2px(2), 0, dp2px(1), Color.parseColor("#40000000"));
         floatingTvCurrent.setText(currentFloatingLyricText);
         lyricsBody.addView(floatingTvCurrent);
 
-        floatingTvSub = new TextView(this);
-        floatingTvSub.setTextSize(TypedValue.COMPLEX_UNIT_SP, 11.5f);
-        floatingTvSub.setTextColor(Color.parseColor("#A0FFFFFF"));
-        floatingTvSub.setGravity(Gravity.CENTER);
-        floatingTvSub.setSingleLine(true);
-        floatingTvSub.setEllipsize(TextUtils.TruncateAt.END);
-        floatingTvSub.setShadowLayer(0, 0, 0, 0);
-        floatingTvSub.setText(currentFloatingSubLyricText);
-        floatingTvSub.setPadding(0, dp2px(2), 0, 0);
-        if (currentFloatingSubLyricText == null || currentFloatingSubLyricText.isEmpty()) {
-            floatingTvSub.setVisibility(View.INVISIBLE); // 保持占位高度，杜绝单双行切换导致卡片高度晃动
-        } else {
-            floatingTvSub.setVisibility(View.VISIBLE);
-        }
-        lyricsBody.addView(floatingTvSub);
+        // 彻底移除 floatingTvSub 第二行，保证视觉极简纯净
         floatingRootLayout.addView(lyricsBody);
 
         // 3. 底部播控栏 (操作态才显示，全部使用精美 SVG 矢量图标)
@@ -951,16 +1012,8 @@ public class MainActivity extends Activity {
         try {
             windowManager.addView(floatingRootLayout, floatingParams);
             floatingLyricView = floatingRootLayout;
-            isFloatingLyricsActive = true;
-            // 刷新通知栏图标以展示右下角勾标 √
-            updateMediaCardFull(lastMediaTitle, lastMediaArtist, lastMediaCoverUrl, lastMediaIsPlaying, isFloatingCurrentFav, lastMediaPosMs, lastMediaDurMs);
-            Toast.makeText(this, "桌面悬浮歌词已开启，点击可呼出播控卡片", Toast.LENGTH_SHORT).show();
-            if (webView != null) {
-                webView.evaluateJavascript("if (window.onDesktopLyricsStateChanged) window.onDesktopLyricsStateChanged(true)", null);
-            }
         } catch (Exception e) {
             e.printStackTrace();
-            Toast.makeText(this, "开启桌面歌词失败：" + e.getMessage(), Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -999,15 +1052,6 @@ public class MainActivity extends Activity {
                     try {
                         floatingTvCurrent.setTextColor(Color.parseColor(currentFloatingThemeColor));
                     } catch (Exception ignored) {}
-                }
-                if (floatingTvSub != null) {
-                    if (currentFloatingSubLyricText != null && !currentFloatingSubLyricText.isEmpty()) {
-                        floatingTvSub.setText(currentFloatingSubLyricText);
-                        floatingTvSub.setVisibility(View.VISIBLE);
-                    } else {
-                        floatingTvSub.setText("");
-                        floatingTvSub.setVisibility(View.INVISIBLE);
-                    }
                 }
                 updateFloatingFavState();
                 updateFloatingPlayState();
@@ -1185,6 +1229,16 @@ public class MainActivity extends Activity {
         @JavascriptInterface
         public boolean isDesktopLyricsActive() {
             return isFloatingLyricsActive;
+        }
+
+        @JavascriptInterface
+        public String getAppVersion() {
+            try {
+                PackageInfo pInfo = getPackageManager().getPackageInfo(getPackageName(), 0);
+                return pInfo.versionName;
+            } catch (Exception e) {
+                return "1.7.5";
+            }
         }
 
         @JavascriptInterface

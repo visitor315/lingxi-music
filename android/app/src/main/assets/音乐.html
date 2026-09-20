@@ -929,14 +929,15 @@ body.night .edit-cover-thumbnail {
 .tonearm-svg { width: 100%; height: 100%; }
 
 .lyrics-simple-preview {
-  margin-top: 26px; height: 52px; overflow: hidden; position: relative;
+  margin-top: 26px; height: 56px; overflow: hidden; position: relative;
   display: flex; align-items: center; justify-content: center; text-align: center; cursor: pointer; width: 90%; padding: 0 16px;
 }
-.preview-scroll-track { display: flex; flex-direction: column; align-items: center; gap: 5px; width: 100%; transition: transform 0.42s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.35s ease; }
-.preview-scroll-track.slide-up { transform: translateY(-22px); opacity: 0.15; }
+.preview-scroll-track {
+  display: flex; flex-direction: column; align-items: center; gap: 4px; width: 100%;
+}
 
 .lyric-row-main {
-  font-size: 14.5px; font-weight: 500; letter-spacing: 0.4px;
+  font-size: 15px; font-weight: 500; letter-spacing: 0.4px; height: 26px; line-height: 26px;
   display: inline-block; white-space: nowrap; text-overflow: ellipsis; max-width: 100%; overflow: hidden;
   color: var(--lyric-inactive);
   transform: none !important;
@@ -963,9 +964,9 @@ body.night .edit-cover-thumbnail {
   color: var(--brand-blue) !important;
 }
 .lyric-row-sub {
-  font-size: 14.5px; font-weight: 400; color: var(--ink-light); letter-spacing: 0.4px;
+  font-size: 15px; font-weight: 500; color: var(--ink-light); letter-spacing: 0.4px; height: 26px; line-height: 26px;
   white-space: nowrap; text-overflow: ellipsis; max-width: 100%; overflow: hidden;
-  opacity: 0.65;
+  opacity: 0.55;
   transform: none !important;
 }
 
@@ -1822,7 +1823,7 @@ body.in-pip-mode .view-player-full {
         <span class="settings-group-header">关于</span>
         <div class="group-menu-card">
           <div class="settings-item-row" onclick="toast(APP_CONFIG.name + ' · v' + APP_CONFIG.version + ' (' + APP_CONFIG.build + ')')">
-            <div class="settings-item-col"><span class="settings-title-line">关于灵犀</span><span class="settings-sub-desc">自用无损音乐播放器 · v3.2</span></div>
+            <div class="settings-item-col"><span class="settings-title-line">关于灵犀</span><span class="settings-sub-desc" id="aboutAppVersionDesc">自用无损音乐播放器 · v1.7.5</span></div>
           </div>
         </div>
         <span class="settings-group-header">系统与调试</span>
@@ -2806,6 +2807,7 @@ function init() {
   initGuideCarousel();
   initCardTapRipple();
   updateCacheStorageDisplay();
+  updateDynamicAppVersion();
   setInterval(updateClock, 1000);
 
   // APK 容器/真机手机打包自动适配：任何手机屏幕/打包容器均自动开启全屏沉浸纯净音乐应用，无需手动删改任何代码
@@ -2980,12 +2982,17 @@ function initAudioEngine() {
     if (!isNaN(audioPlayer.duration) && audioPlayer.duration > 0) {
       const song = currentPlaybackQueue[currentIndex];
       if (song) {
-        song.duration = Math.floor(audioPlayer.duration);
-        document.getElementById('totalTime').textContent = formatTime(song.duration);
+        const actualDur = Math.floor(audioPlayer.duration);
+        song.duration = actualDur;
+        document.getElementById('totalTime').textContent = formatTime(actualDur);
         syncProgress();
-        if (song.duration <= 35 && !song._trialToastShown) {
+        // 自动拦截小于 60 秒的试听片段，自动跨平台无缝检索完整版！
+        if (actualDur > 0 && actualDur < 60 && !song.isLocal && !song._switchedToFull) {
+          song._switchedToFull = true;
+          tryResolveAlternativeFullTrack(song);
+        } else if (actualDur <= 35 && !song._trialToastShown) {
           song._trialToastShown = true;
-          toast('当前为平台30秒试听片段 (原版受VIP版权限制)');
+          toast('当前为平台试听片段 (全网暂无免费完整音源)');
         }
       }
     }
@@ -3393,12 +3400,15 @@ async function executeSearch(keyword) {
   document.getElementById('searchEmptyState').classList.remove('active');
   document.getElementById('searchLoadingState').classList.add('active');
 
-  // 1. 优先实时检索本地音频曲库
+  // 1. 优先实时检索本地音频曲库（自动过滤1分钟以下与试听片段）
   const lowerKw = keyword.toLowerCase().trim();
-  const localMatches = ALL_LIBRARY_SONGS.filter(s =>
-    (s.title && s.title.toLowerCase().includes(lowerKw)) ||
-    (s.artist && s.artist.toLowerCase().includes(lowerKw))
-  ).map(s => ({
+  const trialKeywords = ['试听', '片段', '铃声', '30s', '30秒', '副歌', '高潮版', '截取'];
+  const localMatches = ALL_LIBRARY_SONGS.filter(s => {
+    if (s.duration > 0 && s.duration < 60) return false;
+    const title = (s.title || '').toLowerCase();
+    if (trialKeywords.some(k => title.includes(k))) return false;
+    return (title && title.includes(lowerKw)) || (s.artist && s.artist.toLowerCase().includes(lowerKw));
+  }).map(s => ({
     id: s.id,
     name: s.title,
     artist: s.artist,
@@ -3490,18 +3500,28 @@ async function requestOnlineSearch(keyword, count = 30) {
         let artist = item.artist || item.author || '未知歌手';
         if (Array.isArray(artist)) artist = artist.join(' / ');
         const cover = item.pic || item.cover || '';
+        const dur = Number(item.duration || item.interval || item.length) || 0;
         return {
           id: String(songId || Math.random().toString(36).slice(2)),
           name: name,
           artist: artist,
           album: item.album || '',
           cover: cover,
+          duration: dur,
           pic_id: item.pic_id || String(songId || ''),
           url_id: String(songId || ''),
           lyric_id: item.lyric_id || String(songId || ''),
           source: server
         };
-      }).filter(s => s.name && s.url_id);
+      }).filter(s => {
+        if (!s.name || !s.url_id) return false;
+        // 自动屏蔽 1 分钟以下或带有试听/片段/铃声标签的音源
+        if (s.duration > 0 && s.duration < 60) return false;
+        const lowName = s.name.toLowerCase();
+        const trialKw = ['试听', '片段', '铃声', '30s', '30秒', '副歌', '高潮版', '截取'];
+        if (trialKw.some(k => lowName.includes(k))) return false;
+        return true;
+      });
 
       if (normalized.length > 0) {
         return normalized;
@@ -3947,6 +3967,22 @@ function updateApiDescText() {
     }
   }
 }
+
+// 动态注入并呈现应用实际版本号（从 Android 系统 PackageInfo 动态获取）
+function updateDynamicAppVersion(ver) {
+  if (!ver && window.AndroidBridge && window.AndroidBridge.getAppVersion) {
+    try {
+      ver = window.AndroidBridge.getAppVersion();
+    } catch(e) {}
+  }
+  if (!ver) ver = '1.7.5';
+  APP_CONFIG.version = ver;
+  const descEl = document.getElementById('aboutAppVersionDesc');
+  if (descEl) {
+    descEl.textContent = '自用无损音乐播放器 · v' + ver;
+  }
+}
+window.updateDynamicAppVersion = updateDynamicAppVersion;
 
 async function updateCacheStorageDisplay() {
   const descEl = document.getElementById('cacheStorageDesc');
@@ -5492,7 +5528,7 @@ let lastInterludeNextIdx = -1;
 
 function updateLyricProgressSmooth(forcedIdx) {
   if (!LYRICS_DATA || LYRICS_DATA.length === 0) return;
-  const rawTime = (!isNaN(audioPlayer.currentTime) && audioPlayer.currentTime > 0) ? audioPlayer.currentTime : currentSec;
+  const rawTime = (!isSeekingAudio && !isNaN(audioPlayer.currentTime) && audioPlayer.currentTime > 0) ? audioPlayer.currentTime : currentSec;
   const curTime = Math.max(0, rawTime + LYRIC_AUDIO_OFFSET);
 
   let activeIdx = -1;
@@ -5500,9 +5536,6 @@ function updateLyricProgressSmooth(forcedIdx) {
 
   if (typeof forcedIdx === 'number' && forcedIdx >= 0 && forcedIdx < LYRICS_DATA.length) {
     activeIdx = forcedIdx;
-  } else if (isSeekingAudio && lastActiveIdx >= 0 && lastActiveIdx !== -99) {
-    // 寻道缓冲阶段锁死目标行，绝不允许跳回上一句
-    activeIdx = lastActiveIdx;
   } else {
     for (let i = 0; i < LYRICS_DATA.length; i++) {
       if (curTime >= LYRICS_DATA[i].time) activeIdx = i;
@@ -5715,14 +5748,15 @@ function updateSimplePreviewLyric(targetIdx, isPending = false) {
     isAnimatingPreviewRoll = false;
   }
 
-  const isForward = targetIdx > displayedPreviewIdx && displayedPreviewIdx !== -1;
+  // 严格判断是否为播放推进至下一句（相邻单步步进），杜绝跳选/拖拽时触发错误位移动画
+  const isSequentialNext = (targetIdx === displayedPreviewIdx + 1) && displayedPreviewIdx !== -1;
   displayedPreviewIdx = targetIdx;
 
-  if (isForward) {
+  if (isSequentialNext) {
     isAnimatingPreviewRoll = true;
-    // 物理真实上移：次行早已就位，整轨丝滑上推25px，主行优雅淡出，次行顺势入主，零闪跳
-    track.style.transition = 'transform 0.28s cubic-bezier(0.25, 1, 0.4, 1)';
-    track.style.transform = 'translateY(-25px)';
+    // 物理精确上移 30px（主歌词行高26px + 间距4px = 精准30px）
+    track.style.transition = 'transform 0.28s cubic-bezier(0.25, 1, 0.5, 1)';
+    track.style.transform = 'translateY(-30px)';
 
     previewMain.style.transition = 'opacity 0.22s ease';
     previewMain.style.opacity = '0';
@@ -5730,6 +5764,7 @@ function updateSimplePreviewLyric(targetIdx, isPending = false) {
     if (previewSub) {
       previewSub.style.transition = 'opacity 0.28s ease, color 0.22s ease';
       previewSub.style.transform = 'none';
+      previewSub.style.opacity = '1';
       if (isPending) previewSub.style.color = 'var(--brand-blue)';
     }
 
@@ -5746,12 +5781,13 @@ function updateSimplePreviewLyric(targetIdx, isPending = false) {
         previewSub.style.transition = 'none';
         previewSub.style.transform = 'none';
         previewSub.style.color = '';
+        previewSub.style.opacity = '0.55';
         previewSub.textContent = subTxt;
       }
       isAnimatingPreviewRoll = false;
     }, 280);
   } else {
-    // 换歌、回切、跳选：瞬时直接刷新展示
+    // 进度条拖拽寻道、跳句、换歌：瞬时无缝刷新，绝不闪白、绝不消失
     track.style.transition = 'none';
     track.style.transform = 'translateY(0)';
     previewMain.style.transition = 'none';
@@ -5762,8 +5798,41 @@ function updateSimplePreviewLyric(targetIdx, isPending = false) {
       previewSub.style.transition = 'none';
       previewSub.style.transform = 'none';
       previewSub.style.color = '';
+      previewSub.style.opacity = '0.55';
       previewSub.textContent = subTxt;
     }
+  }
+}
+
+// 拖动进度条时的实时歌词刷新（绝对无空白、无闪烁、无延迟）
+function updateSimplePreviewLyricScrubbing(targetIdx) {
+  const previewMain = document.getElementById('previewMainLyric');
+  const previewSub = document.getElementById('previewSubLyric');
+  const track = document.getElementById('previewScrollTrack');
+  if (!previewMain || !track || !LYRICS_DATA || !LYRICS_DATA[targetIdx]) return;
+
+  if (previewRollTimer) {
+    clearTimeout(previewRollTimer);
+    previewRollTimer = null;
+    isAnimatingPreviewRoll = false;
+  }
+
+  displayedPreviewIdx = targetIdx;
+  track.style.transition = 'none';
+  track.style.transform = 'translateY(0)';
+  previewMain.style.transition = 'none';
+  previewMain.style.opacity = '1';
+  previewMain.classList.remove('pending');
+  previewMain.innerHTML = formatLyricItemHtml(LYRICS_DATA[targetIdx]);
+  previewMain.style.setProperty('--fill-pct', '100%');
+
+  if (previewSub) {
+    previewSub.style.transition = 'none';
+    previewSub.style.transform = 'none';
+    previewSub.style.opacity = '0.55';
+    previewSub.style.color = '';
+    const nextItem = LYRICS_DATA[targetIdx + 1];
+    previewSub.textContent = nextItem ? (nextItem.cleanText || nextItem.text) : '';
   }
 }
 
@@ -6384,6 +6453,62 @@ async function resolveAndPlayOnlineSong(song, isRetry = false) {
   }
 }
 
+// 自动拦截试听片段并跨平台检索全长无损版本（QQ音乐/酷狗备用源）
+async function tryResolveAlternativeFullTrack(song) {
+  if (!song || song.isLocal) return;
+  toast(`检测到《${song.title}》为试听片段，正在跨平台匹配全长完整版...`);
+
+  const currentSrc = song.source || 'netease';
+  const alternativeServers = ['tencent', 'kugou', 'netease'].filter(s => s !== currentSrc);
+  const query = `${song.title} ${song.artist !== '未知歌手' ? song.artist : ''}`.trim();
+  const encodedQuery = encodeURIComponent(query);
+
+  for (const altServer of alternativeServers) {
+    try {
+      const searchUrl = `https://api.i-meto.com/meting/api?server=${altServer}&type=search&id=${encodedQuery}`;
+      const res = await fetch(searchUrl, { signal: AbortSignal.timeout(3500) });
+      if (!res.ok) continue;
+      const list = await res.json();
+      if (!Array.isArray(list) || list.length === 0) continue;
+
+      const trialKeywords = ['试听', '片段', '铃声', '30s', '30秒', '副歌', '高潮版', '截取'];
+      const candidate = list.find(item => {
+        const t = (item.name || item.title || '').toLowerCase();
+        return !trialKeywords.some(k => t.includes(k));
+      }) || list[0];
+
+      if (!candidate) continue;
+
+      const altId = candidate.url_id || candidate.id || (candidate.url && candidate.url.match(/[?&]id=([^&]+)/)?.[1]);
+      if (!altId || altId === song.onlineId) continue;
+
+      const altAudioUrl = `https://api.injahow.cn/meting/?server=${altServer}&type=url&id=${altId}`;
+      
+      song.onlineId = altId;
+      song.source = altServer;
+      song.fileUrl = altAudioUrl;
+      song.urlFetchedAt = Date.now();
+      if (candidate.pic || candidate.cover) song.cover = candidate.pic || candidate.cover;
+      persistData();
+
+      fetchLyricForSong(altId, song.title, altServer);
+
+      const wasPlaying = isPlaying;
+      audioPlayer.src = altAudioUrl;
+      audioPlayer.load();
+      audioPlayer.currentTime = 0;
+      if (wasPlaying) {
+        audioPlayer.play().catch(e => console.warn("Alt track play failed", e));
+      }
+      toast(`已成功切换至《${song.title}》完整版`);
+      return;
+    } catch(err) {
+      console.warn("Alternative track search failed for", altServer, err);
+    }
+  }
+  toast(`《${song.title}》全网暂无免费完整版本，仅有试听片段`);
+}
+
 /* ================== 真实原生桌面悬浮歌词与画中画降级兼容 ================== */
 let isDesktopLyricsActive = false;
 
@@ -6548,6 +6673,21 @@ function initProgressBarDrag() {
     if (seekThumb) seekThumb.style.left = pct + '%';
     const curTimeEl = document.getElementById('curTime');
     if (curTimeEl) curTimeEl.textContent = formatTime(dragSec);
+
+    // 拖动过程中实时更新歌词（完全顺畅滑动、零闪白、无空白行）
+    if (LYRICS_DATA && LYRICS_DATA.length > 0) {
+      let scrubIdx = 0;
+      for (let i = 0; i < LYRICS_DATA.length; i++) {
+        if (dragSec >= LYRICS_DATA[i].time) scrubIdx = i;
+      }
+      if (scrubIdx !== lastActiveIdx) {
+        lastActiveIdx = scrubIdx;
+        updateSimplePreviewLyricScrubbing(scrubIdx);
+        if (isPureLyrics) {
+          scrollLyricItemToCenter(scrubIdx);
+        }
+      }
+    }
   }
 
   function commitSeekPosition(clientX) {
@@ -6572,8 +6712,20 @@ function initProgressBarDrag() {
     if (seekLockTimer) clearTimeout(seekLockTimer);
     seekLockTimer = setTimeout(() => { isSeekingAudio = false; }, 400);
 
+    let targetIdx = 0;
+    if (LYRICS_DATA && LYRICS_DATA.length > 0) {
+      for (let i = 0; i < LYRICS_DATA.length; i++) {
+        if (targetSec >= LYRICS_DATA[i].time) targetIdx = i;
+      }
+      lastActiveIdx = targetIdx;
+      updateSimplePreviewLyricScrubbing(targetIdx);
+      if (isPureLyrics) {
+        scrollLyricItemToCenter(targetIdx);
+      }
+    }
+
     syncProgress();
-    updateLyricProgressSmooth();
+    updateLyricProgressSmooth(targetIdx);
     syncCurrentLyricToDesktop();
   }
 
@@ -7357,8 +7509,21 @@ function seekAudio(e) {
   }
   if (seekLockTimer) clearTimeout(seekLockTimer);
   seekLockTimer = setTimeout(() => { isSeekingAudio = false; }, 400);
+
+  let targetIdx = 0;
+  if (LYRICS_DATA && LYRICS_DATA.length > 0) {
+    for (let i = 0; i < LYRICS_DATA.length; i++) {
+      if (currentSec >= LYRICS_DATA[i].time) targetIdx = i;
+    }
+    lastActiveIdx = targetIdx;
+    updateSimplePreviewLyricScrubbing(targetIdx);
+    if (isPureLyrics) {
+      scrollLyricItemToCenter(targetIdx);
+    }
+  }
+
   syncProgress();
-  updateLyricProgressSmooth();
+  updateLyricProgressSmooth(targetIdx);
   syncCurrentLyricToDesktop();
 }
 
