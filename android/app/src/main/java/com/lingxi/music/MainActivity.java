@@ -189,7 +189,7 @@ public class MainActivity extends Activity {
             @Override
             public void onPageFinished(WebView view, String url) {
                 super.onPageFinished(view, url);
-                String ver = "1.7.7";
+                String ver = "1.7.8";
                 try {
                     ver = getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
                 } catch (Exception ignored) {}
@@ -309,7 +309,12 @@ public class MainActivity extends Activity {
             public void run() {
                 if (floatingHandler != null) {
                     floatingHandler.removeCallbacks(updateFloatingStateRunnable);
-                    floatingHandler.post(updateFloatingStateRunnable);
+                    if (isActivityForeground) {
+                        floatingHandler.post(updateFloatingStateRunnable);
+                    } else {
+                        // 离开前台时延迟 350ms 挂载，彻底避开系统窗口切换动画与算力高峰
+                        floatingHandler.postDelayed(updateFloatingStateRunnable, 350);
+                    }
                 } else {
                     updateFloatingStateRunnable.run();
                 }
@@ -1212,7 +1217,7 @@ public class MainActivity extends Activity {
                 PackageInfo pInfo = getPackageManager().getPackageInfo(getPackageName(), 0);
                 return pInfo.versionName;
             } catch (Exception e) {
-                return "1.7.7";
+                return "1.7.8";
             }
         }
 

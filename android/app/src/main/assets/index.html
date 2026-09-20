@@ -1823,7 +1823,7 @@ body.in-pip-mode .view-player-full {
         <span class="settings-group-header">关于</span>
         <div class="group-menu-card">
           <div class="settings-item-row" onclick="toast(APP_CONFIG.name + ' · v' + APP_CONFIG.version + ' (' + APP_CONFIG.build + ')')">
-            <div class="settings-item-col"><span class="settings-title-line">关于灵犀</span><span class="settings-sub-desc" id="aboutAppVersionDesc">自用无损音乐播放器 · v1.7.7</span></div>
+            <div class="settings-item-col"><span class="settings-title-line">关于灵犀</span><span class="settings-sub-desc" id="aboutAppVersionDesc">自用无损音乐播放器 · v1.7.8</span></div>
           </div>
         </div>
         <span class="settings-group-header">系统与调试</span>
@@ -3998,7 +3998,7 @@ function updateDynamicAppVersion(ver) {
       ver = window.AndroidBridge.getAppVersion();
     } catch(e) {}
   }
-  if (!ver) ver = '1.7.7';
+  if (!ver) ver = '1.7.8';
   APP_CONFIG.version = ver;
   const descEl = document.getElementById('aboutAppVersionDesc');
   if (descEl) {
@@ -5497,23 +5497,24 @@ function startLyricSmoothSync() {
   }
 }
 
-// 监听切到后台/桌面状态：rAF 会被 Chromium 挂起，此时启动高频定时器持续驱动进度条与桌面悬浮歌词滚动
+// 监听切到后台/桌面状态：rAF 会被 Chromium 挂起
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) {
     if (lyricRafId) {
       cancelAnimationFrame(lyricRafId);
       lyricRafId = null;
     }
-    if (!bgLyricInterval && isPlaying) {
+    // 关键优化：若未开启桌面悬浮歌词，切后台时坚决不运行高频定时器与 DOM 计算，节省 100% CPU 给底层音频解码！
+    const needBgLyrics = isDesktopLyricsActive || (window.AndroidBridge && window.AndroidBridge.isDesktopLyricsActive && window.AndroidBridge.isDesktopLyricsActive());
+    if (needBgLyrics && !bgLyricInterval && isPlaying) {
       bgLyricInterval = setInterval(() => {
         if (isPlaying && audioPlayer && !audioPlayer.paused) {
           if (!isSeekingAudio && !isNaN(audioPlayer.currentTime) && audioPlayer.currentTime >= 0) {
             currentSec = audioPlayer.currentTime;
           }
-          syncProgress();
-          updateLyricProgressSmooth();
+          syncCurrentLyricToDesktop();
         }
-      }, 250);
+      }, 500);
     }
   } else {
     if (bgLyricInterval) {
@@ -6567,6 +6568,25 @@ function updateDesktopLyricsUI() {
 window.onDesktopLyricsStateChanged = function(active) {
   isDesktopLyricsActive = !!active;
   updateDesktopLyricsUI();
+  if (document.hidden) {
+    if (isDesktopLyricsActive) {
+      if (!bgLyricInterval && isPlaying) {
+        bgLyricInterval = setInterval(() => {
+          if (isPlaying && audioPlayer && !audioPlayer.paused) {
+            if (!isSeekingAudio && !isNaN(audioPlayer.currentTime) && audioPlayer.currentTime >= 0) {
+              currentSec = audioPlayer.currentTime;
+            }
+            syncCurrentLyricToDesktop();
+          }
+        }, 500);
+      }
+    } else {
+      if (bgLyricInterval) {
+        clearInterval(bgLyricInterval);
+        bgLyricInterval = null;
+      }
+    }
+  }
 };
 
 function syncCurrentLyricToDesktop() {
@@ -6578,10 +6598,17 @@ function syncCurrentLyricToDesktop() {
       curTxt = `${curSong.title} · ${curSong.artist}`;
     }
     if (LYRICS_DATA && LYRICS_DATA.length > 0) {
-      if (lastActiveIdx >= 0 && LYRICS_DATA[lastActiveIdx]) {
-        curTxt = LYRICS_DATA[lastActiveIdx].cleanText || LYRICS_DATA[lastActiveIdx].text;
-        if (LYRICS_DATA[lastActiveIdx + 1]) {
-          nextTxt = LYRICS_DATA[lastActiveIdx + 1].cleanText || LYRICS_DATA[lastActiveIdx + 1].text;
+      const rawTime = (!isSeekingAudio && !isNaN(audioPlayer.currentTime) && audioPlayer.currentTime > 0) ? audioPlayer.currentTime : currentSec;
+      const curTime = Math.max(0, rawTime + LYRIC_AUDIO_OFFSET);
+      let matchIdx = -1;
+      for (let i = 0; i < LYRICS_DATA.length; i++) {
+        if (curTime >= LYRICS_DATA[i].time) matchIdx = i;
+      }
+      if (matchIdx >= 0 && LYRICS_DATA[matchIdx]) {
+        lastActiveIdx = matchIdx;
+        curTxt = LYRICS_DATA[matchIdx].cleanText || LYRICS_DATA[matchIdx].text;
+        if (LYRICS_DATA[matchIdx + 1]) {
+          nextTxt = LYRICS_DATA[matchIdx + 1].cleanText || LYRICS_DATA[matchIdx + 1].text;
         }
       } else if (LYRICS_DATA[0]) {
         nextTxt = LYRICS_DATA[0].cleanText || LYRICS_DATA[0].text;
