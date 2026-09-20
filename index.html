@@ -259,12 +259,12 @@ html, body {
 
 /* ================== 4. 音乐 APP 页面 ================== */
 .view-xianyin {
-  position: absolute; top: 0; left: 0; width: 100%; height: calc(100% - 44px);
+  position: absolute; top: 0; left: 0; width: 100%; height: 100%;
   background: var(--bg-page); z-index: 40; display: flex; flex-direction: column;
-  transform: translateY(100%); transition: transform 0.28s cubic-bezier(0.2, 0.9, 0.3, 1); overflow: hidden;
-  pointer-events: none;
+  transform: none; overflow: hidden;
+  pointer-events: auto;
 }
-.view-xianyin.active { transform: translateY(0); pointer-events: auto; }
+.view-xianyin.active { transform: none; pointer-events: auto; }
 
 .listen-header-bar {
   height: 78px; padding: 38px 18px 0; display: flex; align-items: center;
@@ -1662,7 +1662,7 @@ body.in-pip-mode .view-player-full {
 
 </style>
 </head>
-<body>
+<body class="apk-mode">
 
 <div class="phone-viewport">
   <input type="file" id="audioFileInput" accept="audio/*" multiple style="display:none;" onchange="handleAudioImport(event)">
@@ -4115,12 +4115,12 @@ function syncProgress() {
   const ratio = Math.min(1, Math.max(0, currentSec / song.duration));
   const pct = (ratio * 100).toFixed(1);
 
-  document.getElementById('seekFill').style.width = pct + '%';
-  document.getElementById('seekThumb').style.left = pct + '%';
-  document.getElementById('curTime').textContent = formatTime(currentSec);
-
-  document.getElementById('islandProgressFill').style.width = pct + '%';
-  document.getElementById('islandCurTime').textContent = formatTime(currentSec);
+  const seekFill = document.getElementById('seekFill');
+  if (seekFill) seekFill.style.width = pct + '%';
+  const seekThumb = document.getElementById('seekThumb');
+  if (seekThumb) seekThumb.style.left = pct + '%';
+  const curTime = document.getElementById('curTime');
+  if (curTime) curTime.textContent = formatTime(currentSec);
 
   const ring = document.getElementById('bottomDiscRing');
   if (ring) ring.style.strokeDashoffset = RING_PERIMETER * (1 - ratio);
@@ -5681,11 +5681,10 @@ function openPlayerFull() {
   document.getElementById('viewPlayerFull').classList.add('active');
 }
 function closePlayerFull() {
-  document.getElementById('viewPlayerFull').classList.remove('active');
+  const player = document.getElementById('viewPlayerFull');
+  if (player) player.classList.remove('active');
   if (isPureLyrics) closePureLyricsView();
   closePlaylistDrawer();
-  if (islandEnabled && isPlaying) {
-    }
   if (openedPlayerFromSearch) {
     openedPlayerFromSearch = false;
     // 搜索页始终在底层保持 active，绝不重复触发进入动画；若偶发未激活，则强制无动画瞬间归位
@@ -5714,17 +5713,10 @@ function closePlaylistDrawer() {
   document.getElementById('playlistDrawerBackdrop').classList.remove('open');
 }
 
-function expandIslandCard() {
-  document.getElementById('islandExpandedCard').classList.add('active');
-  const backdrop = document.getElementById('islandBackdrop');
-  if (backdrop) backdrop.classList.add('active');
-}
+function expandIslandCard() {}
 function collapseIslandCard(e) {
-  if (e) e.stopPropagation();
-  document.getElementById('islandExpandedCard').classList.remove('active');
-  const backdrop = document.getElementById('islandBackdrop');
-  if (backdrop) backdrop.classList.remove('active');
-  if (islandEnabled && isPlaying && isDesktop) }
+  if (e && e.stopPropagation) e.stopPropagation();
+}
 
 /* ================== 通用确认弹窗引擎（对标现代双药丸设计） ================== */
 let universalConfirmCallback = null;
@@ -6894,11 +6886,11 @@ function handleSystemBack() {
   const configM = document.getElementById('apiConfigModal');
   const customApiM = document.getElementById('customApiModal');
   const chooseModal = document.getElementById('choosePlaylistModal');
-  const menu = document.getElementById('songContextMenu');
-  const playlistMenu = document.getElementById('playlistContextMenu');
+  const menu = document.getElementById('songMenuOverlay');
+  const playlistMenu = document.getElementById('playlistCornerMenu');
   const drawer = document.getElementById('playlistDrawer');
   const searchP = document.getElementById('viewSearchFull');
-  const editP = document.getElementById('viewEditPlaylistPage');
+  const editP = document.getElementById('viewEditPlaylist');
   const fullP = document.getElementById('viewPlayerFull');
   const detailP = document.getElementById('viewPlaylistDetail');
 
@@ -6973,8 +6965,10 @@ function formatTime(sec) {
 function updateClock() {
   const now = new Date();
   const str = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
-  document.getElementById('big-clock').textContent = str;
-  document.getElementById('status-time').textContent = str;
+  const bigClock = document.getElementById('big-clock');
+  if (bigClock) bigClock.textContent = str;
+  const statusTime = document.getElementById('status-time');
+  if (statusTime) statusTime.textContent = str;
 }
 
 let toastTimer = null;
@@ -7030,7 +7024,8 @@ function cycleThemeMode() {
 const toggleNightMode = cycleThemeMode;
 function toggleIslandFeature() {
   islandEnabled = !islandEnabled;
-  document.getElementById('islandToggle').classList.toggle('active', islandEnabled);
+  const toggle = document.getElementById('islandToggle');
+  if (toggle) toggle.classList.toggle('active', islandEnabled);
   updateUI();
   toast(islandEnabled ? '灵动岛已开启' : '灵动岛已关闭');
 }
