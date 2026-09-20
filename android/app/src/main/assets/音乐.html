@@ -1563,74 +1563,43 @@ body.in-pip-mode .view-player-full {
   padding: 8px !important;
 }
 
-/* ================= 首次进入新手教程指引弹窗 ================= */
-.tutorial-backdrop {
-  position: fixed; inset: 0; background: rgba(0, 0, 0, 0.68);
-  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
-  z-index: 9999; display: flex; align-items: center; justify-content: center;
-  padding: 24px 20px; opacity: 0; pointer-events: none;
-  transition: opacity 0.3s ease;
+
+
+/* ================= 全屏各子页面消除顶部/底部留白与全面屏完美适配 ================= */
+.view-search-full,
+.view-player-full,
+.view-playlist-detail {
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
 }
-.tutorial-backdrop.open {
-  opacity: 1; pointer-events: auto;
+
+.search-header-nav,
+.full-player-header,
+.playlist-header-nav {
+  height: auto !important;
+  min-height: 52px !important;
+  padding-top: max(12px, env(safe-area-inset-top, 12px)) !important;
+  padding-bottom: 6px !important;
 }
-.tutorial-card {
-  width: 100%; max-width: 360px; background: var(--card-bg, #FFFFFF);
-  border-radius: 28px; padding: 26px 22px;
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.3);
-  border: 1px solid var(--card-border, rgba(24, 26, 28, 0.08));
-  display: flex; flex-direction: column; gap: 18px;
-  transform: translateY(20px) scale(0.95);
-  transition: transform 0.32s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+
+.view-settings-page {
+  padding-top: max(12px, env(safe-area-inset-top, 12px)) !important;
+  padding-bottom: calc(84px + env(safe-area-inset-bottom, 0px)) !important;
 }
-.tutorial-backdrop.open .tutorial-card {
-  transform: translateY(0) scale(1);
+
+.view-player-full {
+  padding-bottom: max(16px, env(safe-area-inset-bottom, 16px)) !important;
 }
-body.night .tutorial-card {
-  background: #1C1C1A; border-color: rgba(255, 255, 255, 0.1);
+
+.playlist-content-scroll {
+  padding-bottom: max(32px, env(safe-area-inset-bottom, 32px)) !important;
 }
-.tutorial-header { text-align: center; }
-.tutorial-badge {
-  display: inline-block; padding: 4px 12px; border-radius: 12px;
-  background: rgba(217, 119, 87, 0.12); color: #D97757;
-  font-size: 11.5px; font-weight: 600; letter-spacing: 0.5px; margin-bottom: 8px;
-}
-.tutorial-title {
-  font-family: var(--font-serif); font-size: 22px; font-weight: 700;
-  color: var(--ink-black); margin: 0 0 6px; letter-spacing: 0.5px;
-}
-.tutorial-subtitle {
-  font-size: 12px; color: var(--ink-light); margin: 0; line-height: 1.4;
-}
-.tutorial-features {
-  display: flex; flex-direction: column; gap: 13px;
-}
-.tutorial-feat-item {
-  display: flex; align-items: flex-start; gap: 12px;
-}
-.feat-icon-box {
-  width: 38px; height: 38px; border-radius: 12px;
-  background: rgba(217, 119, 87, 0.1); color: #D97757;
-  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-}
-.feat-icon-box svg {
-  width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 1.6;
-}
-.feat-text { flex: 1; }
-.feat-heading {
-  font-size: 13.5px; font-weight: 600; color: var(--ink-black); margin-bottom: 2px;
-}
-.feat-desc {
-  font-size: 11.5px; color: var(--ink-gray); line-height: 1.42;
-}
-.tutorial-start-btn {
-  width: 100%; height: 46px; border-radius: 14px;
-  background: #D97757; color: #FFFFFF; font-size: 15px; font-weight: 600;
-  border: none; cursor: pointer; display: flex; align-items: center;
-  justify-content: center; transition: opacity 0.2s;
-  box-shadow: 0 4px 14px rgba(217, 119, 87, 0.35);
-}
-.tutorial-start-btn:active { opacity: 0.85; }
+
 </style>
 </head>
 <body>
@@ -1719,7 +1688,12 @@ body.night .tutorial-card {
   <!-- 3. 音乐 APP 页面 -->
   <div class="view-xianyin" id="viewXianyin">
     <header class="listen-header-bar" id="listenHeaderBar">
-      <div class="listen-nav-titles">
+      <div class="listen-nav-titles" style="display:flex; align-items:center; gap:8px;">
+        <button class="icon-btn" onclick="closeXianyin()" title="返回桌面" style="width:32px; height:32px; display:flex; align-items:center; justify-content:center; color:var(--ink-dark);">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/>
+          </svg>
+        </button>
         <span class="nav-tag-btn active" id="tabNavListen" style="cursor:default;">灵犀</span>
       </div>
       <div class="listen-header-actions">
@@ -2106,11 +2080,7 @@ body.night .tutorial-card {
           <div class="settings-item-col"><span class="settings-title-line">桌面画中画悬浮小窗</span><span class="settings-sub-desc" id="pipLyricsDesc">离开应用悬浮置顶显示当前歌词与播控</span></div>
           <div class="blue-toggle-switch" id="pipLyricsToggle"></div>
         </div>
-        <div class="group-menu-divider"></div>
-        <div class="settings-item-row" onclick="openTutorialModal()">
-          <div class="settings-item-col"><span class="settings-title-line">新手使用指南</span><span class="settings-sub-desc">随时查看四大特色功能与快捷手势</span></div>
-          <svg viewBox="0 0 24 24" width="18" height="18" stroke="var(--ink-light)" fill="none" stroke-width="1.8"><polyline points="9 18 15 12 9 6"/></svg>
-        </div>
+
       </div>
     </div>
   </div>
@@ -2619,9 +2589,9 @@ body.night .tutorial-card {
 const ROSE_SVG_PATH = "M281.31 21.217L239.997 127.13l76.01 103.673 97.135-7.532-3.1-79.284-78.2-12.468-1.61 41.535 29.11 7.568-.766-14.1 18.662-1.012 2.15 39.635-68.41-17.788 3.004-77.61 68.65 10.946-2.456-86.044-98.863-13.43zM243.63 66.39l-73.702 39.917L195.885 243.7l141.306 80.704 154.447-80.037-11.252-142.205-79.617-.988.642 22.512 26.705 4.257 4.403 112.57-125.436 9.727-88.227-120.338 24.774-63.51zm-93.107 88.706c-2.992-.017-6.01.004-9.054.06-9.456.174-19.425.853-29.44 1.594 9.427 13.32 18.694 26.165 30.157 35.938 7.894 6.73 16.835 12.308 28.075 16.056l-10.1-53.453c-3.184-.11-6.396-.176-9.64-.194zm25.57 84.51c-14.278 5.27-27.16 13.25-39.437 23.55-17.875 14.995-34.273 35.22-50.625 58.47 56.9 2.6 100.16-6.41 147.316-35.01l-54.223-30.966-3.03-16.045zm270.854 48.968l-50.64 26.244c27.874 20.83 54.865 27.206 90.162 28.557-8.76-21.213-22.617-39.484-39.523-54.8zm-189.853 4.895c-14.566 9.75-28.84 17.8-43.156 24.342.37 10.843 2.813 19.703 6.968 26.47-29.49 37.69-61.714 72.017-96.78 102.843-17.584-1.215-24.577-19.137-17.845-37.344-22.758 18.074-30.427 42.166-20 68.376-6.832 5.23-13.75 10.354-20.78 15.344h45.344c25.65-20.11 49.915-41.82 72.844-65.094 29.485 9.192 54.05-1.51 69.625-27.97-14.975 8.052-31.217 5.627-37.438-6.686 9.653-11.06 19.037-22.436 28.156-34.125 7.25 1.21 15.586.57 24.72-2.03-8.863-17.974-13.326-39.19-11.656-64.126zm18.133 17.065c1.205 25.213 10.463 44.01 24.648 60.12 17.914 20.346 44.73 35.942 73.625 50.814 7.79-33.575 9.555-62.664-2.05-93.77l-34.692 17.978-61.53-35.143z";
 
 /* ================== 歌单作者头像全局矢量定义 ================== */
-const LINGXI_CAT_AVATAR_SVG = `<svg width="17" height="13" viewBox="50 85 300 220" fill="none" style="display:block;"><g stroke="currentColor" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"><path d="M104.613 165C62.4895 136.517 97.2059 92.081 125 137.46"/><path d="M259 133.798C279.706 100.527 328.781 104.891 298.253 150"/><path d="M161.153 159C160.362 154.1 162.845 149.364 164 145"/><path d="M194 165C194.409 156.616 194.948 148.211 196 140"/><path d="M228 159C228 154.661 228 150.329 228 146"/><path d="M153 223C160.473 220.915 168.386 220.023 176 219"/><path d="M225 219C232.895 217.426 240.281 217.931 248 219"/><path d="M188 256.005C221.5 238.742 217.338 264.602 191.479 260.565"/><path d="M201 267C199.054 288.306 181.973 290.175 167 283.734"/><path d="M200.041 267C198.864 295.299 223.581 291.006 237 277.407"/><path d="M111 243C96.3264 238.228 80.8117 237.965 66 236"/><path d="M116 267C99.8675 270.808 83.7433 273.752 68 279"/><path d="M293 233C304.501 229.96 315.688 225.62 327 222"/><path d="M297 261C308.857 259.497 322.138 260.027 333 260.429"/></g></svg>`;
+const LINGXI_CAT_AVATAR_SVG = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#D97757" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:block;"><path d="M19.0993 10.6602C20.2113 11.9744 19.98 13.5815 19.9801 15C19.9801 18.9062 14.7132 20 12 20C9.28677 20 4.01994 18.9062 4.01994 15C4.01995 13.5815 3.78875 11.9744 4.90066 10.6602M19.0993 10.6602C18.9048 10.4303 18.6692 10.2094 18.384 10M19.0993 10.6602C19.7993 11.0634 19.9781 9.55469 19.9801 9.0625V7.18761C19.9801 5.56261 18.8629 5.00011 17.9053 5.00011C16.9477 5.00011 15.0324 6.5625 14.394 6.5625C13.6279 6.5625 13.4804 6.40636 12 6.40636C10.5197 6.40636 10.3721 6.5625 9.60601 6.5625C8.9676 6.5625 7.05236 5 6.09476 5C5.13715 5 4.01995 5.5625 4.01995 7.1875V9.0625C4.02188 9.55469 4.20072 11.0634 4.90066 10.6602M4.90066 10.6602C5.09519 10.4303 5.33082 10.2094 5.61599 10"/><path d="M12.8258 16C12.8258 16.1726 12.4647 16.3125 12.0193 16.3125C11.574 16.3125 11.2129 16.1726 11.2129 16C11.2129 15.8274 11.574 15.6875 12.0193 15.6875C12.4647 15.6875 12.8258 15.8274 12.8258 16Z" fill="#D97757"/><path d="M15.5 13.5938C15.5 14.0252 15.2834 14.375 15.0161 14.375C14.7489 14.375 14.5323 14.0252 14.5323 13.5938C14.5323 13.1623 14.7489 12.8125 15.0161 12.8125C15.2834 12.8125 15.5 13.1623 15.5 13.5938Z" fill="#D97757"/><path d="M9.5 13.5938C9.5 14.0252 9.28336 14.375 9.01613 14.375C8.74889 14.375 8.53226 14.0252 8.53226 13.5938C8.53226 13.1623 8.74889 12.8125 9.01613 12.8125C9.28336 12.8125 9.5 13.1623 9.5 13.5938Z" fill="#D97757"/><path d="M22.0004 15.4688C21.5165 15.1562 19.4197 14.375 18.6133 14.375"/><path d="M20.3871 17.9688C19.9033 17.6562 18.7742 16.875 17.9678 16.875"/><path d="M2 15.4688C2.48387 15.1562 4.58065 14.375 5.3871 14.375"/><path d="M3.61279 17.9688C4.09667 17.6562 5.2257 16.875 6.03215 16.875"/></svg>`;
 
-const USER_CAT_AVATAR_SVG = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" style="display:block;"><path d="M19.0993 10.6602C20.2113 11.9744 19.98 13.5815 19.9801 15C19.9801 18.9062 14.7132 20 12 20C9.28677 20 4.01994 18.9062 4.01994 15C4.01995 13.5815 3.78875 11.9744 4.90066 10.6602M19.0993 10.6602C18.9048 10.4303 18.6692 10.2094 18.384 10M19.0993 10.6602C19.7993 11.0634 19.9781 9.55469 19.9801 9.0625V7.18761C19.9801 5.56261 18.8629 5.00011 17.9053 5.00011C16.9477 5.00011 15.0324 6.5625 14.394 6.5625C13.6279 6.5625 13.4804 6.40636 12 6.40636C10.5197 6.40636 10.3721 6.5625 9.60601 6.5625C8.9676 6.5625 7.05236 5 6.09476 5C5.13715 5 4.01995 5.5625 4.01995 7.1875V9.0625C4.02188 9.55469 4.20072 11.0634 4.90066 10.6602M4.90066 10.6602C5.09519 10.4303 5.33082 10.2094 5.61599 10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M12.8258 16C12.8258 16.1726 12.4647 16.3125 12.0193 16.3125C11.574 16.3125 11.2129 16.1726 11.2129 16C11.2129 15.8274 11.574 15.6875 12.0193 15.6875C12.4647 15.6875 12.8258 15.8274 12.8258 16Z" stroke="currentColor" stroke-width="1.6"/><path d="M15.5 13.5938C15.5 14.0252 15.2834 14.375 15.0161 14.375C14.7489 14.375 14.5323 14.0252 14.5323 13.5938C14.5323 13.1623 14.7489 12.8125 15.0161 12.8125C15.2834 12.8125 15.5 13.1623 15.5 13.5938Z" stroke="currentColor" stroke-width="1.6"/><path d="M9.5 13.5938C9.5 14.0252 9.28336 14.375 9.01613 14.375C8.74889 14.375 8.53226 14.0252 8.53226 13.5938C8.53226 13.1623 8.74889 12.8125 9.01613 12.8125C9.28336 12.8125 9.5 13.1623 9.5 13.5938Z" stroke="currentColor" stroke-width="1.6"/><path d="M22.0004 15.4688C21.5165 15.1562 19.4197 14.375 18.6133 14.375" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M20.3871 17.9688C19.9033 17.6562 18.7742 16.875 17.9678 16.875" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M2 15.4688C2.48387 15.1562 4.58065 14.375 5.3871 14.375" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M3.61279 17.9688C4.09667 17.6562 5.2257 16.875 6.03215 16.875" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>`;
+const USER_CAT_AVATAR_SVG = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:block;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>`;
 
 const OTHER_AVATAR_SVG = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`;
 
@@ -4191,8 +4161,8 @@ function updateUI() {
   document.getElementById('islandPlayBtn').innerHTML = isPlaying ? pauseSvg : playSvg;
   document.getElementById('islandFavBtn').classList.toggle('active', !!song.isFav);
 
-  const isFullPlayer = document.getElementById('viewPlayerFull') && document.getElementById('viewPlayerFull').classList.contains('active');
-  document.getElementById('islandCapsule').classList.toggle('visible', islandEnabled && isPlaying && !isFullPlayer);
+  const isDesktop = !document.getElementById('viewXianyin').classList.contains('active');
+  document.getElementById('islandCapsule').classList.toggle('visible', islandEnabled && isPlaying && isDesktop);
 
   // 双重系统媒体卡片同步 (Web MediaSession + Android 原生通知栏播控卡片)
   if ('mediaSession' in navigator && song) {
@@ -4208,7 +4178,7 @@ function updateUI() {
   }
   if (window.AndroidBridge && window.AndroidBridge.updateMediaCard && song) {
     try {
-      window.AndroidBridge.updateMediaCard(song.title || '灵犀音乐', song.artist || '随心听', isPlaying);
+      if (window.AndroidBridge.updateMediaCardWithCover) { window.AndroidBridge.updateMediaCardWithCover(song.title || '灵犀音乐', song.artist || '随心听', song.cover || '', isPlaying); } else { window.AndroidBridge.updateMediaCard(song.title || '灵犀音乐', song.artist || '随心听', isPlaying); }
     } catch(e) {}
   }
 
@@ -5784,8 +5754,8 @@ function collapseIslandCard(e) {
   document.getElementById('islandExpandedCard').classList.remove('active');
   const backdrop = document.getElementById('islandBackdrop');
   if (backdrop) backdrop.classList.remove('active');
-  const isFullPlayer = document.getElementById('viewPlayerFull') && document.getElementById('viewPlayerFull').classList.contains('active');
-  if (islandEnabled && isPlaying && !isFullPlayer) document.getElementById('islandCapsule').classList.add('visible');
+  const isDesktop = !document.getElementById('viewXianyin').classList.contains('active');
+  if (islandEnabled && isPlaying && isDesktop) document.getElementById('islandCapsule').classList.add('visible');
 }
 
 /* ================== 通用确认弹窗引擎（对标现代双药丸设计） ================== */
@@ -7498,62 +7468,7 @@ async function handleAudioImport(e) {
 init();
 </script>
 
-  <!-- 首次进入新手教程指引弹窗 -->
-  <div class="tutorial-backdrop" id="tutorialBackdrop" onclick="if(event.target===this) closeTutorialModal()">
-    <div class="tutorial-card">
-      <div class="tutorial-header">
-        <div class="tutorial-badge">灵犀音乐 · 极简寻音</div>
-        <h2 class="tutorial-title">快速上手指南</h2>
-        <p class="tutorial-subtitle">文人雅趣 · 纯粹听歌 · 真机沉浸适配</p>
-      </div>
-
-      <div class="tutorial-features">
-        <div class="tutorial-feat-item">
-          <div class="feat-icon-box">
-            <svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 0 0-10 10c0 4.42 2.87 8.17 6.84 9.5.5.08.66-.23.66-.5v-1.69c-2.77.6-3.36-1.34-3.36-1.34-.46-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.87 1.52 2.34 1.07 2.91.83.1-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.92 0-1.11.38-2 1.03-2.71-.1-.25-.45-1.29.1-2.64 0 0 .84-.27 2.75 1.02.79-.22 1.65-.33 2.5-.33.85 0 1.71.11 2.5.33 1.91-1.29 2.75-1.02 2.75-1.02.55 1.35.2 2.39.1 2.64.65.71 1.03 1.6 1.03 2.71 0 3.82-2.34 4.66-4.57 4.91.36.31.69.92.69 1.85V21c0 .27.16.59.67.5C19.14 20.16 22 16.42 22 12A10 10 0 0 0 12 2z"/></svg>
-          </div>
-          <div class="feat-text">
-            <div class="feat-heading">顶部灵动岛常驻</div>
-            <div class="feat-desc">播放音乐时，顶部浮现灵动胶囊；轻触即刻展开详情与快速控制。</div>
-          </div>
-        </div>
-
-        <div class="tutorial-feat-item">
-          <div class="feat-icon-box">
-            <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-          </div>
-          <div class="feat-text">
-            <div class="feat-heading">真实状态栏与锁屏播控</div>
-            <div class="feat-desc">下拉通知栏与锁屏常驻歌曲卡片，无需进入应用即可切换切歌暂停。</div>
-          </div>
-        </div>
-
-        <div class="tutorial-feat-item">
-          <div class="feat-icon-box">
-            <svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-          </div>
-          <div class="feat-text">
-            <div class="feat-heading">桌面画中画悬浮窗</div>
-            <div class="feat-desc">支持画中画悬浮窗，一边听歌看词一边畅玩其他应用。</div>
-          </div>
-        </div>
-
-        <div class="tutorial-feat-item">
-          <div class="feat-icon-box">
-            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v8"/><path d="M8 12h8"/></svg>
-          </div>
-          <div class="feat-text">
-            <div class="feat-heading">沉浸黑胶与文楷纯享</div>
-            <div class="feat-desc">轻触底部中心唱片直达大黑胶；点击全屏唱片轻快切换纯字文楷大歌词。</div>
-          </div>
-        </div>
-      </div>
-
-      <button class="tutorial-start-btn" onclick="closeTutorialModal()">开启寻音之旅</button>
-    </div>
-  </div>
-
-<script>
+  <script>
 // ================== 全局 MediaSession 动作注册 ==================
 if ('mediaSession' in navigator) {
   try {
@@ -7574,24 +7489,12 @@ window.onPipModeChanged = function(isInPip) {
 // ================== 首次进入新手教程逻辑 ==================
 function checkFirstLaunchTutorial() {
   try {
-    if (!localStorage.getItem('lingxi_seen_tutorial_v1')) {
+    if (!localStorage.getItem('lingxi_seen_tutorial_v2')) {
       setTimeout(() => {
-        openTutorialModal();
-      }, 500);
+        openBeginnerGuideModal();
+        localStorage.setItem('lingxi_seen_tutorial_v2', 'true');
+      }, 600);
     }
-  } catch(e) {}
-}
-
-function openTutorialModal() {
-  const backdrop = document.getElementById('tutorialBackdrop');
-  if (backdrop) backdrop.classList.add('open');
-}
-
-function closeTutorialModal() {
-  const backdrop = document.getElementById('tutorialBackdrop');
-  if (backdrop) backdrop.classList.remove('open');
-  try {
-    localStorage.setItem('lingxi_seen_tutorial_v1', 'true');
   } catch(e) {}
 }
 

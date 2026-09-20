@@ -55,9 +55,9 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: github.ref == 'refs/heads/main'
         with:
-          tag_name: v1.1.0
-          name: "灵犀音乐 Android 正式版 v1.1.0"
-          body: "灵犀音乐原生沉浸极速版 APK v1.1.0。包含真实状态栏歌曲卡片、顶部灵动岛常驻、桌面画中画悬浮窗、全幅陶土橙图标与新手使用指南。"
+          tag_name: v1.2.0
+          name: "灵犀音乐 Android 正式版 v1.2.0"
+          body: "灵犀音乐原生沉浸极速版 APK v1.2.0。沉浸式透明状态栏、居中高清系统通知卡片、桌面专属灵动岛、全子页面消除上下留白与歌单全新专属头像。"
           files: |
             output/LingXiMusic.apk
             output/灵犀音乐.apk
