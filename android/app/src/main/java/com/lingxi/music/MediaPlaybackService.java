@@ -71,6 +71,7 @@ public class MediaPlaybackService extends Service {
     private long currentPositionMs = 0;
     private long durationMs = 180000;
     private Bitmap currentCoverBitmap = null;
+    private final android.util.LruCache<String, Bitmap> coverCache = new android.util.LruCache<>(30);
 
     private final android.os.Handler lockHandler = new android.os.Handler(android.os.Looper.getMainLooper());
     private final Runnable delayedReleaseLocksRunnable = new Runnable() {
@@ -219,6 +220,9 @@ public class MediaPlaybackService extends Service {
             mediaPlayer.setOnErrorListener(new MediaPlayer.OnErrorListener() {
                 @Override
                 public boolean onError(MediaPlayer mp, int what, int extra) {
+                    try {
+                        mp.reset();
+                    } catch (Exception ignored) {}
                     isPrepared = false;
                     isPreparing = false;
                     isPlaying = false;
@@ -260,7 +264,9 @@ public class MediaPlaybackService extends Service {
                 if (seekMs >= 0) {
                     mediaPlayer.seekTo((int) seekMs);
                 }
-                mediaPlayer.start();
+                if (!mediaPlayer.isPlaying()) {
+                    mediaPlayer.start();
+                }
                 isPlaying = true;
                 acquireLocks();
                 buildAndPostNotification(currentCoverBitmap != null ? currentCoverBitmap : getRoundedDefaultCover());
@@ -280,11 +286,15 @@ public class MediaPlaybackService extends Service {
             if (url.startsWith("content://")) {
                 mediaPlayer.setDataSource(getApplicationContext(), Uri.parse(url));
             } else {
-                mediaPlayer.setDataSource(url);
+                java.util.Map<String, String> headers = new java.util.HashMap<>();
+                headers.put("User-Agent", "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36");
+                headers.put("Referer", "https://music.163.com/");
+                mediaPlayer.setDataSource(getApplicationContext(), Uri.parse(url), headers);
             }
             mediaPlayer.prepareAsync();
         } catch (Exception e) {
             e.printStackTrace();
+            try { mediaPlayer.reset(); } catch (Exception ignored) {}
             isPreparing = false;
             MainActivity.dispatchWebAction("if (window.onNativeError) window.onNativeError(-1, -1);");
         }
@@ -321,6 +331,7 @@ public class MediaPlaybackService extends Service {
     }
 
     public synchronized void seekTo(long posMs) {
+        currentPositionMs = posMs;
         if (mediaPlayer != null && isPrepared) {
             try {
                 mediaPlayer.seekTo((int) posMs);
@@ -421,10 +432,11 @@ public class MediaPlaybackService extends Service {
             if (isPlaying) {
                 acquireLocks();
             } else {
-                releaseLocks();
+                releaseLocksDelayed(120000);
             }
 
-            if (coverChanged || currentCoverBitmap == null) {
+            boolean isCurrentDefault = (currentCoverBitmap == null || currentCoverBitmap == defaultCoverBitmap);
+            if (coverChanged || isCurrentDefault) {
                 fetchCoverAndNotify();
             } else {
                 buildAndPostNotification(currentCoverBitmap);
@@ -435,10 +447,20 @@ public class MediaPlaybackService extends Service {
     }
 
     private void fetchCoverAndNotify() {
+        final String targetUrl = currentCoverUrl;
+        if (targetUrl != null && !targetUrl.isEmpty()) {
+            Bitmap cached = coverCache.get(targetUrl);
+            if (cached != null) {
+                currentCoverBitmap = cached;
+                buildAndPostNotification(cached);
+                return;
+            }
+        }
+
         new Thread(new Runnable() {
             @Override
             public void run() {
-                Bitmap cover = loadCoverBitmap(currentCoverUrl);
+                Bitmap cover = loadCoverBitmap(targetUrl);
                 if (cover == null) {
                     cover = getRoundedDefaultCover();
                 } else {
@@ -456,35 +478,79 @@ public class MediaPlaybackService extends Service {
                         cover = rounded;
                     } catch (Exception ignored) {}
                 }
-                currentCoverBitmap = cover;
-                buildAndPostNotification(cover);
+                if (targetUrl != null && targetUrl.equals(currentCoverUrl)) {
+                    currentCoverBitmap = cover;
+                    buildAndPostNotification(cover);
+                }
             }
         }).start();
     }
 
     private Bitmap loadCoverBitmap(String urlStr) {
         if (urlStr == null || urlStr.isEmpty()) return null;
+        Bitmap cached = coverCache.get(urlStr);
+        if (cached != null) return cached;
+
         if (urlStr.startsWith("data:image/")) {
             try {
                 int comma = urlStr.indexOf(',');
                 if (comma != -1) {
                     byte[] bytes = Base64.decode(urlStr.substring(comma + 1), Base64.DEFAULT);
-                    return BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
+                    Bitmap b = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
+                    if (b != null) coverCache.put(urlStr, b);
+                    return b;
                 }
             } catch (Exception ignored) {}
             return null;
         }
+
         if (urlStr.startsWith("http://") || urlStr.startsWith("https://")) {
-            try {
-                URL url = new URL(urlStr);
-                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-                conn.setConnectTimeout(3500);
-                conn.setReadTimeout(3500);
-                InputStream is = conn.getInputStream();
-                Bitmap b = BitmapFactory.decodeStream(is);
-                is.close();
-                return b;
-            } catch (Exception ignored) {}
+            String currentUrl = urlStr;
+            int redirects = 0;
+            while (redirects < 5) {
+                try {
+                    URL url = new URL(currentUrl);
+                    HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                    conn.setInstanceFollowRedirects(false); // 支持 HTTPS 与 HTTP 跨域跳转
+                    conn.setConnectTimeout(6000);
+                    conn.setReadTimeout(6000);
+                    conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36");
+                    conn.setRequestProperty("Referer", "https://music.163.com/");
+                    conn.connect();
+
+                    int responseCode = conn.getResponseCode();
+                    if (responseCode == HttpURLConnection.HTTP_MOVED_PERM || responseCode == HttpURLConnection.HTTP_MOVED_TEMP || responseCode == 307 || responseCode == 308) {
+                        String location = conn.getHeaderField("Location");
+                        conn.disconnect();
+                        if (location != null && !location.isEmpty()) {
+                            if (!location.startsWith("http://") && !location.startsWith("https://")) {
+                                URL base = new URL(currentUrl);
+                                location = new URL(base, location).toExternalForm();
+                            }
+                            currentUrl = location;
+                            redirects++;
+                            continue;
+                        }
+                        break;
+                    }
+
+                    if (responseCode == HttpURLConnection.HTTP_OK) {
+                        InputStream is = conn.getInputStream();
+                        Bitmap b = BitmapFactory.decodeStream(is);
+                        is.close();
+                        conn.disconnect();
+                        if (b != null) {
+                            coverCache.put(urlStr, b);
+                        }
+                        return b;
+                    } else {
+                        conn.disconnect();
+                        break;
+                    }
+                } catch (Exception e) {
+                    break;
+                }
+            }
         }
         return null;
     }
