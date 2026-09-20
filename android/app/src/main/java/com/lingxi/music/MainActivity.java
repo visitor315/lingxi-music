@@ -56,6 +56,7 @@ import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.Process;
 import android.view.ViewGroup;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -163,7 +164,15 @@ public class MainActivity extends Activity {
             window.getDecorView().setSystemUiVisibility(flags);
         }
 
+        try {
+            Process.setThreadPriority(Process.THREAD_PRIORITY_AUDIO);
+        } catch (Exception ignored) {}
+
         webView = new WebView(this);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            // 核心解决切应用“抢不过人家”：严禁在离开前台时向系统弃权降级，强制让 WebView 渲染进程在后台维持与前台相同的最高优先级！
+            webView.setRendererPriorityPolicy(WebView.RENDERER_PRIORITY_IMPORTANT, false);
+        }
         webView.setBackgroundColor(Color.parseColor("#FAF9F6"));
         setContentView(webView);
 
@@ -189,7 +198,7 @@ public class MainActivity extends Activity {
             @Override
             public void onPageFinished(WebView view, String url) {
                 super.onPageFinished(view, url);
-                String ver = "1.7.9";
+                String ver = "1.8.0";
                 try {
                     ver = getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
                 } catch (Exception ignored) {}
@@ -1217,7 +1226,7 @@ public class MainActivity extends Activity {
                 PackageInfo pInfo = getPackageManager().getPackageInfo(getPackageName(), 0);
                 return pInfo.versionName;
             } catch (Exception e) {
-                return "1.7.9";
+                return "1.8.0";
             }
         }
 

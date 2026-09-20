@@ -1823,7 +1823,7 @@ body.in-pip-mode .view-player-full {
         <span class="settings-group-header">关于</span>
         <div class="group-menu-card">
           <div class="settings-item-row" onclick="toast(APP_CONFIG.name + ' · v' + APP_CONFIG.version + ' (' + APP_CONFIG.build + ')')">
-            <div class="settings-item-col"><span class="settings-title-line">关于灵犀</span><span class="settings-sub-desc" id="aboutAppVersionDesc">自用无损音乐播放器 · v1.7.9</span></div>
+            <div class="settings-item-col"><span class="settings-title-line">关于灵犀</span><span class="settings-sub-desc" id="aboutAppVersionDesc">自用无损音乐播放器 · v1.8.0</span></div>
           </div>
         </div>
         <span class="settings-group-header">系统与调试</span>
@@ -3998,7 +3998,7 @@ function updateDynamicAppVersion(ver) {
       ver = window.AndroidBridge.getAppVersion();
     } catch(e) {}
   }
-  if (!ver) ver = '1.7.9';
+  if (!ver) ver = '1.8.0';
   APP_CONFIG.version = ver;
   const descEl = document.getElementById('aboutAppVersionDesc');
   if (descEl) {

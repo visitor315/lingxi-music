@@ -23,6 +23,7 @@ import android.net.wifi.WifiManager;
 import android.os.Build;
 import android.os.IBinder;
 import android.os.PowerManager;
+import android.os.Process;
 import android.util.Base64;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
@@ -62,6 +63,9 @@ public class MediaPlaybackService extends Service {
     public void onCreate() {
         super.onCreate();
         sInstance = this;
+        try {
+            Process.setThreadPriority(Process.THREAD_PRIORITY_AUDIO);
+        } catch (Exception ignored) {}
         notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         try {
             PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
