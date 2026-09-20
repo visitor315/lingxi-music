@@ -4,6 +4,9 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -17,27 +20,46 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: '8.4'
+
+      - name: Configure Android SDK
+        run: |
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
+          echo "sdk.dir=$ANDROID_HOME" > android/local.properties
 
       - name: Generate Signing Keystore
         run: |
           keytool -genkey -v -keystore android/app/debug.keystore -alias androiddebugkey -keyalg RSA -keysize 2048 -validity 10000 -storepass android -keypass android -dname "CN=LingXi, OU=Music, O=LingXi, L=Beijing, S=Beijing, C=CN"
 
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v3
-
       - name: Build APK with Gradle
         run: |
           cd android
-          gradle assembleRelease
+          gradle assembleRelease --stacktrace
 
-      - name: Rename APK
+      - name: Prepare APK Outputs
         run: |
-          cp android/app/build/outputs/apk/release/app-release.apk android/app/build/outputs/apk/release/灵犀音乐.apk
+          mkdir -p output
+          cp android/app/build/outputs/apk/release/app-release.apk output/LingXiMusic.apk
+          cp android/app/build/outputs/apk/release/app-release.apk output/灵犀音乐.apk
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: 灵犀音乐-正式版
-          path: android/app/build/outputs/apk/release/灵犀音乐.apk
+          name: LingXiMusic
+          path: output/*
+
+      - name: Create or Update GitHub Release
+        uses: softprops/action-gh-release@v2
+        if: github.ref == 'refs/heads/main'
+        with:
+          tag_name: v1.0.0
+          name: "灵犀音乐 Android 正式版 v1.0.0"
+          body: "灵犀音乐原生离线极速版 APK。内嵌完整离线资源，陶土色圆形图标。"
+          files: |
+            output/LingXiMusic.apk
+            output/灵犀音乐.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
