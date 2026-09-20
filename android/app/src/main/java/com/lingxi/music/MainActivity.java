@@ -836,8 +836,8 @@ public class MainActivity extends Activity {
         floatingTvCurrent.setGravity(Gravity.CENTER);
         floatingTvCurrent.setSingleLine(true);
         floatingTvCurrent.setEllipsize(TextUtils.TruncateAt.END);
-        // 轻微暗色投影，白底屏幕或浅色壁纸也能极清晰辨识
-        floatingTvCurrent.setShadowLayer(dp2px(2), 0, dp2px(1), Color.parseColor("#40000000"));
+        // 纯净现代风，彻底移除黑色阴影
+        floatingTvCurrent.setShadowLayer(0, 0, 0, 0);
         floatingTvCurrent.setText(currentFloatingLyricText);
         lyricsBody.addView(floatingTvCurrent);
 

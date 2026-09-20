@@ -1823,7 +1823,7 @@ body.in-pip-mode .view-player-full {
         <span class="settings-group-header">关于</span>
         <div class="group-menu-card">
           <div class="settings-item-row" onclick="toast(APP_CONFIG.name + ' · v' + APP_CONFIG.version + ' (' + APP_CONFIG.build + ')')">
-            <div class="settings-item-col"><span class="settings-title-line">关于灵犀</span><span class="settings-sub-desc" id="aboutAppVersionDesc">自用无损音乐播放器 · v1.7.5</span></div>
+            <div class="settings-item-col"><span class="settings-title-line">关于灵犀</span><span class="settings-sub-desc" id="aboutAppVersionDesc">自用无损音乐播放器 · v1.7.6</span></div>
           </div>
         </div>
         <span class="settings-group-header">系统与调试</span>
@@ -2986,8 +2986,8 @@ function initAudioEngine() {
         song.duration = actualDur;
         document.getElementById('totalTime').textContent = formatTime(actualDur);
         syncProgress();
-        // 自动拦截小于 60 秒的试听片段，自动跨平台无缝检索完整版！
-        if (actualDur > 0 && actualDur < 60 && !song.isLocal && !song._switchedToFull) {
+        // 自动拦截小于 50 秒的试听片段，自动跨平台无缝检索完整版！
+        if (actualDur > 0 && actualDur < 50 && !song.isLocal && !song._switchedToFull) {
           song._switchedToFull = true;
           tryResolveAlternativeFullTrack(song);
         } else if (actualDur <= 35 && !song._trialToastShown) {
@@ -3400,11 +3400,11 @@ async function executeSearch(keyword) {
   document.getElementById('searchEmptyState').classList.remove('active');
   document.getElementById('searchLoadingState').classList.add('active');
 
-  // 1. 优先实时检索本地音频曲库（自动过滤1分钟以下与试听片段）
+  // 1. 优先实时检索本地音频曲库（自动过滤50秒以下与试听片段）
   const lowerKw = keyword.toLowerCase().trim();
   const trialKeywords = ['试听', '片段', '铃声', '30s', '30秒', '副歌', '高潮版', '截取'];
   const localMatches = ALL_LIBRARY_SONGS.filter(s => {
-    if (s.duration > 0 && s.duration < 60) return false;
+    if (s.duration > 0 && s.duration < 50) return false;
     const title = (s.title || '').toLowerCase();
     if (trialKeywords.some(k => title.includes(k))) return false;
     return (title && title.includes(lowerKw)) || (s.artist && s.artist.toLowerCase().includes(lowerKw));
@@ -3515,8 +3515,8 @@ async function requestOnlineSearch(keyword, count = 30) {
         };
       }).filter(s => {
         if (!s.name || !s.url_id) return false;
-        // 自动屏蔽 1 分钟以下或带有试听/片段/铃声标签的音源
-        if (s.duration > 0 && s.duration < 60) return false;
+        // 自动屏蔽 50 秒以下或带有试听/片段/铃声标签的音源
+        if (s.duration > 0 && s.duration < 50) return false;
         const lowName = s.name.toLowerCase();
         const trialKw = ['试听', '片段', '铃声', '30s', '30秒', '副歌', '高潮版', '截取'];
         if (trialKw.some(k => lowName.includes(k))) return false;
@@ -3975,7 +3975,7 @@ function updateDynamicAppVersion(ver) {
       ver = window.AndroidBridge.getAppVersion();
     } catch(e) {}
   }
-  if (!ver) ver = '1.7.5';
+  if (!ver) ver = '1.7.6';
   APP_CONFIG.version = ver;
   const descEl = document.getElementById('aboutAppVersionDesc');
   if (descEl) {
