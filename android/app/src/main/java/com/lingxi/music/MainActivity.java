@@ -73,6 +73,8 @@ import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
 
 public class MainActivity extends Activity {
     public static final String CHANNEL_ID = "lingxi_playback_channel_v2";
