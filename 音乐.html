@@ -5923,7 +5923,13 @@ async function downloadSongFile(song) {
     }
   }
 
-  // 2. 尝试 Fetch 获取 Blob 并通过本地 Blob URL 触发静默下载（绝不跳转新页面打开原生黑屏播放器）
+  // 2. Android App 原生系统下载通道（直接存入手机「下载 (Download)」目录与媒体库）
+  if (window.AndroidBridge && window.AndroidBridge.downloadFile) {
+    window.AndroidBridge.downloadFile(downloadUrl, filename);
+    return;
+  }
+
+  // 3. 浏览器环境下的 Blob 下载尝试
   try {
     const res = await fetch(downloadUrl);
     if (!res.ok) throw new Error(`HTTP status ${res.status}`);

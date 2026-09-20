@@ -55,9 +55,9 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: github.ref == 'refs/heads/main'
         with:
-          tag_name: v1.3.0
-          name: "灵犀音乐 Android 正式版 v1.3.0"
-          body: "灵犀音乐原生沉浸极速版 APK v1.3.0。居中5键对称系统媒体中心卡片、原生沉浸透明状态栏、彻底移除模拟桌面与应用内胶囊、全子页面消除留白。"
+          tag_name: v1.4.0
+          name: "灵犀音乐 Android 正式版 v1.4.0"
+          body: "灵犀音乐原生沉浸极速版 APK v1.4.0。居中5键对称系统媒体中心卡片、原生系统DownloadManager真实歌曲下载、原生沉浸透明状态栏、彻底移除模拟桌面与应用内胶囊、全子页面消除留白。"
           files: |
             output/LingXiMusic.apk
             output/灵犀音乐.apk

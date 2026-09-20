@@ -1,6 +1,7 @@
 package com.lingxi.music;
 
 import android.app.Activity;
+import android.app.DownloadManager;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
@@ -15,22 +16,30 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.RectF;
+import android.media.MediaScannerConnection;
 import android.media.session.MediaSession;
 import android.media.session.PlaybackState;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.util.Base64;
 import android.util.Rational;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
+import android.webkit.DownloadListener;
 import android.webkit.JavascriptInterface;
+import android.webkit.URLUtil;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.Toast;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -100,6 +109,15 @@ public class MainActivity extends Activity {
         webView.setWebViewClient(new WebViewClient());
         webView.setWebChromeClient(new WebChromeClient());
         webView.addJavascriptInterface(new WebAppInterface(), "AndroidBridge");
+
+        // 系统下载监听器，支持任何 web 下载
+        webView.setDownloadListener(new DownloadListener() {
+            @Override
+            public void onDownloadStart(String url, String userAgent, String contentDisposition, String mimetype, long contentLength) {
+                String filename = URLUtil.guessFileName(url, contentDisposition, mimetype);
+                downloadFile(url, filename);
+            }
+        });
 
         webView.loadUrl("file:///android_asset/index.html");
 
@@ -220,7 +238,6 @@ public class MainActivity extends Activity {
             RectF rect = new RectF(0, 0, size, size);
             canvas.drawRoundRect(rect, 36, 36, paint);
 
-            // Draw inner vinyl disc
             paint.setColor(Color.parseColor("#161718"));
             canvas.drawCircle(size / 2f, size / 2f, size * 0.42f, paint);
 
@@ -325,9 +342,8 @@ public class MainActivity extends Activity {
         pipIntent.setAction(ACTION_PIP);
         PendingIntent pPip = PendingIntent.getActivity(this, 20, pipIntent, flag);
 
-        // Update PlaybackState in MediaSession so Android knows current state
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && mediaSession != null) {
-            long state = isPlaying ? PlaybackState.STATE_PLAYING : PlaybackState.STATE_PAUSED;
+            int state = isPlaying ? PlaybackState.STATE_PLAYING : PlaybackState.STATE_PAUSED;
             long actions = PlaybackState.ACTION_PLAY | PlaybackState.ACTION_PAUSE |
                     PlaybackState.ACTION_SKIP_TO_PREVIOUS | PlaybackState.ACTION_SKIP_TO_NEXT |
                     PlaybackState.ACTION_PLAY_PAUSE;
@@ -366,12 +382,83 @@ public class MainActivity extends Activity {
             if (mediaSession != null) {
                 mediaStyle.setMediaSession(mediaSession.getSessionToken());
             }
-            // In compact view, show Prev (1), Play/Pause (2), Next (3)
             mediaStyle.setShowActionsInCompactView(1, 2, 3);
             builder.setStyle(mediaStyle);
         }
 
         notificationManager.notify(NOTIFICATION_ID, builder.build());
+    }
+
+    public void downloadFile(final String urlStr, final String filename) {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    if (urlStr.startsWith("http://") || urlStr.startsWith("https://")) {
+                        DownloadManager downloadManager = (DownloadManager) getSystemService(Context.DOWNLOAD_SERVICE);
+                        Uri uri = Uri.parse(urlStr);
+                        DownloadManager.Request request = new DownloadManager.Request(uri);
+                        request.setTitle(filename);
+                        request.setDescription("灵犀音乐正在下载歌曲...");
+                        request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
+                        request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, filename);
+                        request.setMimeType("audio/mpeg");
+                        if (downloadManager != null) {
+                            downloadManager.enqueue(request);
+                            Toast.makeText(MainActivity.this, "已加入系统下载，保存在「下载(Download)」文件夹", Toast.LENGTH_LONG).show();
+                            return;
+                        }
+                    }
+                } catch (Exception ignored) {}
+                downloadDirectStream(urlStr, filename);
+            }
+        });
+    }
+
+    private void downloadDirectStream(final String urlStr, final String filename) {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    File dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+                    if (!dir.exists()) dir.mkdirs();
+                    File targetFile = new File(dir, filename);
+
+                    URL u = new URL(urlStr);
+                    HttpURLConnection conn = (HttpURLConnection) u.openConnection();
+                    conn.setConnectTimeout(10000);
+                    conn.setReadTimeout(15000);
+                    InputStream in = conn.getInputStream();
+                    FileOutputStream out = new FileOutputStream(targetFile);
+                    byte[] buf = new byte[8192];
+                    int len;
+                    while ((len = in.read(buf)) != -1) {
+                        out.write(buf, 0, len);
+                    }
+                    out.flush();
+                    out.close();
+                    in.close();
+
+                    MediaScannerConnection.scanFile(MainActivity.this,
+                            new String[]{targetFile.getAbsolutePath()},
+                            new String[]{"audio/mpeg"}, null);
+
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            Toast.makeText(MainActivity.this, "《" + filename + "》已保存至手机「下载」目录", Toast.LENGTH_LONG).show();
+                        }
+                    });
+                } catch (final Exception e) {
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            Toast.makeText(MainActivity.this, "下载失败：" + e.getMessage(), Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                }
+            }
+        }).start();
     }
 
     public class WebAppInterface {
@@ -383,6 +470,11 @@ public class MainActivity extends Activity {
         @JavascriptInterface
         public void updateMediaCardWithCover(final String title, final String artist, final String coverUrl, final boolean isPlaying) {
             showPlaybackNotification(title, artist, coverUrl, isPlaying);
+        }
+
+        @JavascriptInterface
+        public void downloadFile(final String url, final String filename) {
+            MainActivity.this.downloadFile(url, filename);
         }
 
         @JavascriptInterface
