@@ -11,8 +11,31 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<link href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@400;500;700&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-screen-webfont@1.1.0/style.css" media="print" onload="this.media='all'"/>
 <style>
+/* 本地内置加载霞鹜文楷字体，100% 离线生效，杜绝 Google Fonts 阻塞 */
+@font-face {
+  font-family: 'LXGW WenKai';
+  src: url('LXGWWenKaiLite-Regular.ttf') format('truetype');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'LXGW WenKai TC';
+  src: url('LXGWWenKaiLite-Regular.ttf') format('truetype');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: '霞鹜文楷';
+  src: url('LXGWWenKaiLite-Regular.ttf') format('truetype');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
 /* ================= 1. 色彩体系（YYRC 统一标准规范） ================= */
 :root {
   --bg-page: #F7F7F5;
