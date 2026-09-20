@@ -2956,9 +2956,10 @@ const songRetryCounts = {};
 function initAudioEngine() {
   audioPlayer.addEventListener('timeupdate', () => {
     if (isSeekingAudio) return; // 寻道解码期间屏蔽旧时间戳，防止选句时被旧进度强行扯回上一句
-    if (isPlaying && !isNaN(audioPlayer.currentTime) && audioPlayer.currentTime > 0) {
+    if (isPlaying && !isNaN(audioPlayer.currentTime) && audioPlayer.currentTime >= 0) {
       currentSec = audioPlayer.currentTime;
-      // 无论在前台还是后台，timeupdate 事件始终稳定触发，持续驱动桌面悬浮歌词随播放滚动
+      // 无论在前台还是后台，timeupdate 事件稳定触发，持续驱动进度条前进与桌面悬浮歌词滚动
+      syncProgress();
       updateLyricProgressSmooth();
       if (!lyricRafId && isPlaying && !document.hidden) startLyricSmoothSync();
     }
@@ -2967,6 +2968,10 @@ function initAudioEngine() {
   audioPlayer.addEventListener('seeked', () => {
     isSeekingAudio = false;
     if (seekLockTimer) clearTimeout(seekLockTimer);
+    if (!isNaN(audioPlayer.currentTime) && audioPlayer.currentTime >= 0) {
+      currentSec = audioPlayer.currentTime;
+    }
+    syncProgress();
     updateLyricProgressSmooth();
     scrollActiveLyricToCenter();
   });
@@ -2977,6 +2982,7 @@ function initAudioEngine() {
       if (song) {
         song.duration = Math.floor(audioPlayer.duration);
         document.getElementById('totalTime').textContent = formatTime(song.duration);
+        syncProgress();
         if (song.duration <= 35 && !song._trialToastShown) {
           song._trialToastShown = true;
           toast('当前为平台30秒试听片段 (原版受VIP版权限制)');
@@ -4121,8 +4127,19 @@ function playNext() {
 function syncProgress() {
   if (isDraggingProgressBar) return;
   const song = currentPlaybackQueue[currentIndex];
-  if (!song) return;
-  const ratio = Math.min(1, Math.max(0, currentSec / song.duration));
+  const duration = (song && song.duration > 0) ? song.duration : (!isNaN(audioPlayer.duration) && audioPlayer.duration > 0 ? audioPlayer.duration : 180);
+
+  if (isPlaying && !isNaN(audioPlayer.currentTime) && audioPlayer.currentTime >= 0 && !isSeekingAudio) {
+    currentSec = audioPlayer.currentTime;
+  }
+
+  if (song && (!song.duration || song.duration <= 0) && !isNaN(audioPlayer.duration) && audioPlayer.duration > 0) {
+    song.duration = Math.floor(audioPlayer.duration);
+    const totalTimeEl = document.getElementById('totalTime');
+    if (totalTimeEl) totalTimeEl.textContent = formatTime(song.duration);
+  }
+
+  const ratio = Math.min(1, Math.max(0, currentSec / duration));
   const pct = (ratio * 100).toFixed(1);
 
   const seekFill = document.getElementById('seekFill');
@@ -5406,6 +5423,10 @@ function startLyricSmoothSync() {
   if (lyricRafId) cancelAnimationFrame(lyricRafId);
   function tick() {
     if (isPlaying && !audioPlayer.paused && !document.hidden) {
+      if (!isSeekingAudio && !isNaN(audioPlayer.currentTime) && audioPlayer.currentTime >= 0) {
+        currentSec = audioPlayer.currentTime;
+      }
+      syncProgress();
       updateLyricProgressSmooth();
       lyricRafId = requestAnimationFrame(tick);
     } else {
@@ -5417,7 +5438,7 @@ function startLyricSmoothSync() {
   }
 }
 
-// 监听切到后台/桌面状态：rAF 会被 Chromium 挂起，此时启动高频定时器持续驱动桌面悬浮歌词滚动
+// 监听切到后台/桌面状态：rAF 会被 Chromium 挂起，此时启动高频定时器持续驱动进度条与桌面悬浮歌词滚动
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) {
     if (lyricRafId) {
@@ -5427,6 +5448,10 @@ document.addEventListener('visibilitychange', () => {
     if (!bgLyricInterval && isPlaying) {
       bgLyricInterval = setInterval(() => {
         if (isPlaying && audioPlayer && !audioPlayer.paused) {
+          if (!isSeekingAudio && !isNaN(audioPlayer.currentTime) && audioPlayer.currentTime >= 0) {
+            currentSec = audioPlayer.currentTime;
+          }
+          syncProgress();
           updateLyricProgressSmooth();
         }
       }, 250);
@@ -5437,6 +5462,7 @@ document.addEventListener('visibilitychange', () => {
       bgLyricInterval = null;
     }
     if (isPlaying && !audioPlayer.paused) {
+      syncProgress();
       startLyricSmoothSync();
     }
   }
@@ -6486,17 +6512,33 @@ window.onLocalMusicScanned = function(scannedSongs) {
 
 /* ================== 歌曲进度条拖动核心引擎（支持触屏触摸滑动与鼠标平滑拖拽） ================== */
 let isDraggingProgressBar = false;
+let dragSafetyTimer = null;
+
+function setDragProgressState(isDragging) {
+  isDraggingProgressBar = isDragging;
+  if (dragSafetyTimer) clearTimeout(dragSafetyTimer);
+  if (isDragging) {
+    // 8秒无动作自动释放拖拽锁定，防止因触摸中断或手机手势导航导致的锁死
+    dragSafetyTimer = setTimeout(() => {
+      if (isDraggingProgressBar) {
+        isDraggingProgressBar = false;
+        syncProgress();
+      }
+    }, 8000);
+  }
+}
 
 function initProgressBarDrag() {
   const barWrap = document.getElementById('seekBarWrap') || document.querySelector('.seek-bar-wrap');
-  if (!barWrap) return;
+  if (!barWrap || barWrap._dragInited) return;
+  barWrap._dragInited = true;
 
   function updateScrubVisual(clientX) {
     const rect = barWrap.getBoundingClientRect();
     if (rect.width <= 0) return;
     const ratio = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
     const curSong = currentPlaybackQueue[currentIndex];
-    const duration = (curSong && curSong.duration > 0) ? curSong.duration : (audioPlayer.duration || 180);
+    const duration = (curSong && curSong.duration > 0) ? curSong.duration : (!isNaN(audioPlayer.duration) && audioPlayer.duration > 0 ? audioPlayer.duration : 180);
     const dragSec = ratio * duration;
     const pct = (ratio * 100).toFixed(1);
 
@@ -6509,19 +6551,22 @@ function initProgressBarDrag() {
   }
 
   function commitSeekPosition(clientX) {
+    setDragProgressState(false);
     const rect = barWrap.getBoundingClientRect();
     if (rect.width <= 0) return;
     const ratio = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
     const curSong = currentPlaybackQueue[currentIndex];
-    const duration = (curSong && curSong.duration > 0) ? curSong.duration : (audioPlayer.duration || 180);
+    const duration = (curSong && curSong.duration > 0) ? curSong.duration : (!isNaN(audioPlayer.duration) && audioPlayer.duration > 0 ? audioPlayer.duration : 180);
     const targetSec = ratio * duration;
 
     currentSec = targetSec;
     isSeekingAudio = true;
-    if (curSong && curSong.fileUrl && !isNaN(audioPlayer.duration) && audioPlayer.duration > 0) {
-      audioPlayer.currentTime = targetSec;
-    } else if (!isNaN(audioPlayer.duration) && audioPlayer.duration > 0) {
-      audioPlayer.currentTime = targetSec;
+    if (!isNaN(audioPlayer.duration) && audioPlayer.duration > 0) {
+      try {
+        audioPlayer.currentTime = targetSec;
+      } catch(err) {
+        console.warn("audioPlayer seek error:", err);
+      }
     }
 
     if (seekLockTimer) clearTimeout(seekLockTimer);
@@ -6534,7 +6579,7 @@ function initProgressBarDrag() {
 
   // Pointer Events (现代浏览器与 Android WebView 原生标准触摸事件)
   barWrap.addEventListener('pointerdown', (e) => {
-    isDraggingProgressBar = true;
+    setDragProgressState(true);
     try { barWrap.setPointerCapture(e.pointerId); } catch(err) {}
     updateScrubVisual(e.clientX);
     e.stopPropagation();
@@ -6550,7 +6595,6 @@ function initProgressBarDrag() {
 
   barWrap.addEventListener('pointerup', (e) => {
     if (!isDraggingProgressBar) return;
-    isDraggingProgressBar = false;
     try { barWrap.releasePointerCapture(e.pointerId); } catch(err) {}
     commitSeekPosition(e.clientX);
     e.stopPropagation();
@@ -6559,7 +6603,7 @@ function initProgressBarDrag() {
 
   barWrap.addEventListener('pointercancel', (e) => {
     if (!isDraggingProgressBar) return;
-    isDraggingProgressBar = false;
+    setDragProgressState(false);
     try { barWrap.releasePointerCapture(e.pointerId); } catch(err) {}
     syncProgress();
   });
@@ -6567,7 +6611,7 @@ function initProgressBarDrag() {
   // Touch Events 兜底双重保障
   barWrap.addEventListener('touchstart', (e) => {
     if (e.touches && e.touches.length > 0) {
-      isDraggingProgressBar = true;
+      setDragProgressState(true);
       updateScrubVisual(e.touches[0].clientX);
     }
   }, { passive: true });
@@ -6580,12 +6624,58 @@ function initProgressBarDrag() {
 
   barWrap.addEventListener('touchend', (e) => {
     if (isDraggingProgressBar) {
-      isDraggingProgressBar = false;
       if (e.changedTouches && e.changedTouches.length > 0) {
         commitSeekPosition(e.changedTouches[0].clientX);
       } else {
+        setDragProgressState(false);
         syncProgress();
       }
+    }
+  }, { passive: true });
+
+  barWrap.addEventListener('touchcancel', () => {
+    if (isDraggingProgressBar) {
+      setDragProgressState(false);
+      syncProgress();
+    }
+  }, { passive: true });
+
+  // 全局 Window 事件兜底，无论手指滑出屏幕或系统手势触发，彻底杜绝锁定状态残留
+  window.addEventListener('pointerup', (e) => {
+    if (isDraggingProgressBar) {
+      commitSeekPosition(e.clientX);
+    }
+  }, { passive: true });
+
+  window.addEventListener('pointercancel', () => {
+    if (isDraggingProgressBar) {
+      setDragProgressState(false);
+      syncProgress();
+    }
+  }, { passive: true });
+
+  window.addEventListener('touchend', (e) => {
+    if (isDraggingProgressBar) {
+      if (e.changedTouches && e.changedTouches.length > 0) {
+        commitSeekPosition(e.changedTouches[0].clientX);
+      } else {
+        setDragProgressState(false);
+        syncProgress();
+      }
+    }
+  }, { passive: true });
+
+  window.addEventListener('touchcancel', () => {
+    if (isDraggingProgressBar) {
+      setDragProgressState(false);
+      syncProgress();
+    }
+  }, { passive: true });
+
+  window.addEventListener('blur', () => {
+    if (isDraggingProgressBar) {
+      setDragProgressState(false);
+      syncProgress();
     }
   }, { passive: true });
 }
@@ -7249,6 +7339,7 @@ function handleSystemHome() {
 }
 
 function seekAudio(e) {
+  if (isDraggingProgressBar) return;
   const bar = e.currentTarget || document.getElementById('seekBarWrap');
   if (!bar) return;
   const rect = bar.getBoundingClientRect();
@@ -7256,13 +7347,13 @@ function seekAudio(e) {
   const ratio = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
   const curSong = currentPlaybackQueue[currentIndex];
   if (!curSong) return;
-  const duration = (curSong && curSong.duration > 0) ? curSong.duration : (audioPlayer.duration || 180);
+  const duration = (curSong && curSong.duration > 0) ? curSong.duration : (!isNaN(audioPlayer.duration) && audioPlayer.duration > 0 ? audioPlayer.duration : 180);
   currentSec = ratio * duration;
   isSeekingAudio = true;
-  if (curSong.fileUrl && !isNaN(audioPlayer.duration) && audioPlayer.duration > 0) {
-    audioPlayer.currentTime = currentSec;
-  } else if (!isNaN(audioPlayer.duration) && audioPlayer.duration > 0) {
-    audioPlayer.currentTime = currentSec;
+  if (!isNaN(audioPlayer.duration) && audioPlayer.duration > 0) {
+    try {
+      audioPlayer.currentTime = currentSec;
+    } catch(err) {}
   }
   if (seekLockTimer) clearTimeout(seekLockTimer);
   seekLockTimer = setTimeout(() => { isSeekingAudio = false; }, 400);
