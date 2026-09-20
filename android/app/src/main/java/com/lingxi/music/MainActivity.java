@@ -390,10 +390,19 @@ public class MainActivity extends Activity {
         }
         String action = intent.getAction();
         if (ACTION_TOGGLE.equals(action)) {
-            webView.post(new Runnable() {
-                @Override
-                public void run() { webView.evaluateJavascript("togglePlayState()", null); }
-            });
+            MediaPlaybackService service = MediaPlaybackService.getInstance();
+            if (service != null && service.isPrepared()) {
+                if (service.isNativePlaying()) {
+                    service.pausePlayback();
+                } else {
+                    service.resumePlayback();
+                }
+            } else {
+                webView.post(new Runnable() {
+                    @Override
+                    public void run() { webView.evaluateJavascript("togglePlayState()", null); }
+                });
+            }
         } else if (ACTION_PREV.equals(action)) {
             webView.post(new Runnable() {
                 @Override
@@ -968,19 +977,21 @@ public class MainActivity extends Activity {
         floatingIvPlay = createSvgButton(isFloatingCurrentPlaying ? R.drawable.ic_floating_pause : R.drawable.ic_floating_play, 42, new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                isFloatingCurrentPlaying = !isFloatingCurrentPlaying;
-                updateFloatingPlayState();
-
                 MediaPlaybackService service = MediaPlaybackService.getInstance();
-                if (service != null) {
-                    if (isFloatingCurrentPlaying) {
+                if (service != null && service.isPrepared()) {
+                    boolean nextPlaying = !service.isNativePlaying();
+                    isFloatingCurrentPlaying = nextPlaying;
+                    updateFloatingPlayState();
+                    if (nextPlaying) {
                         service.resumePlayback();
                     } else {
                         service.pausePlayback();
                     }
+                } else {
+                    isFloatingCurrentPlaying = !isFloatingCurrentPlaying;
+                    updateFloatingPlayState();
+                    dispatchWebAction("togglePlayState()");
                 }
-
-                dispatchWebAction("togglePlayState()");
                 resetAutoCollapseTimer();
             }
         });
@@ -1165,7 +1176,12 @@ public class MainActivity extends Activity {
                 if (next != null) currentFloatingSubLyricText = next;
                 if (themeColor != null && !themeColor.isEmpty()) currentFloatingThemeColor = themeColor;
                 isFloatingCurrentFav = isFav;
-                isFloatingCurrentPlaying = isPlaying;
+                MediaPlaybackService service = MediaPlaybackService.getInstance();
+                if (service != null && service.isPrepared()) {
+                    isFloatingCurrentPlaying = service.isNativePlaying();
+                } else {
+                    isFloatingCurrentPlaying = isPlaying;
+                }
 
                 if (floatingTvCurrent != null) {
                     floatingTvCurrent.setText(currentFloatingLyricText);
@@ -1379,7 +1395,7 @@ public class MainActivity extends Activity {
                 PackageInfo pInfo = getPackageManager().getPackageInfo(getPackageName(), 0);
                 return pInfo.versionName;
             } catch (Exception e) {
-                return "1.9.2";
+                return "1.9.3";
             }
         }
 

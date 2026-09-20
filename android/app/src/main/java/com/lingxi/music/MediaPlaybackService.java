@@ -333,6 +333,10 @@ public class MediaPlaybackService extends Service {
         return isPlaying;
     }
 
+    public synchronized boolean isPrepared() {
+        return isPrepared;
+    }
+
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         // 先确保立即前台化，避免 Android 8+ 及 Android 14 前台服务因异步延迟而崩溃
