@@ -522,7 +522,47 @@ body.night .hero-main-cover-frame {
 .album-headline-wrap { text-align: center; margin-bottom: 6px; max-width: 320px; line-height: 1.4; }
 .album-headline-title { font-size: 15.5px; font-weight: 600; color: var(--ink-black); display: inline; }
 .album-creator-row { display: flex; align-items: center; gap: 6px; margin-bottom: 16px; }
-.creator-avatar-dot { width: 18px; height: 18px; border-radius: 50%; background: var(--ink-dark); color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600; }
+.creator-avatar-dot {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+.creator-avatar-dot.lingxi {
+  background: #FAF9F6;
+  border: 1px solid rgba(217, 119, 87, 0.28);
+  color: var(--brand-terracotta);
+}
+.creator-avatar-dot.user {
+  background: var(--brand-blue-soft);
+  border: 1px solid rgba(35, 75, 184, 0.22);
+  color: var(--brand-blue);
+}
+.creator-avatar-dot.other {
+  background: rgba(24, 26, 28, 0.06);
+  border: 1px solid rgba(24, 26, 28, 0.12);
+  color: var(--ink-dark);
+}
+body.night .creator-avatar-dot.lingxi {
+  background: #242422;
+  border: 1px solid rgba(224, 135, 105, 0.35);
+  color: var(--brand-terracotta);
+}
+body.night .creator-avatar-dot.user {
+  background: var(--brand-blue-soft);
+  border: 1px solid rgba(74, 118, 237, 0.3);
+  color: var(--brand-blue);
+}
+body.night .creator-avatar-dot.other {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: var(--ink-black);
+}
 .creator-name-text { font-size: 12px; color: var(--ink-gray); }
 
 .hero-action-buttons-grid { display: grid; grid-template-columns: repeat(2, 1fr); width: 100%; max-width: 170px; margin: 0 auto; }
@@ -1746,7 +1786,18 @@ body.apk-mode .view-xianyin {
           <span class="album-headline-title" id="heroTitle">灵犀精选</span>
         </div>
         <div class="album-creator-row">
-          <div class="creator-avatar-dot" id="heroCreatorDot">灵</div><span class="creator-name-text" id="heroAuthor">灵犀音乐</span>
+          <div class="creator-avatar-dot lingxi" id="heroCreatorDot">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style="display:block;">
+              <path d="M19.0993 10.6602C20.2113 11.9744 19.98 13.5815 19.9801 15C19.9801 18.9062 14.7132 20 12 20C9.28677 20 4.01994 18.9062 4.01994 15C4.01995 13.5815 3.78875 11.9744 4.90066 10.6602M19.0993 10.6602C18.9048 10.4303 18.6692 10.2094 18.384 10M19.0993 10.6602C19.7993 11.0634 19.9781 9.55469 19.9801 9.0625V7.18761C19.9801 5.56261 18.8629 5.00011 17.9053 5.00011C16.9477 5.00011 15.0324 6.5625 14.394 6.5625C13.6279 6.5625 13.4804 6.40636 12 6.40636C10.5197 6.40636 10.3721 6.5625 9.60601 6.5625C8.9676 6.5625 7.05236 5 6.09476 5C5.13715 5 4.01995 5.5625 4.01995 7.1875V9.0625C4.02188 9.55469 4.20072 11.0634 4.90066 10.6602M4.90066 10.6602C5.09519 10.4303 5.33082 10.2094 5.61599 10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+              <path d="M12.8258 16C12.8258 16.1726 12.4647 16.3125 12.0193 16.3125C11.574 16.3125 11.2129 16.1726 11.2129 16C11.2129 15.8274 11.574 15.6875 12.0193 15.6875C12.4647 15.6875 12.8258 15.8274 12.8258 16Z" stroke="currentColor" stroke-width="1.6"/>
+              <path d="M15.5 13.5938C15.5 14.0252 15.2834 14.375 15.0161 14.375C14.7489 14.375 14.5323 14.0252 14.5323 13.5938C14.5323 13.1623 14.7489 12.8125 15.0161 12.8125C15.2834 12.8125 15.5 13.1623 15.5 13.5938Z" stroke="currentColor" stroke-width="1.6"/>
+              <path d="M9.5 13.5938C9.5 14.0252 9.28336 14.375 9.01613 14.375C8.74889 14.375 8.53226 14.0252 8.53226 13.5938C8.53226 13.1623 8.74889 12.8125 9.01613 12.8125C9.28336 12.8125 9.5 13.1623 9.5 13.5938Z" stroke="currentColor" stroke-width="1.6"/>
+              <path d="M22.0004 15.4688C21.5165 15.1562 19.4197 14.375 18.6133 14.375" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+              <path d="M20.3871 17.9688C19.9033 17.6562 18.7742 16.875 17.9678 16.875" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+              <path d="M2 15.4688C2.48387 15.1562 4.58065 14.375 5.3871 14.375" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+              <path d="M3.61279 17.9688C4.09667 17.6562 5.2257 16.875 6.03215 16.875" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+            </svg>
+          </div><span class="creator-name-text" id="heroAuthor">灵犀音乐</span>
         </div>
         <div class="album-desc-text" id="heroDesc" style="font-size:12px; color:var(--ink-gray); line-height:1.45; margin-top:5px; text-align:center; max-width:240px; word-break:break-word; display:none;"></div>
                 <div class="hero-action-buttons-grid">
@@ -2387,6 +2438,13 @@ body.apk-mode .view-xianyin {
 <script>
 /* ================== 全局统一玫瑰花矢量路径（与发现页完全一致） ================== */
 const ROSE_SVG_PATH = "M281.31 21.217L239.997 127.13l76.01 103.673 97.135-7.532-3.1-79.284-78.2-12.468-1.61 41.535 29.11 7.568-.766-14.1 18.662-1.012 2.15 39.635-68.41-17.788 3.004-77.61 68.65 10.946-2.456-86.044-98.863-13.43zM243.63 66.39l-73.702 39.917L195.885 243.7l141.306 80.704 154.447-80.037-11.252-142.205-79.617-.988.642 22.512 26.705 4.257 4.403 112.57-125.436 9.727-88.227-120.338 24.774-63.51zm-93.107 88.706c-2.992-.017-6.01.004-9.054.06-9.456.174-19.425.853-29.44 1.594 9.427 13.32 18.694 26.165 30.157 35.938 7.894 6.73 16.835 12.308 28.075 16.056l-10.1-53.453c-3.184-.11-6.396-.176-9.64-.194zm25.57 84.51c-14.278 5.27-27.16 13.25-39.437 23.55-17.875 14.995-34.273 35.22-50.625 58.47 56.9 2.6 100.16-6.41 147.316-35.01l-54.223-30.966-3.03-16.045zm270.854 48.968l-50.64 26.244c27.874 20.83 54.865 27.206 90.162 28.557-8.76-21.213-22.617-39.484-39.523-54.8zm-189.853 4.895c-14.566 9.75-28.84 17.8-43.156 24.342.37 10.843 2.813 19.703 6.968 26.47-29.49 37.69-61.714 72.017-96.78 102.843-17.584-1.215-24.577-19.137-17.845-37.344-22.758 18.074-30.427 42.166-20 68.376-6.832 5.23-13.75 10.354-20.78 15.344h45.344c25.65-20.11 49.915-41.82 72.844-65.094 29.485 9.192 54.05-1.51 69.625-27.97-14.975 8.052-31.217 5.627-37.438-6.686 9.653-11.06 19.037-22.436 28.156-34.125 7.25 1.21 15.586.57 24.72-2.03-8.863-17.974-13.326-39.19-11.656-64.126zm18.133 17.065c1.205 25.213 10.463 44.01 24.648 60.12 17.914 20.346 44.73 35.942 73.625 50.814 7.79-33.575 9.555-62.664-2.05-93.77l-34.692 17.978-61.53-35.143z";
+
+/* ================== 歌单作者头像全局矢量定义 ================== */
+const LINGXI_CAT_AVATAR_SVG = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" style="display:block;"><path d="M19.0993 10.6602C20.2113 11.9744 19.98 13.5815 19.9801 15C19.9801 18.9062 14.7132 20 12 20C9.28677 20 4.01994 18.9062 4.01994 15C4.01995 13.5815 3.78875 11.9744 4.90066 10.6602M19.0993 10.6602C18.9048 10.4303 18.6692 10.2094 18.384 10M19.0993 10.6602C19.7993 11.0634 19.9781 9.55469 19.9801 9.0625V7.18761C19.9801 5.56261 18.8629 5.00011 17.9053 5.00011C16.9477 5.00011 15.0324 6.5625 14.394 6.5625C13.6279 6.5625 13.4804 6.40636 12 6.40636C10.5197 6.40636 10.3721 6.5625 9.60601 6.5625C8.9676 6.5625 7.05236 5 6.09476 5C5.13715 5 4.01995 5.5625 4.01995 7.1875V9.0625C4.02188 9.55469 4.20072 11.0634 4.90066 10.6602M4.90066 10.6602C5.09519 10.4303 5.33082 10.2094 5.61599 10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M12.8258 16C12.8258 16.1726 12.4647 16.3125 12.0193 16.3125C11.574 16.3125 11.2129 16.1726 11.2129 16C11.2129 15.8274 11.574 15.6875 12.0193 15.6875C12.4647 15.6875 12.8258 15.8274 12.8258 16Z" stroke="currentColor" stroke-width="1.6"/><path d="M15.5 13.5938C15.5 14.0252 15.2834 14.375 15.0161 14.375C14.7489 14.375 14.5323 14.0252 14.5323 13.5938C14.5323 13.1623 14.7489 12.8125 15.0161 12.8125C15.2834 12.8125 15.5 13.1623 15.5 13.5938Z" stroke="currentColor" stroke-width="1.6"/><path d="M9.5 13.5938C9.5 14.0252 9.28336 14.375 9.01613 14.375C8.74889 14.375 8.53226 14.0252 8.53226 13.5938C8.53226 13.1623 8.74889 12.8125 9.01613 12.8125C9.28336 12.8125 9.5 13.1623 9.5 13.5938Z" stroke="currentColor" stroke-width="1.6"/><path d="M22.0004 15.4688C21.5165 15.1562 19.4197 14.375 18.6133 14.375" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M20.3871 17.9688C19.9033 17.6562 18.7742 16.875 17.9678 16.875" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M2 15.4688C2.48387 15.1562 4.58065 14.375 5.3871 14.375" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M3.61279 17.9688C4.09667 17.6562 5.2257 16.875 6.03215 16.875" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>`;
+
+const USER_CAT_AVATAR_SVG = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" style="display:block;"><path d="M19.0993 10.6602C20.2113 11.9744 19.98 13.5815 19.9801 15C19.9801 18.9062 14.7132 20 12 20C9.28677 20 4.01994 18.9062 4.01994 15C4.01995 13.5815 3.78875 11.9744 4.90066 10.6602M19.0993 10.6602C18.9048 10.4303 18.6692 10.2094 18.384 10M19.0993 10.6602C19.7993 11.0634 19.9781 9.55469 19.9801 9.0625V7.18761C19.9801 5.56261 18.8629 5.00011 17.9053 5.00011C16.9477 5.00011 15.0324 6.5625 14.394 6.5625C13.6279 6.5625 13.4804 6.40636 12 6.40636C10.5197 6.40636 10.3721 6.5625 9.60601 6.5625C8.9676 6.5625 7.05236 5 6.09476 5C5.13715 5 4.01995 5.5625 4.01995 7.1875V9.0625C4.02188 9.55469 4.20072 11.0634 4.90066 10.6602M4.90066 10.6602C5.09519 10.4303 5.33082 10.2094 5.61599 10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M12.0196 14.9374C11.7284 14.9374 11.4307 14.9818 11.1784 15.0796C11.0546 15.1275 10.9032 15.2031 10.7699 15.3252C10.6361 15.4479 10.4632 15.6749 10.4632 15.9999C10.4632 16.3249 10.6361 16.5519 10.7699 16.6745C10.9032 16.7967 11.0546 16.8722 11.1784 16.9202C11.4307 17.018 11.7284 17.0624 12.0196 17.0624C12.3109 17.0624 12.6085 17.018 12.8609 16.9202C12.9846 16.8722 13.136 16.7967 13.2693 16.6745C13.4032 16.5519 13.5761 16.3249 13.5761 15.9999C13.5761 15.6749 13.4032 15.4479 13.2693 15.3252C13.136 15.2031 12.9846 15.1275 12.8609 15.0796C12.6085 14.9818 12.3109 14.9374 12.0196 14.9374Z" fill="currentColor"/><circle cx="15" cy="13.6" r="1" fill="currentColor"/><circle cx="9" cy="13.6" r="1" fill="currentColor"/></svg>`;
+
+const OTHER_AVATAR_SVG = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`;
 
 const APP_CONFIG = {
   name: '灵犀音乐',
@@ -4430,17 +4488,18 @@ function openPlaylistDetail(idx) {
     descEl.style.display = alb.desc ? 'block' : 'none';
   }
 
-  // 动态作者头像文字：自建歌单与“我”的歌单显示“我”
+  // 动态作者头像 SVG 徽标：灵犀音乐专属陶土猫咪，我的歌单专属萌猫咪
   const dotEl = document.getElementById('heroCreatorDot');
   if (dotEl) {
-    if (alb.id === 'alb_all') {
-      dotEl.textContent = '灵';
-    } else if (alb.id === 'alb_local') {
-      dotEl.textContent = '本';
-    } else if (alb.id === 'alb_fav' || alb.author === '我' || alb.id.startsWith('alb_user_')) {
-      dotEl.textContent = '我';
+    if (alb.id === 'alb_all' || alb.author === '灵犀音乐' || alb.author === '灵犀') {
+      dotEl.className = 'creator-avatar-dot lingxi';
+      dotEl.innerHTML = LINGXI_CAT_AVATAR_SVG;
+    } else if (alb.id === 'alb_fav' || alb.author === '我' || (alb.id && alb.id.startsWith('alb_user_'))) {
+      dotEl.className = 'creator-avatar-dot user';
+      dotEl.innerHTML = USER_CAT_AVATAR_SVG;
     } else {
-      dotEl.textContent = (alb.author && alb.author.charAt(0)) || '我';
+      dotEl.className = 'creator-avatar-dot other';
+      dotEl.innerHTML = OTHER_AVATAR_SVG;
     }
   }
 
