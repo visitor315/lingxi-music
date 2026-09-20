@@ -52,6 +52,7 @@ import android.os.Looper;
 import android.view.ViewGroup;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -102,8 +103,8 @@ public class MainActivity extends Activity {
     private LinearLayout floatingControlsLayout;
     private TextView floatingTvCurrent;
     private TextView floatingTvSub;
-    private TextView floatingTvFav;
-    private TextView floatingTvPlay;
+    private ImageView floatingIvFav;
+    private ImageView floatingIvPlay;
     private boolean isFloatingLyricsActive = false;
     private boolean isControlCardExpanded = false;
     private String currentFloatingThemeColor = "#234BB8";
@@ -111,6 +112,13 @@ public class MainActivity extends Activity {
     private String currentFloatingSubLyricText = "";
     private boolean isFloatingCurrentFav = false;
     private boolean isFloatingCurrentPlaying = true;
+    private String lastMediaTitle = "灵犀音乐";
+    private String lastMediaArtist = "随心听";
+    private String lastMediaCoverUrl = "";
+    private boolean lastMediaIsPlaying = false;
+    private boolean lastMediaIsFav = false;
+    private long lastMediaPosMs = 0;
+    private long lastMediaDurMs = 180000;
     private Handler floatingHandler = new Handler(Looper.getMainLooper());
     private Runnable autoCollapseRunnable = new Runnable() {
         @Override
@@ -342,6 +350,16 @@ public class MainActivity extends Activity {
     }
 
     public void updateMediaCardFull(final String title, final String artist, final String coverUrl, final boolean isPlaying, final boolean isFav, final long positionMs, final long durationMs) {
+        if (title != null) lastMediaTitle = title;
+        if (artist != null) lastMediaArtist = artist;
+        if (coverUrl != null) lastMediaCoverUrl = coverUrl;
+        lastMediaIsPlaying = isPlaying;
+        lastMediaIsFav = isFav;
+        lastMediaPosMs = positionMs;
+        lastMediaDurMs = durationMs;
+        isFloatingCurrentFav = isFav;
+        isFloatingCurrentPlaying = isPlaying;
+
         Intent intent = new Intent(this, MediaPlaybackService.class);
         intent.setAction(MediaPlaybackService.ACTION_UPDATE_STATE);
         intent.putExtra("title", title);
@@ -349,6 +367,7 @@ public class MainActivity extends Activity {
         intent.putExtra("coverUrl", coverUrl);
         intent.putExtra("isPlaying", isPlaying);
         intent.putExtra("isFav", isFav);
+        intent.putExtra("isLyricsActive", isFloatingLyricsActive);
         intent.putExtra("positionMs", positionMs);
         intent.putExtra("durationMs", durationMs);
         try {
@@ -469,32 +488,41 @@ public class MainActivity extends Activity {
         });
     }
 
-    private TextView createControlButton(String text, float sp, View.OnClickListener listener) {
-        TextView tv = new TextView(this);
-        tv.setText(text);
-        tv.setTextSize(TypedValue.COMPLEX_UNIT_SP, sp);
-        tv.setTextColor(Color.WHITE);
-        tv.setGravity(Gravity.CENTER);
-        int pad = dp2px(8);
-        tv.setPadding(pad, pad, pad, pad);
-        tv.setClickable(true);
-        tv.setFocusable(true);
+    private ImageView createSvgButton(int resId, int sizeDp, View.OnClickListener listener) {
+        ImageView iv = new ImageView(this);
+        iv.setImageResource(resId);
+        int pad = dp2px(6);
+        iv.setPadding(pad, pad, pad, pad);
+        int pxSize = dp2px(sizeDp);
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(pxSize, pxSize);
+        lp.gravity = Gravity.CENTER;
+        iv.setLayoutParams(lp);
+        iv.setClickable(true);
+        iv.setFocusable(true);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             TypedValue outValue = new TypedValue();
             getTheme().resolveAttribute(android.R.attr.selectableItemBackgroundBorderless, outValue, true);
-            tv.setBackgroundResource(outValue.resourceId);
+            iv.setBackgroundResource(outValue.resourceId);
         }
-        tv.setOnClickListener(listener);
-        return tv;
+        iv.setOnClickListener(listener);
+        return iv;
+    }
+
+    private View createFlexSpacer() {
+        View v = new View(this);
+        v.setLayoutParams(new LinearLayout.LayoutParams(0, 1, 1.0f));
+        return v;
     }
 
     private void updateFloatingFavState() {
-        if (floatingTvFav != null) {
-            if (isFloatingCurrentFav) {
-                floatingTvFav.setTextColor(Color.parseColor("#BA3B36"));
-            } else {
-                floatingTvFav.setTextColor(Color.parseColor("#B0FFFFFF"));
-            }
+        if (floatingIvFav != null) {
+            floatingIvFav.setImageResource(isFloatingCurrentFav ? R.drawable.ic_floating_fav_active : R.drawable.ic_floating_fav);
+        }
+    }
+
+    private void updateFloatingPlayState() {
+        if (floatingIvPlay != null) {
+            floatingIvPlay.setImageResource(isFloatingCurrentPlaying ? R.drawable.ic_floating_pause : R.drawable.ic_floating_play);
         }
     }
 
@@ -527,21 +555,33 @@ public class MainActivity extends Activity {
 
         if (expanded) {
             GradientDrawable cardBg = new GradientDrawable();
-            cardBg.setColor(Color.parseColor("#E61E1E22")); // 典雅深空灰半透明磨砂卡片，绝无突兀白边
-            cardBg.setCornerRadius(dp2px(16));
+            cardBg.setColor(Color.parseColor("#E6202022")); // 概念版哑光深灰半透明，绝无突兀白边
+            cardBg.setCornerRadius(dp2px(18));
+            cardBg.setStroke(dp2px(1), Color.parseColor("#1FFFFFFF")); // 微光细描边
             floatingRootLayout.setBackground(cardBg);
-            floatingRootLayout.setPadding(dp2px(14), dp2px(10), dp2px(14), dp2px(10));
+            floatingRootLayout.setPadding(dp2px(16), dp2px(12), dp2px(16), dp2px(14));
 
             if (floatingHeaderLayout != null) floatingHeaderLayout.setVisibility(View.VISIBLE);
             if (floatingControlsLayout != null) floatingControlsLayout.setVisibility(View.VISIBLE);
+
+            if (floatingParams != null) {
+                int cardWidth = Math.min(getResources().getDisplayMetrics().widthPixels - dp2px(36), dp2px(330));
+                floatingParams.width = cardWidth;
+                floatingParams.x = 0; // 严禁左右偏移，保持居中
+            }
             resetAutoCollapseTimer();
         } else {
             if (floatingHandler != null) floatingHandler.removeCallbacks(autoCollapseRunnable);
-            floatingRootLayout.setBackground(null); // 平时完全透明无边框！
+            floatingRootLayout.setBackground(null); // 平时完全纯净无框无背景
             floatingRootLayout.setPadding(dp2px(6), dp2px(2), dp2px(6), dp2px(2));
 
             if (floatingHeaderLayout != null) floatingHeaderLayout.setVisibility(View.GONE);
             if (floatingControlsLayout != null) floatingControlsLayout.setVisibility(View.GONE);
+
+            if (floatingParams != null) {
+                floatingParams.width = WindowManager.LayoutParams.WRAP_CONTENT;
+                floatingParams.x = 0; // 严禁左右偏移，保持居中
+            }
         }
 
         if (windowManager != null && floatingLyricView != null && floatingParams != null) {
@@ -574,48 +614,40 @@ public class MainActivity extends Activity {
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         floatingHeaderLayout.setPadding(0, 0, 0, dp2px(4));
 
-        TextView tvLogo = new TextView(this);
-        tvLogo.setText("灵犀");
-        tvLogo.setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f);
-        tvLogo.setTextColor(Color.WHITE);
-        tvLogo.setTypeface(Typeface.DEFAULT_BOLD);
-        GradientDrawable logoBg = new GradientDrawable();
-        try {
-            logoBg.setColor(Color.parseColor(currentFloatingThemeColor));
-        } catch (Exception e) {
-            logoBg.setColor(Color.parseColor("#234BB8"));
-        }
-        logoBg.setCornerRadius(dp2px(4));
-        tvLogo.setBackground(logoBg);
-        tvLogo.setPadding(dp2px(5), dp2px(2), dp2px(5), dp2px(2));
-        floatingHeaderLayout.addView(tvLogo);
+        ImageView ivLogo = new ImageView(this);
+        ivLogo.setImageResource(R.drawable.ic_floating_logo);
+        int logoSize = dp2px(18);
+        LinearLayout.LayoutParams logoLp = new LinearLayout.LayoutParams(logoSize, logoSize);
+        ivLogo.setLayoutParams(logoLp);
+        floatingHeaderLayout.addView(ivLogo);
 
         View spacer = new View(this);
         LinearLayout.LayoutParams spParams = new LinearLayout.LayoutParams(0, 1, 1f);
         floatingHeaderLayout.addView(spacer, spParams);
 
-        TextView tvClose = new TextView(this);
-        tvClose.setText("✕");
-        tvClose.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15f);
-        tvClose.setTextColor(Color.parseColor("#B0FFFFFF"));
-        tvClose.setPadding(dp2px(8), dp2px(2), dp2px(4), dp2px(2));
-        tvClose.setOnClickListener(new View.OnClickListener() {
+        ImageView ivClose = new ImageView(this);
+        ivClose.setImageResource(R.drawable.ic_floating_close);
+        int closeSize = dp2px(22);
+        LinearLayout.LayoutParams closeLp = new LinearLayout.LayoutParams(closeSize, closeSize);
+        ivClose.setLayoutParams(closeLp);
+        ivClose.setPadding(dp2px(2), dp2px(2), dp2px(2), dp2px(2));
+        ivClose.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 hideDesktopLyrics();
             }
         });
-        floatingHeaderLayout.addView(tvClose);
+        floatingHeaderLayout.addView(ivClose);
         floatingRootLayout.addView(floatingHeaderLayout);
 
-        // 2. 核心歌词区 (始终居中，平时无背景，高亮大字体+立体暗影)
+        // 2. 核心歌词区 (始终居中，无阴影，清晰锐利排版)
         LinearLayout lyricsBody = new LinearLayout(this);
         lyricsBody.setOrientation(LinearLayout.VERTICAL);
         lyricsBody.setGravity(Gravity.CENTER_HORIZONTAL);
-        lyricsBody.setPadding(dp2px(8), dp2px(2), dp2px(8), dp2px(2));
+        lyricsBody.setPadding(dp2px(8), dp2px(4), dp2px(8), dp2px(4));
 
         floatingTvCurrent = new TextView(this);
-        floatingTvCurrent.setTextSize(TypedValue.COMPLEX_UNIT_SP, 19f);
+        floatingTvCurrent.setTextSize(TypedValue.COMPLEX_UNIT_SP, 17.5f);
         try {
             floatingTvCurrent.setTextColor(Color.parseColor(currentFloatingThemeColor));
         } catch (Exception e) {
@@ -623,67 +655,64 @@ public class MainActivity extends Activity {
         }
         floatingTvCurrent.setTypeface(Typeface.DEFAULT_BOLD);
         floatingTvCurrent.setGravity(Gravity.CENTER);
-        floatingTvCurrent.setShadowLayer(8, 0, 2, Color.parseColor("#B0000000"));
+        floatingTvCurrent.setShadowLayer(0, 0, 0, 0); // 坚决不加杂乱阴影，对标概念版纯净现代风
         floatingTvCurrent.setText(currentFloatingLyricText);
         lyricsBody.addView(floatingTvCurrent);
 
         floatingTvSub = new TextView(this);
-        floatingTvSub.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12.5f);
-        floatingTvSub.setTextColor(Color.parseColor("#D9FFFFFF"));
+        floatingTvSub.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f);
+        floatingTvSub.setTextColor(Color.parseColor("#A0FFFFFF"));
         floatingTvSub.setGravity(Gravity.CENTER);
-        floatingTvSub.setShadowLayer(6, 0, 1, Color.parseColor("#80000000"));
+        floatingTvSub.setShadowLayer(0, 0, 0, 0); // 坚决不加杂乱阴影
         floatingTvSub.setText(currentFloatingSubLyricText);
-        floatingTvSub.setPadding(0, dp2px(2), 0, 0);
+        floatingTvSub.setPadding(0, dp2px(3), 0, 0);
         if (currentFloatingSubLyricText == null || currentFloatingSubLyricText.isEmpty()) {
             floatingTvSub.setVisibility(View.GONE);
         }
         lyricsBody.addView(floatingTvSub);
         floatingRootLayout.addView(lyricsBody);
 
-        // 3. 底部播控栏 (操作态才显示)
+        // 3. 底部播控栏 (操作态才显示，全部使用精美 SVG 矢量图标)
         floatingControlsLayout = new LinearLayout(this);
         floatingControlsLayout.setOrientation(LinearLayout.HORIZONTAL);
-        floatingControlsLayout.setGravity(Gravity.CENTER);
-        floatingControlsLayout.setPadding(0, dp2px(6), 0, 0);
+        floatingControlsLayout.setGravity(Gravity.CENTER_VERTICAL);
+        floatingControlsLayout.setLayoutParams(new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        floatingControlsLayout.setPadding(dp2px(4), dp2px(10), dp2px(4), 0);
 
-        floatingTvFav = createControlButton("❤", 17f, new View.OnClickListener() {
+        floatingIvFav = createSvgButton(isFloatingCurrentFav ? R.drawable.ic_floating_fav_active : R.drawable.ic_floating_fav, 34, new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 dispatchWebAction("toggleSongFavFromNotification()");
                 resetAutoCollapseTimer();
             }
         });
-        updateFloatingFavState();
-        floatingControlsLayout.addView(floatingTvFav);
 
-        View btnPrev = createControlButton("⏮", 17f, new View.OnClickListener() {
+        ImageView ivPrev = createSvgButton(R.drawable.ic_floating_prev, 34, new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 dispatchWebAction("playPrev()");
                 resetAutoCollapseTimer();
             }
         });
-        floatingControlsLayout.addView(btnPrev);
 
-        floatingTvPlay = createControlButton(isFloatingCurrentPlaying ? "⏸" : "▶", 19f, new View.OnClickListener() {
+        floatingIvPlay = createSvgButton(isFloatingCurrentPlaying ? R.drawable.ic_floating_pause : R.drawable.ic_floating_play, 42, new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 dispatchWebAction("togglePlayState()");
                 resetAutoCollapseTimer();
             }
         });
-        floatingControlsLayout.addView(floatingTvPlay);
 
-        View btnNext = createControlButton("⏭", 17f, new View.OnClickListener() {
+        ImageView ivNext = createSvgButton(R.drawable.ic_floating_next, 34, new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 dispatchWebAction("playNext()");
                 resetAutoCollapseTimer();
             }
         });
-        floatingControlsLayout.addView(btnNext);
 
-        View btnApp = createControlButton("↗", 17f, new View.OnClickListener() {
+        ImageView ivApp = createSvgButton(R.drawable.ic_floating_app, 34, new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 Intent appIntent = new Intent(MainActivity.this, MainActivity.class);
@@ -692,7 +721,17 @@ public class MainActivity extends Activity {
                 setFloatingCardExpanded(false);
             }
         });
-        floatingControlsLayout.addView(btnApp);
+
+        floatingControlsLayout.removeAllViews();
+        floatingControlsLayout.addView(floatingIvFav);
+        floatingControlsLayout.addView(createFlexSpacer());
+        floatingControlsLayout.addView(ivPrev);
+        floatingControlsLayout.addView(createFlexSpacer());
+        floatingControlsLayout.addView(floatingIvPlay);
+        floatingControlsLayout.addView(createFlexSpacer());
+        floatingControlsLayout.addView(ivNext);
+        floatingControlsLayout.addView(createFlexSpacer());
+        floatingControlsLayout.addView(ivApp);
 
         floatingRootLayout.addView(floatingControlsLayout);
 
@@ -711,12 +750,13 @@ public class MainActivity extends Activity {
                 PixelFormat.TRANSLUCENT
         );
         floatingParams.gravity = Gravity.TOP | Gravity.CENTER_HORIZONTAL;
+        floatingParams.x = 0; // 屏幕正中央，严禁左右偏移
         floatingParams.y = dp2px(130);
 
-        // 触摸手势：拖动位移；轻击展开/收起控制卡片；上下滑切词
+        // 触摸手势：仅允许上下拖动，严格禁止左右移动；轻击展开/收起控制卡片；上下滑切词
         floatingRootLayout.setOnTouchListener(new View.OnTouchListener() {
-            private int initialX, initialY;
-            private float initialTouchX, initialTouchY;
+            private int initialY;
+            private float initialTouchY;
             private boolean isMoving = false;
             private long downTime = 0;
 
@@ -724,20 +764,18 @@ public class MainActivity extends Activity {
             public boolean onTouch(View v, MotionEvent event) {
                 switch (event.getAction()) {
                     case MotionEvent.ACTION_DOWN:
-                        initialX = floatingParams.x;
                         initialY = floatingParams.y;
-                        initialTouchX = event.getRawX();
                         initialTouchY = event.getRawY();
                         isMoving = false;
                         downTime = System.currentTimeMillis();
                         return true;
                     case MotionEvent.ACTION_MOVE:
-                        float dx = event.getRawX() - initialTouchX;
                         float dy = event.getRawY() - initialTouchY;
-                        if (Math.abs(dx) > 10 || Math.abs(dy) > 10) {
+                        if (Math.abs(dy) > 10) {
                             isMoving = true;
                         }
-                        floatingParams.x = initialX + (int) dx;
+                        // 严格禁止左右移动：x始终固定为 0，仅在竖直方向随手指移动
+                        floatingParams.x = 0;
                         floatingParams.y = initialY + (int) dy;
                         if (windowManager != null && floatingLyricView != null) {
                             windowManager.updateViewLayout(floatingLyricView, floatingParams);
@@ -745,17 +783,17 @@ public class MainActivity extends Activity {
                         return true;
                     case MotionEvent.ACTION_UP:
                         float totalDy = event.getRawY() - initialTouchY;
-                        float totalDx = event.getRawX() - initialTouchX;
                         long duration = System.currentTimeMillis() - downTime;
+                        floatingParams.x = 0;
 
-                        // 1. 如果没有明显移动且用时短 -> 点击切换平时态与操作态！
+                        // 1. 如果没有明显竖直拖拽且耗时短 -> 点击切换平时态与操作态
                         if (!isMoving && duration < 350) {
                             setFloatingCardExpanded(!isControlCardExpanded);
                             return true;
                         }
 
                         // 2. 上下滑动切歌词行
-                        if (Math.abs(totalDy) > dp2px(24) && Math.abs(totalDy) > Math.abs(totalDx)) {
+                        if (Math.abs(totalDy) > dp2px(24)) {
                             if (totalDy < 0) {
                                 dispatchWebAction("seekToNextLyricLine()");
                             } else {
@@ -775,6 +813,8 @@ public class MainActivity extends Activity {
             windowManager.addView(floatingRootLayout, floatingParams);
             floatingLyricView = floatingRootLayout;
             isFloatingLyricsActive = true;
+            // 刷新通知栏图标以展示右下角勾标 √
+            updateMediaCardFull(lastMediaTitle, lastMediaArtist, lastMediaCoverUrl, lastMediaIsPlaying, isFloatingCurrentFav, lastMediaPosMs, lastMediaDurMs);
             Toast.makeText(this, "桌面悬浮歌词已开启，点击可呼出播控卡片", Toast.LENGTH_SHORT).show();
             if (webView != null) {
                 webView.evaluateJavascript("if (window.onDesktopLyricsStateChanged) window.onDesktopLyricsStateChanged(true)", null);
@@ -797,6 +837,8 @@ public class MainActivity extends Activity {
         }
         isFloatingLyricsActive = false;
         isControlCardExpanded = false;
+        // 刷新通知栏图标以移除勾标 √
+        updateMediaCardFull(lastMediaTitle, lastMediaArtist, lastMediaCoverUrl, lastMediaIsPlaying, isFloatingCurrentFav, lastMediaPosMs, lastMediaDurMs);
         Toast.makeText(this, "桌面悬浮歌词已关闭", Toast.LENGTH_SHORT).show();
         if (webView != null) {
             webView.evaluateJavascript("if (window.onDesktopLyricsStateChanged) window.onDesktopLyricsStateChanged(false)", null);
@@ -828,9 +870,7 @@ public class MainActivity extends Activity {
                     }
                 }
                 updateFloatingFavState();
-                if (floatingTvPlay != null) {
-                    floatingTvPlay.setText(isFloatingCurrentPlaying ? "⏸" : "▶");
-                }
+                updateFloatingPlayState();
             }
         });
     }

@@ -1,0 +1,15 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="36dp"
+    android:height="36dp"
+    android:viewportWidth="36"
+    android:viewportHeight="36">
+    <!-- 外层优雅线框圆圈，对标概念版 -->
+    <path
+        android:strokeColor="#E6FFFFFF"
+        android:strokeWidth="1.8"
+        android:pathData="M 18,2 A 16,16 0 1,1 17.99,2 Z" />
+    <!-- 居中精准双竖条暂停 -->
+    <path
+        android:fillColor="#E6FFFFFF"
+        android:pathData="M 13.5,12 H 16.5 V 24 H 13.5 Z M 19.5,12 H 22.5 V 24 H 19.5 Z" />
+</vector>

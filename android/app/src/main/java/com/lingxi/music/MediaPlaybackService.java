@@ -49,6 +49,7 @@ public class MediaPlaybackService extends Service {
     private String currentCoverUrl = "";
     private boolean isPlaying = false;
     private boolean isFav = false;
+    private boolean isLyricsActive = false;
     private long currentPositionMs = 0;
     private long durationMs = 180000;
     private Bitmap currentCoverBitmap = null;
@@ -147,6 +148,7 @@ public class MediaPlaybackService extends Service {
 
             isPlaying = intent.getBooleanExtra("isPlaying", false);
             isFav = intent.getBooleanExtra("isFav", false);
+            isLyricsActive = intent.getBooleanExtra("isLyricsActive", isLyricsActive);
             currentPositionMs = intent.getLongExtra("positionMs", 0);
             durationMs = intent.getLongExtra("durationMs", 180000);
 
@@ -300,6 +302,9 @@ public class MediaPlaybackService extends Service {
         int favIcon = isFav ? R.drawable.ic_btn_fav_active : R.drawable.ic_btn_fav;
         String favLabel = isFav ? "取消收藏" : "收藏";
 
+        int lyricsIcon = isLyricsActive ? R.drawable.ic_btn_lyrics_active : R.drawable.ic_btn_lyrics;
+        String lyricsLabel = isLyricsActive ? "桌面歌词已开" : "桌面歌词";
+
         builder.setContentTitle(currentTitle)
                 .setContentText(currentArtist)
                 .setSmallIcon(R.mipmap.ic_launcher)
@@ -310,7 +315,7 @@ public class MediaPlaybackService extends Service {
                 .addAction(R.drawable.ic_btn_prev, "上一曲", pPrev)
                 .addAction(isPlaying ? R.drawable.ic_btn_pause : R.drawable.ic_btn_play, isPlaying ? "暂停" : "播放", pToggle)
                 .addAction(R.drawable.ic_btn_next, "下一曲", pNext)
-                .addAction(R.drawable.ic_btn_lyrics, "词", pLyrics);
+                .addAction(lyricsIcon, lyricsLabel, pLyrics);
 
         if (cover != null) {
             builder.setLargeIcon(cover);

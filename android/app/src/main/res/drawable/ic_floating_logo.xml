@@ -1,0 +1,15 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="20dp"
+    android:height="20dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!-- 灵犀简约波形/唱片律动标识，纯净半透白 -->
+    <path
+        android:strokeColor="#CCFFFFFF"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:pathData="M 4,12 C 4,7.58 7.58,4 12,4 C 16.42,4 20,7.58 20,12 M 7,12 C 7,9.24 9.24,7 12,7 C 14.76,7 17,9.24 17,12" />
+    <path
+        android:fillColor="#CCFFFFFF"
+        android:pathData="M 12,12 A 2.2,2.2 0 1,1 11.99,12 Z" />
+</vector>
