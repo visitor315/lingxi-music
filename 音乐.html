@@ -1823,7 +1823,7 @@ body.in-pip-mode .view-player-full {
         <span class="settings-group-header">关于</span>
         <div class="group-menu-card">
           <div class="settings-item-row" onclick="toast(APP_CONFIG.name + ' · v' + APP_CONFIG.version + ' (' + APP_CONFIG.build + ')')">
-            <div class="settings-item-col"><span class="settings-title-line">关于灵犀</span><span class="settings-sub-desc" id="aboutAppVersionDesc">自用无损音乐播放器 · v1.7.6</span></div>
+            <div class="settings-item-col"><span class="settings-title-line">关于灵犀</span><span class="settings-sub-desc" id="aboutAppVersionDesc">自用无损音乐播放器 · v1.7.7</span></div>
           </div>
         </div>
         <span class="settings-group-header">系统与调试</span>
@@ -2208,7 +2208,7 @@ body.in-pip-mode .view-player-full {
     <footer class="player-controls-panel">
       <div class="progress-container">
         <span class="time-label" id="curTime">00:00</span>
-        <div class="seek-bar-wrap" id="seekBarWrap" onclick="seekAudio(event)">
+        <div class="seek-bar-wrap" id="seekBarWrap">
           <div class="seek-track"><div class="seek-fill" id="seekFill"></div></div>
           <div class="seek-thumb" id="seekThumb"></div>
         </div>
@@ -2958,7 +2958,12 @@ const songRetryCounts = {};
 function initAudioEngine() {
   audioPlayer.addEventListener('timeupdate', () => {
     if (isSeekingAudio) return; // 寻道解码期间屏蔽旧时间戳，防止选句时被旧进度强行扯回上一句
-    if (isPlaying && !isNaN(audioPlayer.currentTime) && audioPlayer.currentTime >= 0) {
+    if (!isNaN(audioPlayer.currentTime) && audioPlayer.currentTime >= 0) {
+      // 只要底层音频硬件实际在发声行进，自动自我对齐修复 isPlaying 状态
+      if (!audioPlayer.paused && !isPlaying) {
+        isPlaying = true;
+        updateUI();
+      }
       currentSec = audioPlayer.currentTime;
       // 无论在前台还是后台，timeupdate 事件稳定触发，持续驱动进度条前进与桌面悬浮歌词滚动
       syncProgress();
@@ -3011,10 +3016,24 @@ function initAudioEngine() {
     startLyricSmoothSync();
   });
 
-  audioPlayer.addEventListener('pause', () => {
-    isPlaying = false;
+  audioPlayer.addEventListener('playing', () => {
+    isPlaying = true;
+    const song = currentPlaybackQueue[currentIndex];
+    if (song) songRetryCounts[song.id] = 0;
     updateUI();
-    stopLyricSmoothSync();
+    startLyricSmoothSync();
+  });
+
+  audioPlayer.addEventListener('pause', () => {
+    if (audioPlayer.paused && !isSeekingAudio) {
+      isPlaying = false;
+      updateUI();
+      stopLyricSmoothSync();
+    }
+  });
+
+  audioPlayer.addEventListener('waiting', () => {
+    // 缓冲卡顿状态，保持 isPlaying 真实态，不误报暂停
   });
 
   audioPlayer.addEventListener('error', (e) => {
@@ -3139,15 +3158,19 @@ function playSong(idx) {
 }
 
 function togglePlayState() {
-  isPlaying = !isPlaying;
   const song = currentPlaybackQueue[currentIndex];
   if (song && song.fileUrl) {
-    if (isPlaying) {
-      audioPlayer.play().catch(()=>{});
+    if (audioPlayer.paused) {
+      isPlaying = true;
+      audioPlayer.play().catch(err => {
+        console.warn("Play blocked:", err);
+      });
     } else {
+      isPlaying = false;
       audioPlayer.pause();
     }
   } else {
+    isPlaying = !isPlaying;
     if (isPlaying) {
       startPlaybackLoop();
     } else {
@@ -3975,7 +3998,7 @@ function updateDynamicAppVersion(ver) {
       ver = window.AndroidBridge.getAppVersion();
     } catch(e) {}
   }
-  if (!ver) ver = '1.7.6';
+  if (!ver) ver = '1.7.7';
   APP_CONFIG.version = ver;
   const descEl = document.getElementById('aboutAppVersionDesc');
   if (descEl) {
@@ -4165,7 +4188,7 @@ function syncProgress() {
   const song = currentPlaybackQueue[currentIndex];
   const duration = (song && song.duration > 0) ? song.duration : (!isNaN(audioPlayer.duration) && audioPlayer.duration > 0 ? audioPlayer.duration : 180);
 
-  if (isPlaying && !isNaN(audioPlayer.currentTime) && audioPlayer.currentTime >= 0 && !isSeekingAudio) {
+  if ((isPlaying || !audioPlayer.paused) && !isNaN(audioPlayer.currentTime) && audioPlayer.currentTime >= 0 && !isSeekingAudio) {
     currentSec = audioPlayer.currentTime;
   }
 
@@ -5874,11 +5897,14 @@ let openedPlayerFromSearch = false;
 
 function openPlayerFull() {
   collapseIslandCard();
+  if (typeof setDragProgressState === 'function') setDragProgressState(false);
   document.getElementById('viewPlayerFull').classList.add('active');
+  syncProgress();
 }
 function closePlayerFull() {
   const player = document.getElementById('viewPlayerFull');
   if (player) player.classList.remove('active');
+  if (typeof setDragProgressState === 'function') setDragProgressState(false);
   if (isPureLyrics) closePureLyricsView();
   closePlaylistDrawer();
   if (openedPlayerFromSearch) {
@@ -6658,13 +6684,13 @@ function initProgressBarDrag() {
   if (!barWrap || barWrap._dragInited) return;
   barWrap._dragInited = true;
 
-  function updateScrubVisual(clientX) {
+  function performSeek(clientX, isCommit) {
     const rect = barWrap.getBoundingClientRect();
     if (rect.width <= 0) return;
     const ratio = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
     const curSong = currentPlaybackQueue[currentIndex];
     const duration = (curSong && curSong.duration > 0) ? curSong.duration : (!isNaN(audioPlayer.duration) && audioPlayer.duration > 0 ? audioPlayer.duration : 180);
-    const dragSec = ratio * duration;
+    const targetSec = ratio * duration;
     const pct = (ratio * 100).toFixed(1);
 
     const seekFill = document.getElementById('seekFill');
@@ -6672,15 +6698,15 @@ function initProgressBarDrag() {
     const seekThumb = document.getElementById('seekThumb');
     if (seekThumb) seekThumb.style.left = pct + '%';
     const curTimeEl = document.getElementById('curTime');
-    if (curTimeEl) curTimeEl.textContent = formatTime(dragSec);
+    if (curTimeEl) curTimeEl.textContent = formatTime(targetSec);
 
-    // 拖动过程中实时更新歌词（完全顺畅滑动、零闪白、无空白行）
+    // 毫秒级歌词顺畅联动
     if (LYRICS_DATA && LYRICS_DATA.length > 0) {
       let scrubIdx = 0;
       for (let i = 0; i < LYRICS_DATA.length; i++) {
-        if (dragSec >= LYRICS_DATA[i].time) scrubIdx = i;
+        if (targetSec >= LYRICS_DATA[i].time) scrubIdx = i;
       }
-      if (scrubIdx !== lastActiveIdx) {
+      if (scrubIdx !== lastActiveIdx || isCommit) {
         lastActiveIdx = scrubIdx;
         updateSimplePreviewLyricScrubbing(scrubIdx);
         if (isPureLyrics) {
@@ -6688,67 +6714,55 @@ function initProgressBarDrag() {
         }
       }
     }
+
+    if (isCommit) {
+      currentSec = targetSec;
+      isSeekingAudio = true;
+      if (!isNaN(audioPlayer.duration) && audioPlayer.duration > 0) {
+        try {
+          audioPlayer.currentTime = targetSec;
+        } catch(err) {
+          console.warn("audioPlayer seek error:", err);
+        }
+      }
+      if (seekLockTimer) clearTimeout(seekLockTimer);
+      seekLockTimer = setTimeout(() => { isSeekingAudio = false; }, 400);
+
+      syncProgress();
+      if (LYRICS_DATA && LYRICS_DATA.length > 0) {
+        let finalIdx = 0;
+        for (let i = 0; i < LYRICS_DATA.length; i++) {
+          if (targetSec >= LYRICS_DATA[i].time) finalIdx = i;
+        }
+        updateLyricProgressSmooth(finalIdx);
+      } else {
+        updateLyricProgressSmooth();
+      }
+      syncCurrentLyricToDesktop();
+    }
   }
 
-  function commitSeekPosition(clientX) {
-    setDragProgressState(false);
-    const rect = barWrap.getBoundingClientRect();
-    if (rect.width <= 0) return;
-    const ratio = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
-    const curSong = currentPlaybackQueue[currentIndex];
-    const duration = (curSong && curSong.duration > 0) ? curSong.duration : (!isNaN(audioPlayer.duration) && audioPlayer.duration > 0 ? audioPlayer.duration : 180);
-    const targetSec = ratio * duration;
-
-    currentSec = targetSec;
-    isSeekingAudio = true;
-    if (!isNaN(audioPlayer.duration) && audioPlayer.duration > 0) {
-      try {
-        audioPlayer.currentTime = targetSec;
-      } catch(err) {
-        console.warn("audioPlayer seek error:", err);
-      }
-    }
-
-    if (seekLockTimer) clearTimeout(seekLockTimer);
-    seekLockTimer = setTimeout(() => { isSeekingAudio = false; }, 400);
-
-    let targetIdx = 0;
-    if (LYRICS_DATA && LYRICS_DATA.length > 0) {
-      for (let i = 0; i < LYRICS_DATA.length; i++) {
-        if (targetSec >= LYRICS_DATA[i].time) targetIdx = i;
-      }
-      lastActiveIdx = targetIdx;
-      updateSimplePreviewLyricScrubbing(targetIdx);
-      if (isPureLyrics) {
-        scrollLyricItemToCenter(targetIdx);
-      }
-    }
-
-    syncProgress();
-    updateLyricProgressSmooth(targetIdx);
-    syncCurrentLyricToDesktop();
-  }
-
-  // Pointer Events (现代浏览器与 Android WebView 原生标准触摸事件)
+  // Pointer Events (现代浏览器与 Android WebView 统一精准触控事件)
   barWrap.addEventListener('pointerdown', (e) => {
     setDragProgressState(true);
     try { barWrap.setPointerCapture(e.pointerId); } catch(err) {}
-    updateScrubVisual(e.clientX);
+    performSeek(e.clientX, false);
     e.stopPropagation();
     e.preventDefault();
   }, { passive: false });
 
   barWrap.addEventListener('pointermove', (e) => {
     if (!isDraggingProgressBar) return;
-    updateScrubVisual(e.clientX);
+    performSeek(e.clientX, false);
     e.stopPropagation();
     e.preventDefault();
   }, { passive: false });
 
   barWrap.addEventListener('pointerup', (e) => {
     if (!isDraggingProgressBar) return;
+    setDragProgressState(false);
     try { barWrap.releasePointerCapture(e.pointerId); } catch(err) {}
-    commitSeekPosition(e.clientX);
+    performSeek(e.clientX, true);
     e.stopPropagation();
     e.preventDefault();
   }, { passive: false });
@@ -6760,64 +6774,15 @@ function initProgressBarDrag() {
     syncProgress();
   });
 
-  // Touch Events 兜底双重保障
-  barWrap.addEventListener('touchstart', (e) => {
-    if (e.touches && e.touches.length > 0) {
-      setDragProgressState(true);
-      updateScrubVisual(e.touches[0].clientX);
-    }
-  }, { passive: true });
-
-  barWrap.addEventListener('touchmove', (e) => {
-    if (isDraggingProgressBar && e.touches && e.touches.length > 0) {
-      updateScrubVisual(e.touches[0].clientX);
-    }
-  }, { passive: true });
-
-  barWrap.addEventListener('touchend', (e) => {
-    if (isDraggingProgressBar) {
-      if (e.changedTouches && e.changedTouches.length > 0) {
-        commitSeekPosition(e.changedTouches[0].clientX);
-      } else {
-        setDragProgressState(false);
-        syncProgress();
-      }
-    }
-  }, { passive: true });
-
-  barWrap.addEventListener('touchcancel', () => {
-    if (isDraggingProgressBar) {
-      setDragProgressState(false);
-      syncProgress();
-    }
-  }, { passive: true });
-
-  // 全局 Window 事件兜底，无论手指滑出屏幕或系统手势触发，彻底杜绝锁定状态残留
+  // 全局 Window 兜底，绝不卡死
   window.addEventListener('pointerup', (e) => {
     if (isDraggingProgressBar) {
-      commitSeekPosition(e.clientX);
+      setDragProgressState(false);
+      performSeek(e.clientX, true);
     }
   }, { passive: true });
 
   window.addEventListener('pointercancel', () => {
-    if (isDraggingProgressBar) {
-      setDragProgressState(false);
-      syncProgress();
-    }
-  }, { passive: true });
-
-  window.addEventListener('touchend', (e) => {
-    if (isDraggingProgressBar) {
-      if (e.changedTouches && e.changedTouches.length > 0) {
-        commitSeekPosition(e.changedTouches[0].clientX);
-      } else {
-        setDragProgressState(false);
-        syncProgress();
-      }
-    }
-  }, { passive: true });
-
-  window.addEventListener('touchcancel', () => {
     if (isDraggingProgressBar) {
       setDragProgressState(false);
       syncProgress();
@@ -7622,6 +7587,7 @@ function switchBottomTab(tab) {
     btnListen.classList.remove('active');
     btnSettings.classList.add('active');
     updateCacheStorageDisplay();
+    updateDynamicAppVersion();
   }
 }
 

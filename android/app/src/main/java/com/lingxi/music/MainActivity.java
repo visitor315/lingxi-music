@@ -99,11 +99,10 @@ public class MainActivity extends Activity {
 
     private WebView webView;
     private NotificationManager notificationManager;
-    private MediaSession mediaSession;
     private Bitmap defaultCoverBitmap;
 
     private WindowManager windowManager;
-    private View floatingLyricView;
+    private static View sFloatingLyricView = null;
     private WindowManager.LayoutParams floatingParams;
     private LinearLayout floatingRootLayout;
     private LinearLayout floatingHeaderLayout;
@@ -170,7 +169,6 @@ public class MainActivity extends Activity {
 
         notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         createNotificationChannel();
-        initMediaSession();
 
         WebSettings settings = webView.getSettings();
         settings.setJavaScriptEnabled(true);
@@ -191,7 +189,7 @@ public class MainActivity extends Activity {
             @Override
             public void onPageFinished(WebView view, String url) {
                 super.onPageFinished(view, url);
-                String ver = "1.7.5";
+                String ver = "1.7.7";
                 try {
                     ver = getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
                 } catch (Exception ignored) {}
@@ -242,42 +240,7 @@ public class MainActivity extends Activity {
         handleIntentAction(getIntent());
     }
 
-    private void initMediaSession() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            mediaSession = new MediaSession(this, "LingXiMusicSession");
-            mediaSession.setCallback(new MediaSession.Callback() {
-                @Override
-                public void onPlay() {
-                    webView.post(new Runnable() {
-                        @Override
-                        public void run() { webView.evaluateJavascript("togglePlayState()", null); }
-                    });
-                }
-                @Override
-                public void onPause() {
-                    webView.post(new Runnable() {
-                        @Override
-                        public void run() { webView.evaluateJavascript("togglePlayState()", null); }
-                    });
-                }
-                @Override
-                public void onSkipToNext() {
-                    webView.post(new Runnable() {
-                        @Override
-                        public void run() { webView.evaluateJavascript("playNext()", null); }
-                    });
-                }
-                @Override
-                public void onSkipToPrevious() {
-                    webView.post(new Runnable() {
-                        @Override
-                        public void run() { webView.evaluateJavascript("playPrev()", null); }
-                    });
-                }
-            });
-            mediaSession.setActive(true);
-        }
-    }
+
 
     @Override
     protected void onNewIntent(Intent intent) {
@@ -312,31 +275,43 @@ public class MainActivity extends Activity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        if (windowManager != null && floatingLyricView != null) {
+        if (windowManager != null && sFloatingLyricView != null) {
             try {
-                windowManager.removeView(floatingLyricView);
+                windowManager.removeView(sFloatingLyricView);
             } catch (Exception ignored) {}
-            floatingLyricView = null;
+            sFloatingLyricView = null;
         }
     }
+
+    private final Runnable updateFloatingStateRunnable = new Runnable() {
+        @Override
+        public void run() {
+            if (isActivityForeground) {
+                // 应用位于前台时，严禁在灵犀应用内部显示桌面悬浮歌词遮挡界面
+                if (windowManager != null && sFloatingLyricView != null) {
+                    try {
+                        windowManager.removeView(sFloatingLyricView);
+                    } catch (Exception ignored) {}
+                    sFloatingLyricView = null;
+                }
+            } else {
+                // 应用处于后台或用户返回桌面时，若用户开启了桌面歌词，且尚未挂载，则在桌面上呈现
+                if (isFloatingLyricsActive && sFloatingLyricView == null) {
+                    showDesktopWindowInternal();
+                }
+            }
+        }
+    };
 
     private void updateFloatingWindowState() {
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                if (isActivityForeground) {
-                    // 应用位于前台时，严禁在灵犀应用内部显示桌面悬浮歌词遮挡界面
-                    if (windowManager != null && floatingLyricView != null) {
-                        try {
-                            windowManager.removeView(floatingLyricView);
-                        } catch (Exception ignored) {}
-                        floatingLyricView = null;
-                    }
+                if (floatingHandler != null) {
+                    floatingHandler.removeCallbacks(updateFloatingStateRunnable);
+                    floatingHandler.post(updateFloatingStateRunnable);
                 } else {
-                    // 应用处于后台或用户返回桌面时，若用户开启了桌面歌词，则在桌面上呈现
-                    if (isFloatingLyricsActive && floatingLyricView == null) {
-                        showDesktopWindowInternal();
-                    }
+                    updateFloatingStateRunnable.run();
                 }
             }
         });
@@ -696,9 +671,9 @@ public class MainActivity extends Activity {
             if (floatingControlsLayout != null) floatingControlsLayout.setVisibility(View.GONE);
         }
 
-        if (windowManager != null && floatingLyricView != null && floatingParams != null) {
+        if (windowManager != null && sFloatingLyricView != null && floatingParams != null) {
             try {
-                windowManager.updateViewLayout(floatingLyricView, floatingParams);
+                windowManager.updateViewLayout(sFloatingLyricView, floatingParams);
             } catch (Exception ignored) {}
         }
     }
@@ -720,11 +695,11 @@ public class MainActivity extends Activity {
         if (windowManager == null) {
             windowManager = (WindowManager) getSystemService(Context.WINDOW_SERVICE);
         }
-        if (floatingLyricView != null) {
+        if (sFloatingLyricView != null) {
             try {
-                windowManager.removeView(floatingLyricView);
+                windowManager.removeView(sFloatingLyricView);
             } catch (Exception ignored) {}
-            floatingLyricView = null;
+            sFloatingLyricView = null;
         }
 
         floatingRootLayout = new LinearLayout(this);
@@ -982,9 +957,9 @@ public class MainActivity extends Activity {
                         if (isDragging) {
                             floatingParams.x = 0; // 严格禁止左右移动
                             floatingParams.y = initialY + (int) dy;
-                            if (windowManager != null && floatingLyricView != null) {
+                            if (windowManager != null && sFloatingLyricView != null) {
                                 try {
-                                    windowManager.updateViewLayout(floatingLyricView, floatingParams);
+                                    windowManager.updateViewLayout(sFloatingLyricView, floatingParams);
                                 } catch (Exception ignored) {}
                             }
                         }
@@ -993,9 +968,9 @@ public class MainActivity extends Activity {
                     case MotionEvent.ACTION_CANCEL:
                         floatingParams.x = 0;
                         if (!isDragging) {
-                            float totalDy = Math.abs(event.getRawY() - initialTouchY);
-                            long duration = System.currentTimeMillis() - downTime;
-                            if (totalDy <= touchSlop && duration < 350) {
+                            long now = System.currentTimeMillis();
+                            if (now - lastCardToggleTime > 350) {
+                                lastCardToggleTime = now;
                                 toggleFloatingCardExpanded();
                             }
                         }
@@ -1011,7 +986,7 @@ public class MainActivity extends Activity {
 
         try {
             windowManager.addView(floatingRootLayout, floatingParams);
-            floatingLyricView = floatingRootLayout;
+            sFloatingLyricView = floatingRootLayout;
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -1021,11 +996,11 @@ public class MainActivity extends Activity {
         if (floatingHandler != null) {
             floatingHandler.removeCallbacks(autoCollapseRunnable);
         }
-        if (windowManager != null && floatingLyricView != null) {
+        if (windowManager != null && sFloatingLyricView != null) {
             try {
-                windowManager.removeView(floatingLyricView);
+                windowManager.removeView(sFloatingLyricView);
             } catch (Exception ignored) {}
-            floatingLyricView = null;
+            sFloatingLyricView = null;
         }
         isFloatingLyricsActive = false;
         isControlCardExpanded = false;
@@ -1237,7 +1212,7 @@ public class MainActivity extends Activity {
                 PackageInfo pInfo = getPackageManager().getPackageInfo(getPackageName(), 0);
                 return pInfo.versionName;
             } catch (Exception e) {
-                return "1.7.5";
+                return "1.7.7";
             }
         }
 
