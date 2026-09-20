@@ -1823,7 +1823,7 @@ body.in-pip-mode .view-player-full {
         <span class="settings-group-header">关于</span>
         <div class="group-menu-card">
           <div class="settings-item-row" onclick="toast(APP_CONFIG.name + ' · v' + APP_CONFIG.version + ' (' + APP_CONFIG.build + ')')">
-            <div class="settings-item-col"><span class="settings-title-line">关于灵犀</span><span class="settings-sub-desc" id="aboutAppVersionDesc">自用无损音乐播放器 · v1.8.0</span></div>
+            <div class="settings-item-col"><span class="settings-title-line">关于灵犀</span><span class="settings-sub-desc" id="aboutAppVersionDesc">自用无损音乐播放器 · v1.9.0</span></div>
           </div>
         </div>
         <span class="settings-group-header">系统与调试</span>
@@ -2775,6 +2775,7 @@ audioPlayer.preload = 'auto';
 const RING_PERIMETER = 2 * Math.PI * 22.5;
 
 function init() {
+  initNativeAudioEngine();
   initAudioEngine();
   renderVinylDiscs();
   renderSongList();
@@ -2955,6 +2956,87 @@ let isSeekingAudio = false;
 let seekLockTimer = null;
 const songRetryCounts = {};
 
+let isNativeAudioSupported = false;
+let nativeSyncTimer = null;
+
+function initNativeAudioEngine() {
+  isNativeAudioSupported = !!(window.AndroidBridge && window.AndroidBridge.isNativeAudioSupported && window.AndroidBridge.isNativeAudioSupported());
+  if (isNativeAudioSupported) {
+    if (nativeSyncTimer) clearInterval(nativeSyncTimer);
+    nativeSyncTimer = setInterval(() => {
+      if (isNativeAudioSupported && isPlaying) {
+        const pos = window.AndroidBridge.getNativePosition ? window.AndroidBridge.getNativePosition() : currentSec;
+        if (typeof pos === 'number' && pos >= 0 && !isSeekingAudio) {
+          currentSec = pos;
+        }
+        if (document.hidden) {
+          const needBg = isDesktopLyricsActive || (window.AndroidBridge && window.AndroidBridge.isDesktopLyricsActive && window.AndroidBridge.isDesktopLyricsActive());
+          if (needBg) {
+            syncCurrentLyricToDesktop();
+          }
+          return;
+        }
+        syncProgress();
+        updateLyricProgressSmooth();
+      }
+    }, 250);
+  }
+}
+
+window.onNativePlay = function() {
+  isPlaying = true;
+  updateUI();
+  startLyricSmoothSync();
+};
+
+window.onNativePause = function() {
+  isPlaying = false;
+  updateUI();
+  stopLyricSmoothSync();
+};
+
+window.onNativePrepared = function(durationSec) {
+  isPlaying = true;
+  const song = currentPlaybackQueue[currentIndex];
+  if (song && durationSec > 0) {
+    song.duration = Math.floor(durationSec);
+    const totalTimeEl = document.getElementById('totalTime');
+    if (totalTimeEl) totalTimeEl.textContent = formatTime(song.duration);
+    syncProgress();
+  }
+  updateUI();
+  startLyricSmoothSync();
+};
+
+window.onNativeCompletion = function() {
+  stopLyricSmoothSync();
+  handleTrackEnd();
+};
+
+window.onNativeSeekComplete = function() {
+  isSeekingAudio = false;
+  syncProgress();
+  updateLyricProgressSmooth();
+};
+
+window.onNativeError = function(what, extra) {
+  console.warn("Native MediaPlayer error:", what, extra);
+  const song = currentPlaybackQueue[currentIndex];
+  if (!song) return;
+  const isOnline = !!(song.onlineId || (song.fileUrl && song.fileUrl.startsWith('http')));
+  const retries = songRetryCounts[song.id] || 0;
+  if (isOnline && retries < 2) {
+    songRetryCounts[song.id] = retries + 1;
+    toast(`《${song.title}》正在自动切换高可用音源通道...`);
+    delete song.fileUrl;
+    resolveAndPlayOnlineSong(song, true);
+  } else {
+    toast(`《${song.title}》音源加载异常`);
+    isPlaying = false;
+    updateUI();
+  }
+};
+
 function initAudioEngine() {
   audioPlayer.addEventListener('timeupdate', () => {
     if (isSeekingAudio) return; // 寻道解码期间屏蔽旧时间戳，防止选句时被旧进度强行扯回上一句
@@ -3127,21 +3209,30 @@ function playSongAtQueue(idx) {
   }
 
   if (song.fileUrl) {
-    if (audioPlayer.src !== song.fileUrl) {
-      audioPlayer.src = song.fileUrl;
-      audioPlayer.load();
-    }
-    audioPlayer.currentTime = 0;
-    const playPromise = audioPlayer.play();
-    if (playPromise !== undefined) {
-      playPromise.then(() => {
-        isPlaying = true;
-        updateUI();
-      }).catch(err => {
-        console.warn("Autoplay block or stream pending", err);
-        isPlaying = false;
-        updateUI();
-      });
+    if (isNativeAudioSupported) {
+      if (audioPlayer && !audioPlayer.paused) {
+        try { audioPlayer.pause(); } catch(e) {}
+      }
+      window.AndroidBridge.playNativeAudio(song.fileUrl, 0);
+      isPlaying = true;
+      updateUI();
+    } else {
+      if (audioPlayer.src !== song.fileUrl) {
+        audioPlayer.src = song.fileUrl;
+        audioPlayer.load();
+      }
+      audioPlayer.currentTime = 0;
+      const playPromise = audioPlayer.play();
+      if (playPromise !== undefined) {
+        playPromise.then(() => {
+          isPlaying = true;
+          updateUI();
+        }).catch(err => {
+          console.warn("Autoplay block or stream pending", err);
+          isPlaying = false;
+          updateUI();
+        });
+      }
     }
   } else if (song.onlineId || song.title) {
     resolveAndPlayOnlineSong(song);
@@ -3160,14 +3251,24 @@ function playSong(idx) {
 function togglePlayState() {
   const song = currentPlaybackQueue[currentIndex];
   if (song && song.fileUrl) {
-    if (audioPlayer.paused) {
-      isPlaying = true;
-      audioPlayer.play().catch(err => {
-        console.warn("Play blocked:", err);
-      });
+    if (isNativeAudioSupported) {
+      if (isPlaying) {
+        window.AndroidBridge.pauseNativeAudio();
+        isPlaying = false;
+      } else {
+        window.AndroidBridge.resumeNativeAudio();
+        isPlaying = true;
+      }
     } else {
-      isPlaying = false;
-      audioPlayer.pause();
+      if (audioPlayer.paused) {
+        isPlaying = true;
+        audioPlayer.play().catch(err => {
+          console.warn("Play blocked:", err);
+        });
+      } else {
+        isPlaying = false;
+        audioPlayer.pause();
+      }
     }
   } else {
     isPlaying = !isPlaying;
@@ -3998,7 +4099,7 @@ function updateDynamicAppVersion(ver) {
       ver = window.AndroidBridge.getAppVersion();
     } catch(e) {}
   }
-  if (!ver) ver = '1.8.0';
+  if (!ver) ver = '1.9.0';
   APP_CONFIG.version = ver;
   const descEl = document.getElementById('aboutAppVersionDesc');
   if (descEl) {
@@ -4185,15 +4286,25 @@ function playNext() {
 
 function syncProgress() {
   if (isDraggingProgressBar) return;
+  if (document.hidden) return; // 切后台彻底跳过 DOM 刷新与样式重绘！
   const song = currentPlaybackQueue[currentIndex];
-  const duration = (song && song.duration > 0) ? song.duration : (!isNaN(audioPlayer.duration) && audioPlayer.duration > 0 ? audioPlayer.duration : 180);
-
-  if ((isPlaying || !audioPlayer.paused) && !isNaN(audioPlayer.currentTime) && audioPlayer.currentTime >= 0 && !isSeekingAudio) {
-    currentSec = audioPlayer.currentTime;
+  let duration = 180;
+  if (isNativeAudioSupported) {
+    const nd = window.AndroidBridge.getNativeDuration ? window.AndroidBridge.getNativeDuration() : 0;
+    duration = (song && song.duration > 0) ? song.duration : (nd > 0 ? nd : 180);
+    if (!isSeekingAudio) {
+      const np = window.AndroidBridge.getNativePosition ? window.AndroidBridge.getNativePosition() : currentSec;
+      if (typeof np === 'number' && np >= 0) currentSec = np;
+    }
+  } else {
+    duration = (song && song.duration > 0) ? song.duration : (!isNaN(audioPlayer.duration) && audioPlayer.duration > 0 ? audioPlayer.duration : 180);
+    if ((isPlaying || !audioPlayer.paused) && !isNaN(audioPlayer.currentTime) && audioPlayer.currentTime >= 0 && !isSeekingAudio) {
+      currentSec = audioPlayer.currentTime;
+    }
   }
 
-  if (song && (!song.duration || song.duration <= 0) && !isNaN(audioPlayer.duration) && audioPlayer.duration > 0) {
-    song.duration = Math.floor(audioPlayer.duration);
+  if (song && (!song.duration || song.duration <= 0) && duration > 0) {
+    song.duration = Math.floor(duration);
     const totalTimeEl = document.getElementById('totalTime');
     if (totalTimeEl) totalTimeEl.textContent = formatTime(song.duration);
   }
@@ -4237,7 +4348,9 @@ function updateUI() {
   }
   if (window.AndroidBridge && song) {
     try {
-      const curSec = (typeof audioPlayer !== 'undefined' && audioPlayer) ? (audioPlayer.currentTime || 0) : 0;
+      const curSec = isNativeAudioSupported
+        ? (window.AndroidBridge.getNativePosition ? window.AndroidBridge.getNativePosition() : currentSec)
+        : ((typeof audioPlayer !== 'undefined' && audioPlayer) ? (audioPlayer.currentTime || 0) : 0);
       const durSec = song.duration || 180;
       const isFav = !!song.isFav;
       if (window.AndroidBridge.updateMediaCardFull) {
@@ -5455,8 +5568,12 @@ function seekToLyricLine(time, e, explicitIdx) {
   }
 
   const curSong = currentPlaybackQueue[currentIndex];
-  if (curSong && curSong.fileUrl && !isNaN(audioPlayer.duration) && audioPlayer.duration > 0) {
-    audioPlayer.currentTime = currentSec;
+  if (curSong && curSong.fileUrl) {
+    if (isNativeAudioSupported) {
+      window.AndroidBridge.seekNativeAudio(currentSec);
+    } else if (!isNaN(audioPlayer.duration) && audioPlayer.duration > 0) {
+      audioPlayer.currentTime = currentSec;
+    }
   }
   syncProgress();
   updateLyricProgress(explicitIdx);
@@ -5481,9 +5598,18 @@ let bgLyricInterval = null;
 function startLyricSmoothSync() {
   if (lyricRafId) cancelAnimationFrame(lyricRafId);
   function tick() {
-    if (isPlaying && !audioPlayer.paused && !document.hidden) {
-      if (!isSeekingAudio && !isNaN(audioPlayer.currentTime) && audioPlayer.currentTime >= 0) {
-        currentSec = audioPlayer.currentTime;
+    if (isPlaying && !document.hidden) {
+      if (!isNativeAudioSupported && audioPlayer.paused) {
+        lyricRafId = null;
+        return;
+      }
+      if (!isSeekingAudio) {
+        if (isNativeAudioSupported) {
+          const np = window.AndroidBridge.getNativePosition ? window.AndroidBridge.getNativePosition() : currentSec;
+          if (typeof np === 'number' && np >= 0) currentSec = np;
+        } else if (!isNaN(audioPlayer.currentTime) && audioPlayer.currentTime >= 0) {
+          currentSec = audioPlayer.currentTime;
+        }
       }
       syncProgress();
       updateLyricProgressSmooth();
@@ -5506,7 +5632,7 @@ document.addEventListener('visibilitychange', () => {
     }
     // 关键优化：若未开启桌面悬浮歌词，切后台时坚决不运行高频定时器与 DOM 计算，节省 100% CPU 给底层音频解码！
     const needBgLyrics = isDesktopLyricsActive || (window.AndroidBridge && window.AndroidBridge.isDesktopLyricsActive && window.AndroidBridge.isDesktopLyricsActive());
-    if (needBgLyrics && !bgLyricInterval && isPlaying) {
+    if (needBgLyrics && !bgLyricInterval && isPlaying && !isNativeAudioSupported) {
       bgLyricInterval = setInterval(() => {
         if (isPlaying && audioPlayer && !audioPlayer.paused) {
           if (!isSeekingAudio && !isNaN(audioPlayer.currentTime) && audioPlayer.currentTime >= 0) {
@@ -5521,7 +5647,11 @@ document.addEventListener('visibilitychange', () => {
       clearInterval(bgLyricInterval);
       bgLyricInterval = null;
     }
-    if (isPlaying && !audioPlayer.paused) {
+    if (isPlaying) {
+      if (isNativeAudioSupported && window.AndroidBridge.getNativePosition) {
+        const np = window.AndroidBridge.getNativePosition();
+        if (typeof np === 'number' && np >= 0) currentSec = np;
+      }
       syncProgress();
       startLyricSmoothSync();
     }
@@ -5551,8 +5681,11 @@ let LYRIC_AUDIO_OFFSET = -0.35;
 let lastInterludeNextIdx = -1;
 
 function updateLyricProgressSmooth(forcedIdx) {
+  if (document.hidden) return; // 切后台彻底跳过歌词 DOM 渲染与重排计算！
   if (!LYRICS_DATA || LYRICS_DATA.length === 0) return;
-  const rawTime = (!isSeekingAudio && !isNaN(audioPlayer.currentTime) && audioPlayer.currentTime > 0) ? audioPlayer.currentTime : currentSec;
+  const rawTime = isNativeAudioSupported
+    ? (window.AndroidBridge.getNativePosition ? window.AndroidBridge.getNativePosition() : currentSec)
+    : ((!isSeekingAudio && !isNaN(audioPlayer.currentTime) && audioPlayer.currentTime > 0) ? audioPlayer.currentTime : currentSec);
   const curTime = Math.max(0, rawTime + LYRIC_AUDIO_OFFSET);
 
   let activeIdx = -1;
@@ -6456,18 +6589,28 @@ async function resolveAndPlayOnlineSong(song, isRetry = false) {
 
     // 5. 播放音频流
     stopPlaybackLoop();
-    audioPlayer.src = audioUrl;
-    audioPlayer.load();
-    audioPlayer.currentTime = 0;
-    const playPromise = audioPlayer.play();
-    if (playPromise !== undefined) {
-      playPromise.then(() => {
-        isPlaying = true;
-        songRetryCounts[song.id] = 0;
-        updateUI();
-      }).catch(err => {
-        console.warn("Autoplay block or user interaction required:", err);
-      });
+    if (isNativeAudioSupported) {
+      if (audioPlayer && !audioPlayer.paused) {
+        try { audioPlayer.pause(); } catch(e) {}
+      }
+      window.AndroidBridge.playNativeAudio(audioUrl, 0);
+      isPlaying = true;
+      songRetryCounts[song.id] = 0;
+      updateUI();
+    } else {
+      audioPlayer.src = audioUrl;
+      audioPlayer.load();
+      audioPlayer.currentTime = 0;
+      const playPromise = audioPlayer.play();
+      if (playPromise !== undefined) {
+        playPromise.then(() => {
+          isPlaying = true;
+          songRetryCounts[song.id] = 0;
+          updateUI();
+        }).catch(err => {
+          console.warn("Autoplay block or user interaction required:", err);
+        });
+      }
     }
 
     updateMediaSession(song);
@@ -6598,7 +6741,9 @@ function syncCurrentLyricToDesktop() {
       curTxt = `${curSong.title} · ${curSong.artist}`;
     }
     if (LYRICS_DATA && LYRICS_DATA.length > 0) {
-      const rawTime = (!isSeekingAudio && !isNaN(audioPlayer.currentTime) && audioPlayer.currentTime > 0) ? audioPlayer.currentTime : currentSec;
+      const rawTime = isNativeAudioSupported
+        ? (window.AndroidBridge.getNativePosition ? window.AndroidBridge.getNativePosition() : currentSec)
+        : ((!isSeekingAudio && !isNaN(audioPlayer.currentTime) && audioPlayer.currentTime > 0) ? audioPlayer.currentTime : currentSec);
       const curTime = Math.max(0, rawTime + LYRIC_AUDIO_OFFSET);
       let matchIdx = -1;
       for (let i = 0; i < LYRICS_DATA.length; i++) {
@@ -6631,7 +6776,9 @@ window.seekToNextLyricLine = function() {
   if (targetIdx >= LYRICS_DATA.length) targetIdx = LYRICS_DATA.length - 1;
   const targetTime = LYRICS_DATA[targetIdx].time;
   currentSec = targetTime;
-  if (audioPlayer) {
+  if (isNativeAudioSupported) {
+    window.AndroidBridge.seekNativeAudio(targetTime);
+  } else if (audioPlayer) {
     audioPlayer.currentTime = targetTime;
   }
   updateLyricProgressSmooth(targetIdx);
@@ -6644,7 +6791,9 @@ window.seekToPrevLyricLine = function() {
   let targetIdx = (lastActiveIdx > 0) ? (lastActiveIdx - 1) : 0;
   const targetTime = LYRICS_DATA[targetIdx].time;
   currentSec = targetTime;
-  if (audioPlayer) {
+  if (isNativeAudioSupported) {
+    window.AndroidBridge.seekNativeAudio(targetTime);
+  } else if (audioPlayer) {
     audioPlayer.currentTime = targetTime;
   }
   updateLyricProgressSmooth(targetIdx);
@@ -6745,7 +6894,9 @@ function initProgressBarDrag() {
     if (isCommit) {
       currentSec = targetSec;
       isSeekingAudio = true;
-      if (!isNaN(audioPlayer.duration) && audioPlayer.duration > 0) {
+      if (isNativeAudioSupported) {
+        window.AndroidBridge.seekNativeAudio(targetSec);
+      } else if (!isNaN(audioPlayer.duration) && audioPlayer.duration > 0) {
         try {
           audioPlayer.currentTime = targetSec;
         } catch(err) {

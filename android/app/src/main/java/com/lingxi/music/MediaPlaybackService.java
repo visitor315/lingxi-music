@@ -16,9 +16,12 @@ import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.RectF;
+import android.media.AudioAttributes;
+import android.media.MediaPlayer;
 import android.media.MediaMetadata;
 import android.media.session.MediaSession;
 import android.media.session.PlaybackState;
+import android.net.Uri;
 import android.net.wifi.WifiManager;
 import android.os.Build;
 import android.os.IBinder;
@@ -39,6 +42,10 @@ public class MediaPlaybackService extends Service {
     public static final String ACTION_FAV = "com.lingxi.music.ACTION_FAV";
     public static final String ACTION_LYRICS = "com.lingxi.music.ACTION_LYRICS";
     public static final String ACTION_UPDATE_STATE = "com.lingxi.music.ACTION_UPDATE_STATE";
+    public static final String ACTION_PLAY_URL = "com.lingxi.music.ACTION_PLAY_URL";
+    public static final String ACTION_PAUSE = "com.lingxi.music.ACTION_PAUSE";
+    public static final String ACTION_RESUME = "com.lingxi.music.ACTION_RESUME";
+    public static final String ACTION_SEEK = "com.lingxi.music.ACTION_SEEK";
 
     private static MediaPlaybackService sInstance = null;
     public static MediaPlaybackService getInstance() { return sInstance; }
@@ -48,6 +55,12 @@ public class MediaPlaybackService extends Service {
     private PowerManager.WakeLock wakeLock;
     private WifiManager.WifiLock wifiLock;
     private Bitmap defaultCoverBitmap = null;
+
+    private MediaPlayer mediaPlayer = null;
+    private String currentAudioUrl = "";
+    private boolean isPrepared = false;
+    private boolean isPreparing = false;
+    private long pendingSeekMs = -1;
 
     private String currentTitle = "灵犀音乐";
     private String currentArtist = "随心听";
@@ -119,11 +132,11 @@ public class MediaPlaybackService extends Service {
             mediaSession.setCallback(new MediaSession.Callback() {
                 @Override
                 public void onPlay() {
-                    MainActivity.dispatchWebAction("togglePlayState()");
+                    resumePlayback();
                 }
                 @Override
                 public void onPause() {
-                    MainActivity.dispatchWebAction("togglePlayState()");
+                    pausePlayback();
                 }
                 @Override
                 public void onSkipToNext() {
@@ -135,12 +148,183 @@ public class MediaPlaybackService extends Service {
                 }
                 @Override
                 public void onSeekTo(long pos) {
-                    double sec = pos / 1000.0;
-                    MainActivity.dispatchWebAction("if (audioPlayer) { audioPlayer.currentTime = " + sec + "; syncProgress(); updateLyricProgressSmooth(); }");
+                    seekTo(pos);
                 }
             });
             mediaSession.setActive(true);
         }
+    }
+
+    private synchronized void initMediaPlayerIfNeeded() {
+        if (mediaPlayer == null) {
+            mediaPlayer = new MediaPlayer();
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                AudioAttributes attrs = new AudioAttributes.Builder()
+                        .setUsage(AudioAttributes.USAGE_MEDIA)
+                        .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                        .build();
+                mediaPlayer.setAudioAttributes(attrs);
+            }
+            try {
+                mediaPlayer.setWakeMode(getApplicationContext(), PowerManager.PARTIAL_WAKE_LOCK);
+            } catch (Exception ignored) {}
+
+            mediaPlayer.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
+                @Override
+                public void onPrepared(MediaPlayer mp) {
+                    isPrepared = true;
+                    isPreparing = false;
+                    if (pendingSeekMs > 0) {
+                        try {
+                            mp.seekTo((int) pendingSeekMs);
+                        } catch (Exception ignored) {}
+                        pendingSeekMs = -1;
+                    }
+                    try {
+                        mp.start();
+                        isPlaying = true;
+                        durationMs = mp.getDuration();
+                        acquireLocks();
+                        buildAndPostNotification(currentCoverBitmap != null ? currentCoverBitmap : getRoundedDefaultCover());
+                        MainActivity.dispatchWebAction("if (window.onNativePrepared) window.onNativePrepared(" + (durationMs / 1000.0) + ");");
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+            });
+
+            mediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
+                @Override
+                public void onCompletion(MediaPlayer mp) {
+                    isPlaying = false;
+                    releaseLocks();
+                    buildAndPostNotification(currentCoverBitmap != null ? currentCoverBitmap : getRoundedDefaultCover());
+                    MainActivity.dispatchWebAction("if (window.onNativeCompletion) window.onNativeCompletion(); else if (typeof handleTrackEnd === 'function') handleTrackEnd();");
+                }
+            });
+
+            mediaPlayer.setOnErrorListener(new MediaPlayer.OnErrorListener() {
+                @Override
+                public boolean onError(MediaPlayer mp, int what, int extra) {
+                    isPrepared = false;
+                    isPreparing = false;
+                    isPlaying = false;
+                    releaseLocks();
+                    MainActivity.dispatchWebAction("if (window.onNativeError) window.onNativeError(" + what + ", " + extra + ");");
+                    return true;
+                }
+            });
+
+            mediaPlayer.setOnSeekCompleteListener(new MediaPlayer.OnSeekCompleteListener() {
+                @Override
+                public void onSeekComplete(MediaPlayer mp) {
+                    MainActivity.dispatchWebAction("if (window.onNativeSeekComplete) window.onNativeSeekComplete();");
+                }
+            });
+        }
+    }
+
+    public synchronized void playUrl(String url, long seekMs) {
+        if (url == null || url.isEmpty()) return;
+        initMediaPlayerIfNeeded();
+
+        if (url.equals(currentAudioUrl) && isPrepared) {
+            try {
+                if (seekMs >= 0) {
+                    mediaPlayer.seekTo((int) seekMs);
+                }
+                mediaPlayer.start();
+                isPlaying = true;
+                acquireLocks();
+                buildAndPostNotification(currentCoverBitmap != null ? currentCoverBitmap : getRoundedDefaultCover());
+                MainActivity.dispatchWebAction("if (window.onNativePlay) window.onNativePlay();");
+                return;
+            } catch (Exception ignored) {}
+        }
+
+        currentAudioUrl = url;
+        pendingSeekMs = seekMs;
+        isPrepared = false;
+        isPreparing = true;
+
+        try {
+            mediaPlayer.reset();
+            if (url.startsWith("content://")) {
+                mediaPlayer.setDataSource(getApplicationContext(), Uri.parse(url));
+            } else {
+                mediaPlayer.setDataSource(url);
+            }
+            mediaPlayer.prepareAsync();
+        } catch (Exception e) {
+            e.printStackTrace();
+            isPreparing = false;
+            MainActivity.dispatchWebAction("if (window.onNativeError) window.onNativeError(-1, -1);");
+        }
+    }
+
+    public synchronized void pausePlayback() {
+        if (mediaPlayer != null && isPrepared) {
+            try {
+                if (mediaPlayer.isPlaying()) {
+                    mediaPlayer.pause();
+                }
+            } catch (Exception ignored) {}
+        }
+        isPlaying = false;
+        releaseLocks();
+        buildAndPostNotification(currentCoverBitmap != null ? currentCoverBitmap : getRoundedDefaultCover());
+        MainActivity.dispatchWebAction("if (window.onNativePause) window.onNativePause();");
+    }
+
+    public synchronized void resumePlayback() {
+        if (mediaPlayer != null && isPrepared) {
+            try {
+                mediaPlayer.start();
+                isPlaying = true;
+                acquireLocks();
+                buildAndPostNotification(currentCoverBitmap != null ? currentCoverBitmap : getRoundedDefaultCover());
+                MainActivity.dispatchWebAction("if (window.onNativePlay) window.onNativePlay();");
+                return;
+            } catch (Exception ignored) {}
+        }
+        MainActivity.dispatchWebAction("togglePlayState()");
+    }
+
+    public synchronized void seekTo(long posMs) {
+        if (mediaPlayer != null && isPrepared) {
+            try {
+                mediaPlayer.seekTo((int) posMs);
+            } catch (Exception ignored) {}
+        } else {
+            pendingSeekMs = posMs;
+        }
+    }
+
+    public synchronized long getCurrentPositionMs() {
+        if (mediaPlayer != null && isPrepared) {
+            try {
+                return mediaPlayer.getCurrentPosition();
+            } catch (Exception ignored) {}
+        }
+        return currentPositionMs;
+    }
+
+    public synchronized long getDurationMs() {
+        if (mediaPlayer != null && isPrepared) {
+            try {
+                return mediaPlayer.getDuration();
+            } catch (Exception ignored) {}
+        }
+        return durationMs;
+    }
+
+    public synchronized boolean isNativePlaying() {
+        if (mediaPlayer != null && isPrepared) {
+            try {
+                return mediaPlayer.isPlaying();
+            } catch (Exception ignored) {}
+        }
+        return isPlaying;
     }
 
     @Override
@@ -156,7 +340,15 @@ public class MediaPlaybackService extends Service {
         if (ACTION_FAV.equals(action)) {
             MainActivity.dispatchWebAction("toggleSongFavFromNotification()");
         } else if (ACTION_PLAY_PAUSE.equals(action)) {
-            MainActivity.dispatchWebAction("togglePlayState()");
+            if (mediaPlayer != null && isPrepared) {
+                if (mediaPlayer.isPlaying()) {
+                    pausePlayback();
+                } else {
+                    resumePlayback();
+                }
+            } else {
+                MainActivity.dispatchWebAction("togglePlayState()");
+            }
         } else if (ACTION_PREV.equals(action)) {
             MainActivity.dispatchWebAction("playPrev()");
         } else if (ACTION_NEXT.equals(action)) {
@@ -165,6 +357,17 @@ public class MediaPlaybackService extends Service {
             if (MainActivity.getInstance() != null) {
                 MainActivity.getInstance().toggleDesktopLyrics();
             }
+        } else if (ACTION_PLAY_URL.equals(action)) {
+            String url = intent.getStringExtra("url");
+            long seek = intent.getLongExtra("seekMs", 0);
+            playUrl(url, seek);
+        } else if (ACTION_PAUSE.equals(action)) {
+            pausePlayback();
+        } else if (ACTION_RESUME.equals(action)) {
+            resumePlayback();
+        } else if (ACTION_SEEK.equals(action)) {
+            long seek = intent.getLongExtra("seekMs", 0);
+            seekTo(seek);
         } else if (ACTION_UPDATE_STATE.equals(action)) {
             currentTitle = intent.getStringExtra("title");
             if (currentTitle == null) currentTitle = "灵犀音乐";
@@ -410,6 +613,13 @@ public class MediaPlaybackService extends Service {
         super.onDestroy();
         sInstance = null;
         releaseLocks();
+        if (mediaPlayer != null) {
+            try {
+                if (mediaPlayer.isPlaying()) mediaPlayer.stop();
+                mediaPlayer.release();
+            } catch (Exception ignored) {}
+            mediaPlayer = null;
+        }
         if (mediaSession != null) {
             mediaSession.setActive(false);
             mediaSession.release();

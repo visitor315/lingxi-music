@@ -198,7 +198,7 @@ public class MainActivity extends Activity {
             @Override
             public void onPageFinished(WebView view, String url) {
                 super.onPageFinished(view, url);
-                String ver = "1.8.0";
+                String ver = "1.9.0";
                 try {
                     ver = getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
                 } catch (Exception ignored) {}
@@ -246,6 +246,18 @@ public class MainActivity extends Activity {
         webView.loadUrl("file:///android_asset/index.html");
 
         checkNotificationPermission();
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            try {
+                android.os.PowerManager pm = (android.os.PowerManager) getSystemService(Context.POWER_SERVICE);
+                if (pm != null && !pm.isIgnoringBatteryOptimizations(getPackageName())) {
+                    Intent bIntent = new Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
+                    bIntent.setData(Uri.parse("package:" + getPackageName()));
+                    startActivity(bIntent);
+                }
+            } catch (Exception ignored) {}
+        }
+
         handleIntentAction(getIntent());
     }
 
@@ -1226,13 +1238,134 @@ public class MainActivity extends Activity {
                 PackageInfo pInfo = getPackageManager().getPackageInfo(getPackageName(), 0);
                 return pInfo.versionName;
             } catch (Exception e) {
-                return "1.8.0";
+                return "1.9.0";
             }
         }
 
         @JavascriptInterface
         public void scanLocalMusic() {
             MainActivity.this.scanLocalMusic();
+        }
+
+        @JavascriptInterface
+        public boolean isNativeAudioSupported() {
+            return true;
+        }
+
+        @JavascriptInterface
+        public void playNativeAudio(final String url, final double seekSec) {
+            final long seekMs = (long) (seekSec * 1000);
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    MediaPlaybackService service = MediaPlaybackService.getInstance();
+                    if (service != null) {
+                        service.playUrl(url, seekMs);
+                    } else {
+                        Intent intent = new Intent(MainActivity.this, MediaPlaybackService.class);
+                        intent.setAction(MediaPlaybackService.ACTION_PLAY_URL);
+                        intent.putExtra("url", url);
+                        intent.putExtra("seekMs", seekMs);
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                            startForegroundService(intent);
+                        } else {
+                            startService(intent);
+                        }
+                    }
+                }
+            });
+        }
+
+        @JavascriptInterface
+        public void pauseNativeAudio() {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    MediaPlaybackService service = MediaPlaybackService.getInstance();
+                    if (service != null) {
+                        service.pausePlayback();
+                    } else {
+                        Intent intent = new Intent(MainActivity.this, MediaPlaybackService.class);
+                        intent.setAction(MediaPlaybackService.ACTION_PAUSE);
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                            startForegroundService(intent);
+                        } else {
+                            startService(intent);
+                        }
+                    }
+                }
+            });
+        }
+
+        @JavascriptInterface
+        public void resumeNativeAudio() {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    MediaPlaybackService service = MediaPlaybackService.getInstance();
+                    if (service != null) {
+                        service.resumePlayback();
+                    } else {
+                        Intent intent = new Intent(MainActivity.this, MediaPlaybackService.class);
+                        intent.setAction(MediaPlaybackService.ACTION_RESUME);
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                            startForegroundService(intent);
+                        } else {
+                            startService(intent);
+                        }
+                    }
+                }
+            });
+        }
+
+        @JavascriptInterface
+        public void seekNativeAudio(final double seekSec) {
+            final long seekMs = (long) (seekSec * 1000);
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    MediaPlaybackService service = MediaPlaybackService.getInstance();
+                    if (service != null) {
+                        service.seekTo(seekMs);
+                    } else {
+                        Intent intent = new Intent(MainActivity.this, MediaPlaybackService.class);
+                        intent.setAction(MediaPlaybackService.ACTION_SEEK);
+                        intent.putExtra("seekMs", seekMs);
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                            startForegroundService(intent);
+                        } else {
+                            startService(intent);
+                        }
+                    }
+                }
+            });
+        }
+
+        @JavascriptInterface
+        public double getNativePosition() {
+            MediaPlaybackService service = MediaPlaybackService.getInstance();
+            if (service != null) {
+                return service.getCurrentPositionMs() / 1000.0;
+            }
+            return 0.0;
+        }
+
+        @JavascriptInterface
+        public double getNativeDuration() {
+            MediaPlaybackService service = MediaPlaybackService.getInstance();
+            if (service != null) {
+                return service.getDurationMs() / 1000.0;
+            }
+            return 0.0;
+        }
+
+        @JavascriptInterface
+        public boolean isNativePlaying() {
+            MediaPlaybackService service = MediaPlaybackService.getInstance();
+            if (service != null) {
+                return service.isNativePlaying();
+            }
+            return false;
         }
     }
 
