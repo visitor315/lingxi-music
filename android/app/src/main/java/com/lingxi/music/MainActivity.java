@@ -32,6 +32,7 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
 import android.provider.Settings;
+import android.text.TextUtils;
 import android.util.Base64;
 import android.util.Rational;
 import android.util.TypedValue;
@@ -271,6 +272,27 @@ public class MainActivity extends Activity {
         super.onNewIntent(intent);
         setIntent(intent);
         handleIntentAction(intent);
+        handleIntentNavigation(intent);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        handleIntentNavigation(getIntent());
+    }
+
+    private void handleIntentNavigation(Intent intent) {
+        if (intent != null && "settings".equals(intent.getStringExtra("navigate_to"))) {
+            intent.removeExtra("navigate_to");
+            if (webView != null) {
+                webView.postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        webView.evaluateJavascript("if (typeof closePlayerFull === 'function') closePlayerFull(); if (typeof switchBottomTab === 'function') switchBottomTab('settings');", null);
+                    }
+                }, 200);
+            }
+        }
     }
 
     private void handleIntentAction(Intent intent) {
@@ -588,35 +610,29 @@ public class MainActivity extends Activity {
         isControlCardExpanded = expanded;
         if (floatingRootLayout == null) return;
 
+        int cardPadH = dp2px(16);
+        int cardPadTop = dp2px(10);
+        int cardPadBottom = dp2px(12);
+
         if (expanded) {
             GradientDrawable cardBg = new GradientDrawable();
-            cardBg.setColor(Color.parseColor("#E6202022")); // 概念版哑光深灰半透明，绝无突兀白边
+            cardBg.setColor(Color.parseColor("#E6202022")); // 概念版哑光深灰半透明
             cardBg.setCornerRadius(dp2px(18));
             cardBg.setStroke(dp2px(1), Color.parseColor("#1FFFFFFF")); // 微光细描边
             floatingRootLayout.setBackground(cardBg);
-            floatingRootLayout.setPadding(dp2px(16), dp2px(12), dp2px(16), dp2px(14));
+            floatingRootLayout.setPadding(cardPadH, cardPadTop, cardPadH, cardPadBottom);
 
             if (floatingHeaderLayout != null) floatingHeaderLayout.setVisibility(View.VISIBLE);
             if (floatingControlsLayout != null) floatingControlsLayout.setVisibility(View.VISIBLE);
-
-            if (floatingParams != null) {
-                int cardWidth = Math.min(getResources().getDisplayMetrics().widthPixels - dp2px(36), dp2px(330));
-                floatingParams.width = cardWidth;
-                floatingParams.x = 0; // 严禁左右偏移，保持居中
-            }
             resetAutoCollapseTimer();
         } else {
             if (floatingHandler != null) floatingHandler.removeCallbacks(autoCollapseRunnable);
             floatingRootLayout.setBackground(null); // 平时完全纯净无框无背景
-            floatingRootLayout.setPadding(dp2px(6), dp2px(2), dp2px(6), dp2px(2));
+            floatingRootLayout.setPadding(cardPadH, cardPadTop, cardPadH, cardPadBottom);
 
-            if (floatingHeaderLayout != null) floatingHeaderLayout.setVisibility(View.GONE);
+            // 关键：平时态使用 INVISIBLE 保持顶部栏占位高度，确保歌词文字垂直坐标绝对固定，点击展开时绝不向下移动！
+            if (floatingHeaderLayout != null) floatingHeaderLayout.setVisibility(View.INVISIBLE);
             if (floatingControlsLayout != null) floatingControlsLayout.setVisibility(View.GONE);
-
-            if (floatingParams != null) {
-                floatingParams.width = WindowManager.LayoutParams.WRAP_CONTENT;
-                floatingParams.x = 0; // 严禁左右偏移，保持居中
-            }
         }
 
         if (windowManager != null && floatingLyricView != null && floatingParams != null) {
@@ -640,15 +656,9 @@ public class MainActivity extends Activity {
         floatingRootLayout = new LinearLayout(this);
         floatingRootLayout.setOrientation(LinearLayout.VERTICAL);
         floatingRootLayout.setGravity(Gravity.CENTER_HORIZONTAL);
+        // 彻底移除任何可能导致左滑、右滑或下移的 LayoutTransition 动画，确保卡片直接纯粹呈现，位置完全锁死
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
-            LayoutTransition transition = new LayoutTransition();
-            transition.enableTransitionType(LayoutTransition.CHANGING);
-            transition.setDuration(200);
-            floatingRootLayout.setLayoutTransition(transition);
-        }
-
-        // 1. 顶部栏 (操作态才显示)
+        // 1. 顶部栏 (平时为 INVISIBLE 占位，展开时为 VISIBLE)
         floatingHeaderLayout = new LinearLayout(this);
         floatingHeaderLayout.setOrientation(LinearLayout.HORIZONTAL);
         floatingHeaderLayout.setGravity(Gravity.CENTER_VERTICAL);
@@ -667,9 +677,39 @@ public class MainActivity extends Activity {
                 }
             });
         }
-        int logoSize = dp2px(20);
+        int logoSize = dp2px(22);
         LinearLayout.LayoutParams logoLp = new LinearLayout.LayoutParams(logoSize, logoSize);
         ivLogo.setLayoutParams(logoLp);
+        ivLogo.setClickable(true);
+        ivLogo.setFocusable(true);
+        ivLogo.setBackground(null);
+        ivLogo.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                    v.setAlpha(0.55f);
+                    v.setScaleX(0.92f);
+                    v.setScaleY(0.92f);
+                } else if (event.getAction() == MotionEvent.ACTION_UP || event.getAction() == MotionEvent.ACTION_CANCEL) {
+                    v.setAlpha(1.0f);
+                    v.setScaleX(1.0f);
+                    v.setScaleY(1.0f);
+                }
+                return false;
+            }
+        });
+        // 点击小猫咪图标直接返回并进入灵犀音乐应用
+        ivLogo.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent appIntent = new Intent(MainActivity.this, MainActivity.class);
+                appIntent.setAction(Intent.ACTION_MAIN);
+                appIntent.addCategory(Intent.CATEGORY_LAUNCHER);
+                appIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
+                startActivity(appIntent);
+                setFloatingCardExpanded(false);
+            }
+        });
         floatingHeaderLayout.addView(ivLogo);
 
         View spacer = new View(this);
@@ -703,11 +743,13 @@ public class MainActivity extends Activity {
         floatingHeaderLayout.addView(ivClose);
         floatingRootLayout.addView(floatingHeaderLayout);
 
-        // 2. 核心歌词区 (始终居中，无阴影，清晰锐利排版)
+        // 2. 核心歌词区 (始终居中，单行防换行，清晰锐利排版)
         LinearLayout lyricsBody = new LinearLayout(this);
         lyricsBody.setOrientation(LinearLayout.VERTICAL);
         lyricsBody.setGravity(Gravity.CENTER_HORIZONTAL);
-        lyricsBody.setPadding(dp2px(8), dp2px(4), dp2px(8), dp2px(4));
+        lyricsBody.setLayoutParams(new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        lyricsBody.setPadding(dp2px(4), dp2px(2), dp2px(4), dp2px(4));
 
         floatingTvCurrent = new TextView(this);
         floatingTvCurrent.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15.5f);
@@ -718,6 +760,8 @@ public class MainActivity extends Activity {
         }
         floatingTvCurrent.setTypeface(Typeface.DEFAULT_BOLD);
         floatingTvCurrent.setGravity(Gravity.CENTER);
+        floatingTvCurrent.setSingleLine(true);
+        floatingTvCurrent.setEllipsize(TextUtils.TruncateAt.END);
         floatingTvCurrent.setShadowLayer(0, 0, 0, 0); // 纯净现代风
         floatingTvCurrent.setText(currentFloatingLyricText);
         lyricsBody.addView(floatingTvCurrent);
@@ -726,11 +770,15 @@ public class MainActivity extends Activity {
         floatingTvSub.setTextSize(TypedValue.COMPLEX_UNIT_SP, 11.5f);
         floatingTvSub.setTextColor(Color.parseColor("#A0FFFFFF"));
         floatingTvSub.setGravity(Gravity.CENTER);
+        floatingTvSub.setSingleLine(true);
+        floatingTvSub.setEllipsize(TextUtils.TruncateAt.END);
         floatingTvSub.setShadowLayer(0, 0, 0, 0);
         floatingTvSub.setText(currentFloatingSubLyricText);
         floatingTvSub.setPadding(0, dp2px(2), 0, 0);
         if (currentFloatingSubLyricText == null || currentFloatingSubLyricText.isEmpty()) {
-            floatingTvSub.setVisibility(View.GONE);
+            floatingTvSub.setVisibility(View.INVISIBLE); // 保持占位高度，杜绝单双行切换导致卡片高度晃动
+        } else {
+            floatingTvSub.setVisibility(View.VISIBLE);
         }
         lyricsBody.addView(floatingTvSub);
         floatingRootLayout.addView(lyricsBody);
@@ -779,7 +827,10 @@ public class MainActivity extends Activity {
             @Override
             public void onClick(View v) {
                 Intent appIntent = new Intent(MainActivity.this, MainActivity.class);
-                appIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                appIntent.setAction(Intent.ACTION_MAIN);
+                appIntent.addCategory(Intent.CATEGORY_LAUNCHER);
+                appIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
+                appIntent.putExtra("navigate_to", "settings");
                 startActivity(appIntent);
                 setFloatingCardExpanded(false);
                 dispatchWebAction("if (typeof closePlayerFull === 'function') closePlayerFull(); if (typeof switchBottomTab === 'function') switchBottomTab('settings');");
@@ -807,8 +858,11 @@ public class MainActivity extends Activity {
             layoutType = WindowManager.LayoutParams.TYPE_PHONE;
         }
 
+        int screenWidth = getResources().getDisplayMetrics().widthPixels;
+        int cardWidth = Math.min(screenWidth - dp2px(36), dp2px(330));
+
         floatingParams = new WindowManager.LayoutParams(
-                WindowManager.LayoutParams.WRAP_CONTENT,
+                cardWidth,
                 WindowManager.LayoutParams.WRAP_CONTENT,
                 layoutType,
                 WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE | WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
@@ -891,7 +945,7 @@ public class MainActivity extends Activity {
             }
         });
 
-        // 初始设为平时纯净无框态
+        // 初始设为平时纯净无框态（顶部栏 INVISIBLE，底栏 GONE，文字位置完全居中固定）
         setFloatingCardExpanded(false);
 
         try {
@@ -951,7 +1005,8 @@ public class MainActivity extends Activity {
                         floatingTvSub.setText(currentFloatingSubLyricText);
                         floatingTvSub.setVisibility(View.VISIBLE);
                     } else {
-                        floatingTvSub.setVisibility(View.GONE);
+                        floatingTvSub.setText("");
+                        floatingTvSub.setVisibility(View.INVISIBLE);
                     }
                 }
                 updateFloatingFavState();

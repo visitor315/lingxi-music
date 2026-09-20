@@ -2958,8 +2958,9 @@ function initAudioEngine() {
     if (isSeekingAudio) return; // 寻道解码期间屏蔽旧时间戳，防止选句时被旧进度强行扯回上一句
     if (isPlaying && !isNaN(audioPlayer.currentTime) && audioPlayer.currentTime > 0) {
       currentSec = audioPlayer.currentTime;
-      // 仅用作低频兜底：平滑同步帧在活跃时优先由 rAF 驱动以获得丝滑质感
-      if (!lyricRafId && isPlaying) startLyricSmoothSync();
+      // 无论在前台还是后台，timeupdate 事件始终稳定触发，持续驱动桌面悬浮歌词随播放滚动
+      updateLyricProgressSmooth();
+      if (!lyricRafId && isPlaying && !document.hidden) startLyricSmoothSync();
     }
   });
 
@@ -5399,24 +5400,56 @@ function playAtTargetLyric(e) {
 }
 
 let lyricRafId = null;
+let bgLyricInterval = null;
 
 function startLyricSmoothSync() {
   if (lyricRafId) cancelAnimationFrame(lyricRafId);
   function tick() {
-    if (isPlaying && !audioPlayer.paused) {
+    if (isPlaying && !audioPlayer.paused && !document.hidden) {
       updateLyricProgressSmooth();
       lyricRafId = requestAnimationFrame(tick);
     } else {
       lyricRafId = null;
     }
   }
-  lyricRafId = requestAnimationFrame(tick);
+  if (!document.hidden) {
+    lyricRafId = requestAnimationFrame(tick);
+  }
 }
+
+// 监听切到后台/桌面状态：rAF 会被 Chromium 挂起，此时启动高频定时器持续驱动桌面悬浮歌词滚动
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    if (lyricRafId) {
+      cancelAnimationFrame(lyricRafId);
+      lyricRafId = null;
+    }
+    if (!bgLyricInterval && isPlaying) {
+      bgLyricInterval = setInterval(() => {
+        if (isPlaying && audioPlayer && !audioPlayer.paused) {
+          updateLyricProgressSmooth();
+        }
+      }, 250);
+    }
+  } else {
+    if (bgLyricInterval) {
+      clearInterval(bgLyricInterval);
+      bgLyricInterval = null;
+    }
+    if (isPlaying && !audioPlayer.paused) {
+      startLyricSmoothSync();
+    }
+  }
+});
 
 function stopLyricSmoothSync() {
   if (lyricRafId) {
     cancelAnimationFrame(lyricRafId);
     lyricRafId = null;
+  }
+  if (bgLyricInterval) {
+    clearInterval(bgLyricInterval);
+    bgLyricInterval = null;
   }
 }
 
