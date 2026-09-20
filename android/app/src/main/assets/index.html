@@ -3273,35 +3273,37 @@ function playSong(idx) {
 
 function togglePlayState() {
   const song = currentPlaybackQueue[currentIndex];
-  if (song && song.fileUrl) {
+  if (!song) return;
+
+  if (isPlaying) {
     if (isNativeAudioSupported) {
-      if (isPlaying) {
-        window.AndroidBridge.pauseNativeAudio();
-        isPlaying = false;
-      } else {
+      window.AndroidBridge.pauseNativeAudio();
+    } else {
+      audioPlayer.pause();
+    }
+    isPlaying = false;
+    stopPlaybackLoop();
+    updateUI();
+  } else {
+    // 恢复播放或初次联网加载播放
+    const hasNativePrepared = isNativeAudioSupported && window.AndroidBridge.isNativePrepared && window.AndroidBridge.isNativePrepared();
+    if (song.fileUrl && (hasNativePrepared || !isNativeAudioSupported)) {
+      if (isNativeAudioSupported) {
         window.AndroidBridge.resumeNativeAudio();
         isPlaying = true;
-      }
-    } else {
-      if (audioPlayer.paused) {
-        isPlaying = true;
-        audioPlayer.play().catch(err => {
-          console.warn("Play blocked:", err);
-        });
+        updateUI();
       } else {
-        isPlaying = false;
-        audioPlayer.pause();
+        if (audioPlayer.src && audioPlayer.src.includes(song.fileUrl) && audioPlayer.currentTime > 0) {
+          audioPlayer.play().then(() => { isPlaying = true; updateUI(); }).catch(() => { playSongAtQueue(currentIndex); });
+        } else {
+          playSongAtQueue(currentIndex);
+        }
       }
-    }
-  } else {
-    isPlaying = !isPlaying;
-    if (isPlaying) {
-      startPlaybackLoop();
     } else {
-      stopPlaybackLoop();
+      // 缺少有效音频流或原生解码器尚未就绪，自动触发全网音源解析与加载播放
+      playSongAtQueue(currentIndex);
     }
   }
-  updateUI();
 }
 
 function startPlaybackLoop() {
@@ -4311,16 +4313,35 @@ function syncProgress() {
   if (isDraggingProgressBar) return;
   if (document.hidden) return; // 切后台彻底跳过 DOM 刷新与样式重绘！
   const song = currentPlaybackQueue[currentIndex];
-  let duration = 180;
+  let duration = (song && song.duration > 0) ? song.duration : 180;
   if (isNativeAudioSupported) {
     const nd = window.AndroidBridge.getNativeDuration ? window.AndroidBridge.getNativeDuration() : 0;
-    duration = (song && song.duration > 0) ? song.duration : (nd > 0 ? nd : 180);
+    if (nd > 0) {
+      const realDur = Math.floor(nd);
+      // 若原生解码上报真实音频流时长与元数据不符，以底层流真实时长为准动态校准
+      if (song && Math.abs(song.duration - realDur) >= 1) {
+        song.duration = realDur;
+        const totalTimeEl = document.getElementById('totalTime');
+        if (totalTimeEl) totalTimeEl.textContent = formatTime(realDur);
+      }
+      duration = realDur;
+    }
     if (!isSeekingAudio) {
       const np = window.AndroidBridge.getNativePosition ? window.AndroidBridge.getNativePosition() : currentSec;
-      if (typeof np === 'number' && np >= 0) currentSec = np;
+      if (typeof np === 'number' && np >= 0) {
+        currentSec = np;
+      }
     }
   } else {
-    duration = (song && song.duration > 0) ? song.duration : (!isNaN(audioPlayer.duration) && audioPlayer.duration > 0 ? audioPlayer.duration : 180);
+    if (!isNaN(audioPlayer.duration) && audioPlayer.duration > 0) {
+      const realDur = Math.floor(audioPlayer.duration);
+      if (song && Math.abs(song.duration - realDur) >= 1) {
+        song.duration = realDur;
+        const totalTimeEl = document.getElementById('totalTime');
+        if (totalTimeEl) totalTimeEl.textContent = formatTime(realDur);
+      }
+      duration = realDur;
+    }
     if ((isPlaying || !audioPlayer.paused) && !isNaN(audioPlayer.currentTime) && audioPlayer.currentTime >= 0 && !isSeekingAudio) {
       currentSec = audioPlayer.currentTime;
     }
@@ -4332,7 +4353,12 @@ function syncProgress() {
     if (totalTimeEl) totalTimeEl.textContent = formatTime(song.duration);
   }
 
-  const ratio = Math.min(1, Math.max(0, currentSec / duration));
+  // 严格钳位：当前播放进度绝不允许大于总时间
+  if (duration > 0 && currentSec > duration) {
+    currentSec = duration;
+  }
+
+  const ratio = Math.min(1, Math.max(0, currentSec / (duration > 0 ? duration : 1)));
   const pct = (ratio * 100).toFixed(1);
 
   const seekFill = document.getElementById('seekFill');
@@ -4340,7 +4366,7 @@ function syncProgress() {
   const seekThumb = document.getElementById('seekThumb');
   if (seekThumb) seekThumb.style.left = pct + '%';
   const curTime = document.getElementById('curTime');
-  if (curTime) curTime.textContent = formatTime(currentSec);
+  if (curTime) curTime.textContent = formatTime(Math.min(currentSec, duration));
 
   const ring = document.getElementById('bottomDiscRing');
   if (ring) ring.style.strokeDashoffset = RING_PERIMETER * (1 - ratio);
@@ -6070,6 +6096,48 @@ function openPlayerFull() {
   if (typeof setDragProgressState === 'function') setDragProgressState(false);
   document.getElementById('viewPlayerFull').classList.add('active');
   syncProgress();
+  const song = currentPlaybackQueue[currentIndex];
+  if (song && !song.fileUrl && (song.onlineId || song.title)) {
+    prefetchOnlineSongSource(song);
+  }
+}
+
+async function prefetchOnlineSongSource(song) {
+  if (!song || song.fileUrl || song._isPrefetching) return;
+  song._isPrefetching = true;
+  try {
+    let targetOnlineId = song.onlineId;
+    let targetSource = song.source || 'netease';
+    let audioUrl = '';
+    if (targetOnlineId) {
+      audioUrl = `https://api.injahow.cn/meting/?server=${targetSource}&type=url&id=${targetOnlineId}`;
+    } else if (song.title) {
+      const query = `${song.title} ${song.artist !== '未知歌手' ? song.artist : ''}`.trim();
+      const matches = await requestOnlineSearch(query, 1);
+      if (matches && matches.length) {
+        const item = matches[0];
+        song.onlineId = item.url_id || item.id;
+        song.source = item.source || 'netease';
+        if (item.cover && !song.cover) {
+          song.cover = item.cover;
+          applySongCoverToUI(song.cover);
+        }
+        audioUrl = `https://api.injahow.cn/meting/?server=${song.source}&type=url&id=${song.onlineId}`;
+      }
+    }
+    if (audioUrl) {
+      song.fileUrl = audioUrl;
+      song.urlFetchedAt = Date.now();
+      persistData();
+      if (song.onlineId) {
+        fetchLyricForSong(song.onlineId, song.title, song.source);
+      }
+    }
+  } catch(e) {
+    console.warn("Prefetch error:", e);
+  } finally {
+    song._isPrefetching = false;
+  }
 }
 function closePlayerFull() {
   const player = document.getElementById('viewPlayerFull');
@@ -6905,8 +6973,9 @@ function initProgressBarDrag() {
     if (rect.width <= 0) return;
     const ratio = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
     const curSong = currentPlaybackQueue[currentIndex];
-    const duration = (curSong && curSong.duration > 0) ? curSong.duration : (!isNaN(audioPlayer.duration) && audioPlayer.duration > 0 ? audioPlayer.duration : 180);
-    const targetSec = ratio * duration;
+    const nd = (isNativeAudioSupported && window.AndroidBridge.getNativeDuration) ? window.AndroidBridge.getNativeDuration() : 0;
+    const duration = (nd > 0) ? nd : ((curSong && curSong.duration > 0) ? curSong.duration : (!isNaN(audioPlayer.duration) && audioPlayer.duration > 0 ? audioPlayer.duration : 180));
+    const targetSec = Math.min(ratio * duration, duration);
     const pct = (ratio * 100).toFixed(1);
 
     const seekFill = document.getElementById('seekFill');
@@ -6944,7 +7013,7 @@ function initProgressBarDrag() {
         }
       }
       if (seekLockTimer) clearTimeout(seekLockTimer);
-      seekLockTimer = setTimeout(() => { isSeekingAudio = false; }, 400);
+      seekLockTimer = setTimeout(() => { isSeekingAudio = false; syncProgress(); }, 700);
 
       syncProgress();
       if (LYRICS_DATA && LYRICS_DATA.length > 0) {

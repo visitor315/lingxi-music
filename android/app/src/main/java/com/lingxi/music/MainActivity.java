@@ -91,10 +91,12 @@ public class MainActivity extends Activity {
     public static MainActivity getInstance() { return sInstance; }
     public static void dispatchWebAction(final String jsCode) {
         if (sInstance != null && sInstance.webView != null) {
-            sInstance.webView.post(new Runnable() {
+            sInstance.runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    sInstance.webView.evaluateJavascript(jsCode, null);
+                    if (sInstance != null && sInstance.webView != null) {
+                        sInstance.webView.evaluateJavascript(jsCode, null);
+                    }
                 }
             });
         }
@@ -1392,7 +1394,7 @@ public class MainActivity extends Activity {
                 PackageInfo pInfo = getPackageManager().getPackageInfo(getPackageName(), 0);
                 return pInfo.versionName;
             } catch (Exception e) {
-                return "1.9.5";
+                return "1.9.6";
             }
         }
 
@@ -1518,6 +1520,15 @@ public class MainActivity extends Activity {
             MediaPlaybackService service = MediaPlaybackService.getInstance();
             if (service != null) {
                 return service.isNativePlaying();
+            }
+            return false;
+        }
+
+        @JavascriptInterface
+        public boolean isNativePrepared() {
+            MediaPlaybackService service = MediaPlaybackService.getInstance();
+            if (service != null) {
+                return service.isPrepared();
             }
             return false;
         }

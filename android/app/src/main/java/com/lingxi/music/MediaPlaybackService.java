@@ -72,6 +72,16 @@ public class MediaPlaybackService extends Service {
     private long durationMs = 180000;
     private Bitmap currentCoverBitmap = null;
 
+    private final android.os.Handler lockHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+    private final Runnable delayedReleaseLocksRunnable = new Runnable() {
+        @Override
+        public void run() {
+            if (!isPlaying && !isPreparing) {
+                releaseLocks();
+            }
+        }
+    };
+
     @Override
     public void onCreate() {
         super.onCreate();
@@ -198,7 +208,8 @@ public class MediaPlaybackService extends Service {
                 @Override
                 public void onCompletion(MediaPlayer mp) {
                     isPlaying = false;
-                    releaseLocks();
+                    // 保持 WakeLock/WifiLock 活跃 90 秒，给后台切歌、网络拉流留足时间，防止 CPU 深度休眠截断播放队列
+                    releaseLocksDelayed(90000);
                     buildAndPostNotification(currentCoverBitmap != null ? currentCoverBitmap : getRoundedDefaultCover());
                     MainActivity.setNativePlaybackState(false);
                     MainActivity.dispatchWebAction("if (window.onNativeCompletion) window.onNativeCompletion(); else if (typeof handleTrackEnd === 'function') handleTrackEnd();");
@@ -211,10 +222,23 @@ public class MediaPlaybackService extends Service {
                     isPrepared = false;
                     isPreparing = false;
                     isPlaying = false;
-                    releaseLocks();
+                    // 延时释放，给自动重试和通道切换留足网络拉流时间
+                    releaseLocksDelayed(45000);
                     MainActivity.setNativePlaybackState(false);
                     MainActivity.dispatchWebAction("if (window.onNativeError) window.onNativeError(" + what + ", " + extra + ");");
                     return true;
+                }
+            });
+
+            mediaPlayer.setOnInfoListener(new MediaPlayer.OnInfoListener() {
+                @Override
+                public boolean onInfo(MediaPlayer mp, int what, int extra) {
+                    if (what == MediaPlayer.MEDIA_INFO_BUFFERING_END) {
+                        if (isPlaying && !mp.isPlaying()) {
+                            try { mp.start(); } catch (Exception ignored) {}
+                        }
+                    }
+                    return false;
                 }
             });
 
@@ -275,7 +299,7 @@ public class MediaPlaybackService extends Service {
             } catch (Exception ignored) {}
         }
         isPlaying = false;
-        releaseLocks();
+        releaseLocksDelayed(120000); // 暂停后保留 2 分钟锁，方便随时恢复，超时后自动休眠释放
         buildAndPostNotification(currentCoverBitmap != null ? currentCoverBitmap : getRoundedDefaultCover());
         MainActivity.setNativePlaybackState(false);
         MainActivity.dispatchWebAction("if (window.onNativePause) window.onNativePause();");
@@ -318,7 +342,8 @@ public class MediaPlaybackService extends Service {
     public synchronized long getDurationMs() {
         if (mediaPlayer != null && isPrepared) {
             try {
-                return mediaPlayer.getDuration();
+                int d = mediaPlayer.getDuration();
+                if (d > 0) return d;
             } catch (Exception ignored) {}
         }
         return durationMs;
@@ -594,6 +619,9 @@ public class MediaPlaybackService extends Service {
     }
 
     public void acquireLocks() {
+        if (lockHandler != null) {
+            lockHandler.removeCallbacks(delayedReleaseLocksRunnable);
+        }
         // 持有 WakeLock 确保切后台与息屏时不被系统 CPU 调度深度挂起
         if (wakeLock != null && !wakeLock.isHeld()) {
             try {
@@ -609,7 +637,17 @@ public class MediaPlaybackService extends Service {
         }
     }
 
+    public void releaseLocksDelayed(long delayMs) {
+        if (lockHandler != null) {
+            lockHandler.removeCallbacks(delayedReleaseLocksRunnable);
+            lockHandler.postDelayed(delayedReleaseLocksRunnable, delayMs);
+        }
+    }
+
     public void releaseLocks() {
+        if (lockHandler != null) {
+            lockHandler.removeCallbacks(delayedReleaseLocksRunnable);
+        }
         if (wakeLock != null && wakeLock.isHeld()) {
             try { wakeLock.release(); } catch (Exception ignored) {}
         }
@@ -622,6 +660,9 @@ public class MediaPlaybackService extends Service {
     public void onDestroy() {
         super.onDestroy();
         sInstance = null;
+        if (lockHandler != null) {
+            lockHandler.removeCallbacks(delayedReleaseLocksRunnable);
+        }
         releaseLocks();
         if (mediaPlayer != null) {
             try {
