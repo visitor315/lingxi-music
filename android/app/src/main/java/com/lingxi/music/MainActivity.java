@@ -16,6 +16,13 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.RectF;
+import android.content.ActivityNotFoundException;
+import android.content.ContentResolver;
+import android.database.Cursor;
+import android.graphics.PixelFormat;
+import android.graphics.Typeface;
+import android.graphics.drawable.GradientDrawable;
+import android.media.MediaMetadata;
 import android.media.MediaScannerConnection;
 import android.media.session.MediaSession;
 import android.media.session.PlaybackState;
@@ -23,20 +30,31 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
+import android.provider.MediaStore;
+import android.provider.Settings;
 import android.util.Base64;
 import android.util.Rational;
+import android.util.TypedValue;
+import android.view.Gravity;
 import android.view.KeyEvent;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 import android.webkit.DownloadListener;
 import android.webkit.JavascriptInterface;
 import android.webkit.URLUtil;
+import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.LinearLayout;
+import android.widget.TextView;
 import android.widget.Toast;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -52,12 +70,23 @@ public class MainActivity extends Activity {
     public static final String ACTION_PREV = "com.lingxi.music.ACTION_PREV";
     public static final String ACTION_TOGGLE = "com.lingxi.music.ACTION_TOGGLE";
     public static final String ACTION_NEXT = "com.lingxi.music.ACTION_NEXT";
+    public static final String ACTION_LYRICS = "com.lingxi.music.ACTION_LYRICS";
     public static final String ACTION_PIP = "com.lingxi.music.ACTION_PIP";
 
     private WebView webView;
     private NotificationManager notificationManager;
     private MediaSession mediaSession;
     private Bitmap defaultCoverBitmap;
+
+    private WindowManager windowManager;
+    private View floatingLyricView;
+    private WindowManager.LayoutParams floatingParams;
+    private TextView floatingTvCurrent;
+    private TextView floatingTvSub;
+    private boolean isFloatingLyricsActive = false;
+
+    private ValueCallback<Uri[]> uploadMessage;
+    private final static int FILE_CHOOSER_RESULT_CODE = 10001;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -107,7 +136,33 @@ public class MainActivity extends Activity {
         }
 
         webView.setWebViewClient(new WebViewClient());
-        webView.setWebChromeClient(new WebChromeClient());
+        webView.setWebChromeClient(new WebChromeClient() {
+            @Override
+            public boolean onShowFileChooser(WebView webView, ValueCallback<Uri[]> filePathCallback, WebChromeClient.FileChooserParams fileChooserParams) {
+                if (uploadMessage != null) {
+                    uploadMessage.onReceiveValue(null);
+                }
+                uploadMessage = filePathCallback;
+                Intent intent = null;
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                    try {
+                        intent = fileChooserParams.createIntent();
+                    } catch (Exception ignored) {}
+                }
+                if (intent == null) {
+                    intent = new Intent(Intent.ACTION_GET_CONTENT);
+                    intent.addCategory(Intent.CATEGORY_OPENABLE);
+                    intent.setType("audio/*");
+                }
+                try {
+                    startActivityForResult(intent, FILE_CHOOSER_RESULT_CODE);
+                } catch (ActivityNotFoundException e) {
+                    uploadMessage = null;
+                    return false;
+                }
+                return true;
+            }
+        });
         webView.addJavascriptInterface(new WebAppInterface(), "AndroidBridge");
 
         // 系统下载监听器，支持任何 web 下载
@@ -194,11 +249,8 @@ public class MainActivity extends Activity {
                 @Override
                 public void run() { webView.evaluateJavascript("toggleFavCurrent()", null); }
             });
-        } else if (ACTION_PIP.equals(action)) {
-            webView.post(new Runnable() {
-                @Override
-                public void run() { webView.evaluateJavascript("togglePipLyrics()", null); }
-            });
+        } else if (ACTION_LYRICS.equals(action) || ACTION_PIP.equals(action)) {
+            toggleDesktopLyrics();
         }
     }
 
@@ -338,19 +390,29 @@ public class MainActivity extends Activity {
         nextIntent.setAction(ACTION_NEXT);
         PendingIntent pNext = PendingIntent.getActivity(this, 3, nextIntent, flag);
 
-        Intent pipIntent = new Intent(this, MainActivity.class);
-        pipIntent.setAction(ACTION_PIP);
-        PendingIntent pPip = PendingIntent.getActivity(this, 20, pipIntent, flag);
+        Intent lyricsIntent = new Intent(this, MainActivity.class);
+        lyricsIntent.setAction(ACTION_LYRICS);
+        PendingIntent pLyrics = PendingIntent.getActivity(this, 20, lyricsIntent, flag);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && mediaSession != null) {
             int state = isPlaying ? PlaybackState.STATE_PLAYING : PlaybackState.STATE_PAUSED;
             long actions = PlaybackState.ACTION_PLAY | PlaybackState.ACTION_PAUSE |
                     PlaybackState.ACTION_SKIP_TO_PREVIOUS | PlaybackState.ACTION_SKIP_TO_NEXT |
-                    PlaybackState.ACTION_PLAY_PAUSE;
+                    PlaybackState.ACTION_PLAY_PAUSE | PlaybackState.ACTION_SEEK_TO;
             mediaSession.setPlaybackState(new PlaybackState.Builder()
                     .setActions(actions)
                     .setState(state, PlaybackState.PLAYBACK_POSITION_UNKNOWN, 1.0f)
                     .build());
+
+            MediaMetadata.Builder mb = new MediaMetadata.Builder()
+                    .putString(MediaMetadata.METADATA_KEY_TITLE, title)
+                    .putString(MediaMetadata.METADATA_KEY_ARTIST, artist)
+                    .putString(MediaMetadata.METADATA_KEY_ALBUM, "灵犀音乐");
+            if (cover != null) {
+                mb.putBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART, cover);
+                mb.putBitmap(MediaMetadata.METADATA_KEY_ART, cover);
+            }
+            mediaSession.setMetadata(mb.build());
         }
 
         Notification.Builder builder;
@@ -370,7 +432,7 @@ public class MainActivity extends Activity {
                 .addAction(R.drawable.ic_btn_prev, "上一曲", pPrev)
                 .addAction(isPlaying ? R.drawable.ic_btn_pause : R.drawable.ic_btn_play, isPlaying ? "暂停" : "播放", pToggle)
                 .addAction(R.drawable.ic_btn_next, "下一曲", pNext)
-                .addAction(R.drawable.ic_btn_pip, "小窗", pPip);
+                .addAction(R.drawable.ic_btn_lyrics, "词", pLyrics);
 
         if (cover != null) {
             builder.setLargeIcon(cover);
@@ -461,6 +523,278 @@ public class MainActivity extends Activity {
         }).start();
     }
 
+    private int dp2px(float dp) {
+        return (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, dp, getResources().getDisplayMetrics());
+    }
+
+    public void toggleDesktopLyrics() {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    if (!Settings.canDrawOverlays(MainActivity.this)) {
+                        try {
+                            Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                                    Uri.parse("package:" + getPackageName()));
+                            startActivity(intent);
+                            Toast.makeText(MainActivity.this, "请在系统设置中允许开启「悬浮窗权限」以显示桌面歌词", Toast.LENGTH_LONG).show();
+                        } catch (Exception e) {
+                            Toast.makeText(MainActivity.this, "未能直接打开悬浮窗权限，请在系统应用设置中手动开启", Toast.LENGTH_LONG).show();
+                        }
+                        return;
+                    }
+                }
+
+                if (isFloatingLyricsActive) {
+                    hideDesktopLyrics();
+                } else {
+                    showDesktopLyrics();
+                }
+            }
+        });
+    }
+
+    public void showDesktopLyrics() {
+        if (windowManager == null) {
+            windowManager = (WindowManager) getSystemService(Context.WINDOW_SERVICE);
+        }
+        if (floatingLyricView != null) {
+            try {
+                windowManager.removeView(floatingLyricView);
+            } catch (Exception ignored) {}
+            floatingLyricView = null;
+        }
+
+        LinearLayout layout = new LinearLayout(this);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        layout.setGravity(Gravity.CENTER_HORIZONTAL);
+        int padH = dp2px(20);
+        int padV = dp2px(11);
+        layout.setPadding(padH, padV, padH, padV);
+
+        GradientDrawable bg = new GradientDrawable();
+        bg.setColor(Color.parseColor("#E618181A"));
+        bg.setCornerRadius(dp2px(22));
+        bg.setStroke(dp2px(1.2f), Color.parseColor("#33FFFFFF"));
+        layout.setBackground(bg);
+
+        floatingTvCurrent = new TextView(this);
+        floatingTvCurrent.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15.5f);
+        floatingTvCurrent.setTextColor(Color.WHITE);
+        floatingTvCurrent.setTypeface(Typeface.DEFAULT_BOLD);
+        floatingTvCurrent.setGravity(Gravity.CENTER);
+        floatingTvCurrent.setShadowLayer(6, 0, 2, Color.parseColor("#80000000"));
+        floatingTvCurrent.setText("灵犀音乐 · 桌面歌词");
+        layout.addView(floatingTvCurrent);
+
+        floatingTvSub = new TextView(this);
+        floatingTvSub.setTextSize(TypedValue.COMPLEX_UNIT_SP, 11.5f);
+        floatingTvSub.setTextColor(Color.parseColor("#B0FFFFFF"));
+        floatingTvSub.setGravity(Gravity.CENTER);
+        floatingTvSub.setText("上下滑动切词 · 拖拽移动");
+        floatingTvSub.setPadding(0, dp2px(3), 0, 0);
+        layout.addView(floatingTvSub);
+
+        int layoutType;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            layoutType = WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY;
+        } else {
+            layoutType = WindowManager.LayoutParams.TYPE_PHONE;
+        }
+
+        floatingParams = new WindowManager.LayoutParams(
+                WindowManager.LayoutParams.WRAP_CONTENT,
+                WindowManager.LayoutParams.WRAP_CONTENT,
+                layoutType,
+                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE | WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
+                PixelFormat.TRANSLUCENT
+        );
+        floatingParams.gravity = Gravity.TOP | Gravity.CENTER_HORIZONTAL;
+        floatingParams.y = dp2px(130);
+
+        layout.setOnTouchListener(new View.OnTouchListener() {
+            private int initialX, initialY;
+            private float initialTouchX, initialTouchY;
+            private boolean isMoving = false;
+            private long downTime = 0;
+
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                switch (event.getAction()) {
+                    case MotionEvent.ACTION_DOWN:
+                        initialX = floatingParams.x;
+                        initialY = floatingParams.y;
+                        initialTouchX = event.getRawX();
+                        initialTouchY = event.getRawY();
+                        isMoving = false;
+                        downTime = System.currentTimeMillis();
+                        return true;
+                    case MotionEvent.ACTION_MOVE:
+                        float dx = event.getRawX() - initialTouchX;
+                        float dy = event.getRawY() - initialTouchY;
+                        if (Math.abs(dx) > 12 || Math.abs(dy) > 12) {
+                            isMoving = true;
+                        }
+                        floatingParams.x = initialX + (int) dx;
+                        floatingParams.y = initialY + (int) dy;
+                        if (windowManager != null && floatingLyricView != null) {
+                            windowManager.updateViewLayout(floatingLyricView, floatingParams);
+                        }
+                        return true;
+                    case MotionEvent.ACTION_UP:
+                        float totalDy = event.getRawY() - initialTouchY;
+                        float totalDx = event.getRawX() - initialTouchX;
+                        long duration = System.currentTimeMillis() - downTime;
+                        if (!isMoving && duration < 300) {
+                            Intent appIntent = new Intent(MainActivity.this, MainActivity.class);
+                            appIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                            startActivity(appIntent);
+                            return true;
+                        }
+                        if (Math.abs(totalDy) > dp2px(24) && Math.abs(totalDy) > Math.abs(totalDx)) {
+                            if (totalDy < 0) {
+                                webView.post(new Runnable() {
+                                    @Override
+                                    public void run() { webView.evaluateJavascript("seekToNextLyricLine()", null); }
+                                });
+                            } else {
+                                webView.post(new Runnable() {
+                                    @Override
+                                    public void run() { webView.evaluateJavascript("seekToPrevLyricLine()", null); }
+                                });
+                            }
+                        }
+                        return true;
+                }
+                return false;
+            }
+        });
+
+        try {
+            windowManager.addView(layout, floatingParams);
+            floatingLyricView = layout;
+            isFloatingLyricsActive = true;
+            Toast.makeText(this, "桌面悬浮歌词已开启，支持上下滑动与拖拽", Toast.LENGTH_SHORT).show();
+            if (webView != null) {
+                webView.evaluateJavascript("if (window.onDesktopLyricsStateChanged) window.onDesktopLyricsStateChanged(true)", null);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            Toast.makeText(this, "开启桌面歌词失败：" + e.getMessage(), Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    public void hideDesktopLyrics() {
+        if (windowManager != null && floatingLyricView != null) {
+            try {
+                windowManager.removeView(floatingLyricView);
+            } catch (Exception ignored) {}
+            floatingLyricView = null;
+        }
+        isFloatingLyricsActive = false;
+        Toast.makeText(this, "桌面悬浮歌词已关闭", Toast.LENGTH_SHORT).show();
+        if (webView != null) {
+            webView.evaluateJavascript("if (window.onDesktopLyricsStateChanged) window.onDesktopLyricsStateChanged(false)", null);
+        }
+    }
+
+    public void updateDesktopLyric(final String current, final String next) {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if (floatingTvCurrent != null && current != null) {
+                    floatingTvCurrent.setText(current);
+                }
+                if (floatingTvSub != null) {
+                    if (next != null && !next.isEmpty()) {
+                        floatingTvSub.setText(next);
+                        floatingTvSub.setVisibility(View.VISIBLE);
+                    } else {
+                        floatingTvSub.setVisibility(View.GONE);
+                    }
+                }
+            }
+        });
+    }
+
+    public void scanLocalMusic() {
+        if (Build.VERSION.SDK_INT >= 33) {
+            if (checkSelfPermission("android.permission.READ_MEDIA_AUDIO") != PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(new String[]{"android.permission.READ_MEDIA_AUDIO"}, 102);
+                return;
+            }
+        } else {
+            if (checkSelfPermission("android.permission.READ_EXTERNAL_STORAGE") != PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(new String[]{"android.permission.READ_EXTERNAL_STORAGE"}, 102);
+                return;
+            }
+        }
+
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                final JSONArray songs = new JSONArray();
+                try {
+                    ContentResolver cr = getContentResolver();
+                    Uri uri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
+                    String[] projection = {
+                            MediaStore.Audio.Media._ID,
+                            MediaStore.Audio.Media.TITLE,
+                            MediaStore.Audio.Media.ARTIST,
+                            MediaStore.Audio.Media.ALBUM,
+                            MediaStore.Audio.Media.DURATION,
+                            MediaStore.Audio.Media.DATA
+                    };
+                    String selection = MediaStore.Audio.Media.IS_MUSIC + "!=0 AND " +
+                            MediaStore.Audio.Media.DURATION + ">=15000";
+                    Cursor cursor = cr.query(uri, projection, selection, null, MediaStore.Audio.Media.DEFAULT_SORT_ORDER);
+                    if (cursor != null) {
+                        int idCol = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media._ID);
+                        int titleCol = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.TITLE);
+                        int artistCol = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST);
+                        int albumCol = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM);
+                        int durationCol = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DURATION);
+                        int dataCol = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATA);
+
+                        while (cursor.moveToNext()) {
+                            long id = cursor.getLong(idCol);
+                            String title = cursor.getString(titleCol);
+                            String artist = cursor.getString(artistCol);
+                            String album = cursor.getString(albumCol);
+                            long durationMs = cursor.getLong(durationCol);
+                            String path = cursor.getString(dataCol);
+
+                            if (artist == null || artist.equals("<unknown>")) artist = "未知歌手";
+                            if (album == null || album.equals("<unknown>")) album = "本地音乐";
+
+                            JSONObject item = new JSONObject();
+                            item.put("id", "local_" + id);
+                            item.put("title", title);
+                            item.put("artist", artist);
+                            item.put("album", album);
+                            item.put("duration", Math.max(1, (int)(durationMs / 1000)));
+                            item.put("fileUrl", "file://" + path);
+                            item.put("isLocal", true);
+                            songs.put(item);
+                        }
+                        cursor.close();
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+
+                final String resultJson = songs.toString();
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        webView.evaluateJavascript("window.onLocalMusicScanned(" + resultJson + ")", null);
+                        Toast.makeText(MainActivity.this, "已扫描到 " + songs.length() + " 首本地歌曲", Toast.LENGTH_SHORT).show();
+                    }
+                });
+            }
+        }).start();
+    }
+
     public class WebAppInterface {
         @JavascriptInterface
         public void updateMediaCard(final String title, final String artist, final boolean isPlaying) {
@@ -511,6 +845,49 @@ public class MainActivity extends Activity {
                     }
                 }
             });
+        }
+
+        @JavascriptInterface
+        public void toggleDesktopLyrics() {
+            MainActivity.this.toggleDesktopLyrics();
+        }
+
+        @JavascriptInterface
+        public void updateDesktopLyric(final String current, final String next) {
+            MainActivity.this.updateDesktopLyric(current, next);
+        }
+
+        @JavascriptInterface
+        public boolean isDesktopLyricsActive() {
+            return isFloatingLyricsActive;
+        }
+
+        @JavascriptInterface
+        public void scanLocalMusic() {
+            MainActivity.this.scanLocalMusic();
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == FILE_CHOOSER_RESULT_CODE) {
+            if (uploadMessage == null) return;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                uploadMessage.onReceiveValue(WebChromeClient.FileChooserParams.parseResult(resultCode, data));
+            } else {
+                Uri result = (data == null || resultCode != RESULT_OK) ? null : data.getData();
+                uploadMessage.onReceiveValue(result != null ? new Uri[]{result} : null);
+            }
+            uploadMessage = null;
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == 102 && grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            scanLocalMusic();
         }
     }
 
