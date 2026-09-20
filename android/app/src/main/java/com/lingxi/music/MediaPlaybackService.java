@@ -16,9 +16,6 @@ import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.RectF;
-import android.media.AudioAttributes;
-import android.media.AudioFocusRequest;
-import android.media.AudioManager;
 import android.media.MediaMetadata;
 import android.media.session.MediaSession;
 import android.media.session.PlaybackState;
@@ -47,11 +44,8 @@ public class MediaPlaybackService extends Service {
 
     private MediaSession mediaSession;
     private NotificationManager notificationManager;
-    private AudioManager audioManager;
-    private AudioFocusRequest audioFocusRequest;
     private PowerManager.WakeLock wakeLock;
     private WifiManager.WifiLock wifiLock;
-    private boolean hasAudioFocus = false;
     private Bitmap defaultCoverBitmap = null;
 
     private String currentTitle = "灵犀音乐";
@@ -69,7 +63,6 @@ public class MediaPlaybackService extends Service {
         super.onCreate();
         sInstance = this;
         notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-        audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
         try {
             PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
             if (pm != null) {
@@ -184,9 +177,9 @@ public class MediaPlaybackService extends Service {
             durationMs = intent.getLongExtra("durationMs", 180000);
 
             if (isPlaying) {
-                acquireLocksAndFocus();
+                acquireLocks();
             } else {
-                releaseLocksAndFocus();
+                releaseLocks();
             }
 
             if (coverChanged || currentCoverBitmap == null) {
@@ -383,54 +376,15 @@ public class MediaPlaybackService extends Service {
         }
     }
 
-    private final AudioManager.OnAudioFocusChangeListener audioFocusChangeListener = new AudioManager.OnAudioFocusChangeListener() {
-        @Override
-        public void onAudioFocusChange(int focusChange) {
-            if (focusChange == AudioManager.AUDIOFOCUS_LOSS) {
-                hasAudioFocus = false;
-                MainActivity.dispatchWebAction("if (isPlaying) togglePlayState();");
-            } else if (focusChange == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT) {
-                hasAudioFocus = false;
-                MainActivity.dispatchWebAction("if (isPlaying) togglePlayState();");
-            } else if (focusChange == AudioManager.AUDIOFOCUS_GAIN) {
-                hasAudioFocus = true;
-            }
-        }
-    };
-
-    public void acquireLocksAndFocus() {
-        // 1. 请求系统级媒体音频焦点 (通知 Android 与 Vivo 调度器给予实时媒体线程保护，禁止降频惩罚)
-        if (audioManager != null && !hasAudioFocus) {
-            try {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    AudioAttributes playbackAttributes = new AudioAttributes.Builder()
-                            .setUsage(AudioAttributes.USAGE_MEDIA)
-                            .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
-                            .build();
-                    audioFocusRequest = new AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
-                            .setAudioAttributes(playbackAttributes)
-                            .setAcceptsDelayedFocusGain(true)
-                            .setOnAudioFocusChangeListener(audioFocusChangeListener)
-                            .build();
-                    int res = audioManager.requestAudioFocus(audioFocusRequest);
-                    hasAudioFocus = (res == AudioManager.AUDIOFOCUS_REQUEST_GRANTED);
-                } else {
-                    int res = audioManager.requestAudioFocus(audioFocusChangeListener, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN);
-                    hasAudioFocus = (res == AudioManager.AUDIOFOCUS_REQUEST_GRANTED);
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
-
-        // 2. 持有 WakeLock 确保切后台与息屏时不被系统 CPU 调度深度挂起
+    public void acquireLocks() {
+        // 持有 WakeLock 确保切后台与息屏时不被系统 CPU 调度深度挂起
         if (wakeLock != null && !wakeLock.isHeld()) {
             try {
                 wakeLock.acquire(12 * 60 * 60 * 1000L); // 12 小时超时保护
             } catch (Exception ignored) {}
         }
 
-        // 3. 持有 WifiLock 保证切应用时网络拉流不发生节能休眠与分包抖动
+        // 持有 WifiLock 保证切应用时网络拉流不发生节能休眠与分包抖动
         if (wifiLock != null && !wifiLock.isHeld()) {
             try {
                 wifiLock.acquire();
@@ -438,22 +392,12 @@ public class MediaPlaybackService extends Service {
         }
     }
 
-    public void releaseLocksAndFocus() {
+    public void releaseLocks() {
         if (wakeLock != null && wakeLock.isHeld()) {
             try { wakeLock.release(); } catch (Exception ignored) {}
         }
         if (wifiLock != null && wifiLock.isHeld()) {
             try { wifiLock.release(); } catch (Exception ignored) {}
-        }
-        if (audioManager != null && hasAudioFocus) {
-            try {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && audioFocusRequest != null) {
-                    audioManager.abandonAudioFocusRequest(audioFocusRequest);
-                } else {
-                    audioManager.abandonAudioFocus(audioFocusChangeListener);
-                }
-            } catch (Exception ignored) {}
-            hasAudioFocus = false;
         }
     }
 
@@ -461,7 +405,7 @@ public class MediaPlaybackService extends Service {
     public void onDestroy() {
         super.onDestroy();
         sInstance = null;
-        releaseLocksAndFocus();
+        releaseLocks();
         if (mediaSession != null) {
             mediaSession.setActive(false);
             mediaSession.release();
