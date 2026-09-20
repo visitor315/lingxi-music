@@ -1419,14 +1419,40 @@ body.apk-mode .phone-viewport {
   border: none !important;
   border-radius: 0 !important;
   box-shadow: none !important;
-  padding-top: env(safe-area-inset-top, 0px) !important;
-  padding-bottom: env(safe-area-inset-bottom, 0px) !important;
+  padding: 0 !important;
 }
 
 body.apk-mode .view-xianyin {
-  transform: translateX(0) !important;
+  position: absolute !important;
+  top: 0 !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  transform: none !important;
   opacity: 1 !important;
   pointer-events: auto !important;
+}
+
+body.apk-mode .listen-header-bar {
+  height: auto !important;
+  min-height: 54px !important;
+  padding-top: max(14px, env(safe-area-inset-top, 14px)) !important;
+  padding-bottom: 6px !important;
+}
+
+body.apk-mode .xianyin-bottom-nav {
+  position: absolute !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  height: calc(64px + env(safe-area-inset-bottom, 0px)) !important;
+  padding-bottom: env(safe-area-inset-bottom, 0px) !important;
+}
+
+body.apk-mode .xianyin-content-scroll {
+  padding-bottom: calc(86px + env(safe-area-inset-bottom, 0px)) !important;
 }
 
 @media screen and (max-width: 600px), (display-mode: standalone) {
@@ -1445,16 +1471,166 @@ body.apk-mode .view-xianyin {
     border: none !important;
     border-radius: 0 !important;
     box-shadow: none !important;
-    padding-top: env(safe-area-inset-top, 0px) !important;
-    padding-bottom: env(safe-area-inset-bottom, 0px) !important;
+    padding: 0 !important;
   }
 
   .view-xianyin {
-    transform: translateX(0) !important;
+    position: absolute !important;
+    top: 0 !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    transform: none !important;
     opacity: 1 !important;
     pointer-events: auto !important;
   }
+
+  .listen-header-bar {
+    height: auto !important;
+    min-height: 54px !important;
+    padding-top: max(14px, env(safe-area-inset-top, 14px)) !important;
+    padding-bottom: 6px !important;
+  }
+
+  .xianyin-bottom-nav {
+    position: absolute !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    height: calc(64px + env(safe-area-inset-bottom, 0px)) !important;
+    padding-bottom: env(safe-area-inset-bottom, 0px) !important;
+  }
+
+  .xianyin-content-scroll {
+    padding-bottom: calc(86px + env(safe-area-inset-bottom, 0px)) !important;
+  }
 }
+
+/* ================= 灵动岛通用层级与真机适配 ================= */
+.island-capsule {
+  position: absolute !important;
+  top: max(10px, env(safe-area-inset-top, 10px)) !important;
+  left: 50% !important;
+  transform: translateX(-50%) scale(0.9);
+  width: 138px !important;
+  height: 34px !important;
+  background: #0E0F10 !important;
+  color: #FFFFFF !important;
+  border-radius: 20px !important;
+  padding: 0 12px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  z-index: 150 !important;
+  cursor: pointer !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35) !important;
+  transition: transform 0.36s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.26s ease !important;
+  opacity: 0;
+  pointer-events: none;
+}
+.island-capsule.visible {
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  transform: translateX(-50%) scale(1) !important;
+}
+.island-backdrop {
+  z-index: 158 !important;
+}
+.island-expanded-card {
+  position: absolute !important;
+  top: max(10px, env(safe-area-inset-top, 10px)) !important;
+  left: 10px !important;
+  right: 10px !important;
+  z-index: 160 !important;
+}
+
+/* ================= 画中画桌面小窗模式 ================= */
+body.in-pip-mode .listen-header-bar,
+body.in-pip-mode .xianyin-content-scroll,
+body.in-pip-mode .xianyin-bottom-nav,
+body.in-pip-mode .status-bar,
+body.in-pip-mode .nav-bar,
+body.in-pip-mode .island-capsule,
+body.in-pip-mode .island-expanded-card {
+  display: none !important;
+}
+body.in-pip-mode .view-player-full {
+  display: flex !important;
+  transform: none !important;
+  padding: 8px !important;
+}
+
+/* ================= 首次进入新手教程指引弹窗 ================= */
+.tutorial-backdrop {
+  position: fixed; inset: 0; background: rgba(0, 0, 0, 0.68);
+  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  z-index: 9999; display: flex; align-items: center; justify-content: center;
+  padding: 24px 20px; opacity: 0; pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+.tutorial-backdrop.open {
+  opacity: 1; pointer-events: auto;
+}
+.tutorial-card {
+  width: 100%; max-width: 360px; background: var(--card-bg, #FFFFFF);
+  border-radius: 28px; padding: 26px 22px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--card-border, rgba(24, 26, 28, 0.08));
+  display: flex; flex-direction: column; gap: 18px;
+  transform: translateY(20px) scale(0.95);
+  transition: transform 0.32s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+}
+.tutorial-backdrop.open .tutorial-card {
+  transform: translateY(0) scale(1);
+}
+body.night .tutorial-card {
+  background: #1C1C1A; border-color: rgba(255, 255, 255, 0.1);
+}
+.tutorial-header { text-align: center; }
+.tutorial-badge {
+  display: inline-block; padding: 4px 12px; border-radius: 12px;
+  background: rgba(217, 119, 87, 0.12); color: #D97757;
+  font-size: 11.5px; font-weight: 600; letter-spacing: 0.5px; margin-bottom: 8px;
+}
+.tutorial-title {
+  font-family: var(--font-serif); font-size: 22px; font-weight: 700;
+  color: var(--ink-black); margin: 0 0 6px; letter-spacing: 0.5px;
+}
+.tutorial-subtitle {
+  font-size: 12px; color: var(--ink-light); margin: 0; line-height: 1.4;
+}
+.tutorial-features {
+  display: flex; flex-direction: column; gap: 13px;
+}
+.tutorial-feat-item {
+  display: flex; align-items: flex-start; gap: 12px;
+}
+.feat-icon-box {
+  width: 38px; height: 38px; border-radius: 12px;
+  background: rgba(217, 119, 87, 0.1); color: #D97757;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.feat-icon-box svg {
+  width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 1.6;
+}
+.feat-text { flex: 1; }
+.feat-heading {
+  font-size: 13.5px; font-weight: 600; color: var(--ink-black); margin-bottom: 2px;
+}
+.feat-desc {
+  font-size: 11.5px; color: var(--ink-gray); line-height: 1.42;
+}
+.tutorial-start-btn {
+  width: 100%; height: 46px; border-radius: 14px;
+  background: #D97757; color: #FFFFFF; font-size: 15px; font-weight: 600;
+  border: none; cursor: pointer; display: flex; align-items: center;
+  justify-content: center; transition: opacity 0.2s;
+  box-shadow: 0 4px 14px rgba(217, 119, 87, 0.35);
+}
+.tutorial-start-btn:active { opacity: 0.85; }
 </style>
 </head>
 <body>
@@ -1927,8 +2103,13 @@ body.apk-mode .view-xianyin {
         </div>
         <div class="group-menu-divider"></div>
         <div class="settings-item-row" onclick="togglePipLyrics()">
-          <div class="settings-item-col"><span class="settings-title-line">桌面悬浮歌词 (画中画)</span><span class="settings-sub-desc" id="pipLyricsDesc">离开应用悬浮置顶显示当前歌词</span></div>
+          <div class="settings-item-col"><span class="settings-title-line">桌面画中画悬浮小窗</span><span class="settings-sub-desc" id="pipLyricsDesc">离开应用悬浮置顶显示当前歌词与播控</span></div>
           <div class="blue-toggle-switch" id="pipLyricsToggle"></div>
+        </div>
+        <div class="group-menu-divider"></div>
+        <div class="settings-item-row" onclick="openTutorialModal()">
+          <div class="settings-item-col"><span class="settings-title-line">新手使用指南</span><span class="settings-sub-desc">随时查看四大特色功能与快捷手势</span></div>
+          <svg viewBox="0 0 24 24" width="18" height="18" stroke="var(--ink-light)" fill="none" stroke-width="1.8"><polyline points="9 18 15 12 9 6"/></svg>
         </div>
       </div>
     </div>
@@ -4010,8 +4191,26 @@ function updateUI() {
   document.getElementById('islandPlayBtn').innerHTML = isPlaying ? pauseSvg : playSvg;
   document.getElementById('islandFavBtn').classList.toggle('active', !!song.isFav);
 
-  const isDesktop = !document.getElementById('viewXianyin').classList.contains('active');
-  document.getElementById('islandCapsule').classList.toggle('visible', islandEnabled && isPlaying && isDesktop);
+  const isFullPlayer = document.getElementById('viewPlayerFull') && document.getElementById('viewPlayerFull').classList.contains('active');
+  document.getElementById('islandCapsule').classList.toggle('visible', islandEnabled && isPlaying && !isFullPlayer);
+
+  // 双重系统媒体卡片同步 (Web MediaSession + Android 原生通知栏播控卡片)
+  if ('mediaSession' in navigator && song) {
+    try {
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: song.title || '灵犀音乐',
+        artist: song.artist || '随心听',
+        album: '灵犀音乐',
+        artwork: [{ src: song.cover || 'icon.png', sizes: '512x512', type: 'image/png' }]
+      });
+      navigator.mediaSession.playbackState = isPlaying ? 'playing' : 'paused';
+    } catch(e) {}
+  }
+  if (window.AndroidBridge && window.AndroidBridge.updateMediaCard && song) {
+    try {
+      window.AndroidBridge.updateMediaCard(song.title || '灵犀音乐', song.artist || '随心听', isPlaying);
+    } catch(e) {}
+  }
 
   document.getElementById('fullPlayerSongTitle').textContent = song.title;
   document.getElementById('fullPlayerArtist').textContent = song.artist;
@@ -5536,12 +5735,16 @@ let openedPlayerFromSearch = false;
 
 function openPlayerFull() {
   collapseIslandCard();
+  document.getElementById('islandCapsule').classList.remove('visible');
   document.getElementById('viewPlayerFull').classList.add('active');
 }
 function closePlayerFull() {
   document.getElementById('viewPlayerFull').classList.remove('active');
   if (isPureLyrics) closePureLyricsView();
   closePlaylistDrawer();
+  if (islandEnabled && isPlaying) {
+    document.getElementById('islandCapsule').classList.add('visible');
+  }
   if (openedPlayerFromSearch) {
     openedPlayerFromSearch = false;
     // 搜索页始终在底层保持 active，绝不重复触发进入动画；若偶发未激活，则强制无动画瞬间归位
@@ -5581,8 +5784,8 @@ function collapseIslandCard(e) {
   document.getElementById('islandExpandedCard').classList.remove('active');
   const backdrop = document.getElementById('islandBackdrop');
   if (backdrop) backdrop.classList.remove('active');
-  const isDesktop = !document.getElementById('viewXianyin').classList.contains('active');
-  if (islandEnabled && isPlaying && isDesktop) document.getElementById('islandCapsule').classList.add('visible');
+  const isFullPlayer = document.getElementById('viewPlayerFull') && document.getElementById('viewPlayerFull').classList.contains('active');
+  if (islandEnabled && isPlaying && !isFullPlayer) document.getElementById('islandCapsule').classList.add('visible');
 }
 
 /* ================== 通用确认弹窗引擎（对标现代双药丸设计） ================== */
@@ -6168,8 +6371,18 @@ function updatePipCanvas() {
 }
 
 async function togglePipLyrics() {
+  if (window.AndroidBridge && window.AndroidBridge.isPipSupported && window.AndroidBridge.isPipSupported()) {
+    try {
+      window.AndroidBridge.enterPipMode();
+      toast('已进入桌面画中画小窗');
+      return;
+    } catch(err) {
+      console.warn('Android PiP failed:', err);
+    }
+  }
+
   if (!('pictureInPictureEnabled' in document) || !document.pictureInPictureEnabled) {
-    toast('当前浏览器或环境暂不支持画中画悬浮窗');
+    toast('当前环境暂不支持画中画悬浮窗');
     return;
   }
 
@@ -7284,5 +7497,108 @@ async function handleAudioImport(e) {
 
 init();
 </script>
+
+  <!-- 首次进入新手教程指引弹窗 -->
+  <div class="tutorial-backdrop" id="tutorialBackdrop" onclick="if(event.target===this) closeTutorialModal()">
+    <div class="tutorial-card">
+      <div class="tutorial-header">
+        <div class="tutorial-badge">灵犀音乐 · 极简寻音</div>
+        <h2 class="tutorial-title">快速上手指南</h2>
+        <p class="tutorial-subtitle">文人雅趣 · 纯粹听歌 · 真机沉浸适配</p>
+      </div>
+
+      <div class="tutorial-features">
+        <div class="tutorial-feat-item">
+          <div class="feat-icon-box">
+            <svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 0 0-10 10c0 4.42 2.87 8.17 6.84 9.5.5.08.66-.23.66-.5v-1.69c-2.77.6-3.36-1.34-3.36-1.34-.46-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.87 1.52 2.34 1.07 2.91.83.1-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.92 0-1.11.38-2 1.03-2.71-.1-.25-.45-1.29.1-2.64 0 0 .84-.27 2.75 1.02.79-.22 1.65-.33 2.5-.33.85 0 1.71.11 2.5.33 1.91-1.29 2.75-1.02 2.75-1.02.55 1.35.2 2.39.1 2.64.65.71 1.03 1.6 1.03 2.71 0 3.82-2.34 4.66-4.57 4.91.36.31.69.92.69 1.85V21c0 .27.16.59.67.5C19.14 20.16 22 16.42 22 12A10 10 0 0 0 12 2z"/></svg>
+          </div>
+          <div class="feat-text">
+            <div class="feat-heading">顶部灵动岛常驻</div>
+            <div class="feat-desc">播放音乐时，顶部浮现灵动胶囊；轻触即刻展开详情与快速控制。</div>
+          </div>
+        </div>
+
+        <div class="tutorial-feat-item">
+          <div class="feat-icon-box">
+            <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          </div>
+          <div class="feat-text">
+            <div class="feat-heading">真实状态栏与锁屏播控</div>
+            <div class="feat-desc">下拉通知栏与锁屏常驻歌曲卡片，无需进入应用即可切换切歌暂停。</div>
+          </div>
+        </div>
+
+        <div class="tutorial-feat-item">
+          <div class="feat-icon-box">
+            <svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+          </div>
+          <div class="feat-text">
+            <div class="feat-heading">桌面画中画悬浮窗</div>
+            <div class="feat-desc">支持画中画悬浮窗，一边听歌看词一边畅玩其他应用。</div>
+          </div>
+        </div>
+
+        <div class="tutorial-feat-item">
+          <div class="feat-icon-box">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v8"/><path d="M8 12h8"/></svg>
+          </div>
+          <div class="feat-text">
+            <div class="feat-heading">沉浸黑胶与文楷纯享</div>
+            <div class="feat-desc">轻触底部中心唱片直达大黑胶；点击全屏唱片轻快切换纯字文楷大歌词。</div>
+          </div>
+        </div>
+      </div>
+
+      <button class="tutorial-start-btn" onclick="closeTutorialModal()">开启寻音之旅</button>
+    </div>
+  </div>
+
+<script>
+// ================== 全局 MediaSession 动作注册 ==================
+if ('mediaSession' in navigator) {
+  try {
+    navigator.mediaSession.setActionHandler('play', () => togglePlayState());
+    navigator.mediaSession.setActionHandler('pause', () => togglePlayState());
+    navigator.mediaSession.setActionHandler('previoustrack', () => playPrev());
+    navigator.mediaSession.setActionHandler('nexttrack', () => playNext());
+  } catch(e) {}
+}
+
+// ================== 画中画模式监听 ==================
+window.onPipModeChanged = function(isInPip) {
+  document.body.classList.toggle('in-pip-mode', isInPip);
+  isPipActive = isInPip;
+  if (typeof updatePipLyricsUI === 'function') updatePipLyricsUI();
+};
+
+// ================== 首次进入新手教程逻辑 ==================
+function checkFirstLaunchTutorial() {
+  try {
+    if (!localStorage.getItem('lingxi_seen_tutorial_v1')) {
+      setTimeout(() => {
+        openTutorialModal();
+      }, 500);
+    }
+  } catch(e) {}
+}
+
+function openTutorialModal() {
+  const backdrop = document.getElementById('tutorialBackdrop');
+  if (backdrop) backdrop.classList.add('open');
+}
+
+function closeTutorialModal() {
+  const backdrop = document.getElementById('tutorialBackdrop');
+  if (backdrop) backdrop.classList.remove('open');
+  try {
+    localStorage.setItem('lingxi_seen_tutorial_v1', 'true');
+  } catch(e) {}
+}
+
+window.addEventListener('load', () => {
+  checkFirstLaunchTutorial();
+});
+</script>
+
 </body>
 </html>
