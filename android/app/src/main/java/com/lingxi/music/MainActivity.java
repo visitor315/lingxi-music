@@ -663,7 +663,7 @@ public class MainActivity extends Activity {
 
     private void toggleFloatingCardExpanded() {
         long now = System.currentTimeMillis();
-        if (now - lastCardToggleTime < 350) return;
+        if (now - lastCardToggleTime < 250) return;
         lastCardToggleTime = now;
         setFloatingCardExpanded(!isControlCardExpanded);
     }
@@ -840,6 +840,10 @@ public class MainActivity extends Activity {
         // 纯净现代风，彻底移除黑色阴影
         floatingTvCurrent.setShadowLayer(0, 0, 0, 0);
         floatingTvCurrent.setText(currentFloatingLyricText);
+        floatingTvCurrent.setClickable(false);
+        floatingTvCurrent.setFocusable(false);
+        lyricsBody.setClickable(false);
+        lyricsBody.setFocusable(false);
         lyricsBody.addView(floatingTvCurrent);
 
         // 彻底移除 floatingTvSub 第二行，保证视觉极简纯净
@@ -937,12 +941,6 @@ public class MainActivity extends Activity {
         final int touchSlop = ViewConfiguration.get(this).getScaledTouchSlop();
         final GestureDetector gestureDetector = new GestureDetector(this, new GestureDetector.SimpleOnGestureListener() {
             @Override
-            public boolean onSingleTapConfirmed(MotionEvent e) {
-                toggleFloatingCardExpanded();
-                return true;
-            }
-
-            @Override
             public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
                 if (e1 == null || e2 == null) return false;
                 float dy = e2.getRawY() - e1.getRawY();
@@ -991,15 +989,18 @@ public class MainActivity extends Activity {
                         }
                         return true;
                     case MotionEvent.ACTION_UP:
-                    case MotionEvent.ACTION_CANCEL:
                         floatingParams.x = 0;
                         if (!isDragging) {
-                            long now = System.currentTimeMillis();
-                            if (now - lastCardToggleTime > 350) {
-                                lastCardToggleTime = now;
+                            float totalDy = Math.abs(event.getRawY() - initialTouchY);
+                            long duration = System.currentTimeMillis() - downTime;
+                            if (totalDy <= touchSlop && duration < 600) {
                                 toggleFloatingCardExpanded();
                             }
                         }
+                        isDragging = false;
+                        return true;
+                    case MotionEvent.ACTION_CANCEL:
+                        floatingParams.x = 0;
                         isDragging = false;
                         return true;
                 }
