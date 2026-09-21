@@ -1096,7 +1096,20 @@ public class MainActivity extends Activity {
                         if (isDragging) {
                             if (!isFloatingLocked) {
                                 floatingParams.x = 0; // 严格禁止左右移动
-                                floatingParams.y = initialY + (int) dy;
+                                int statusBarHeight = 0;
+                                int resId = getResources().getIdentifier("status_bar_height", "dimen", "android");
+                                if (resId > 0) {
+                                    statusBarHeight = getResources().getDimensionPixelSize(resId);
+                                }
+                                if (statusBarHeight <= 0) {
+                                    statusBarHeight = dp2px(32);
+                                }
+                                int minY = statusBarHeight + dp2px(8);
+                                DisplayMetrics dm = getResources().getDisplayMetrics();
+                                int maxY = (dm != null && dm.heightPixels > 0) ? (dm.heightPixels - dp2px(120)) : dp2px(600);
+                                int targetY = initialY + (int) dy;
+                                floatingParams.y = Math.max(minY, Math.min(targetY, maxY));
+
                                 if (windowManager != null && sFloatingLyricView != null) {
                                     try {
                                         windowManager.updateViewLayout(sFloatingLyricView, floatingParams);
@@ -1394,7 +1407,7 @@ public class MainActivity extends Activity {
                 PackageInfo pInfo = getPackageManager().getPackageInfo(getPackageName(), 0);
                 return pInfo.versionName;
             } catch (Exception e) {
-                return "1.9.7";
+                return "1.9.8";
             }
         }
 
@@ -1531,6 +1544,28 @@ public class MainActivity extends Activity {
                 return service.isPrepared();
             }
             return false;
+        }
+
+        @JavascriptInterface
+        public void setNativeSleepTimer(final double minutes) {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    MediaPlaybackService service = MediaPlaybackService.getInstance();
+                    if (service != null) {
+                        service.setSleepTimer(minutes);
+                    } else {
+                        Intent intent = new Intent(MainActivity.this, MediaPlaybackService.class);
+                        intent.setAction(MediaPlaybackService.ACTION_SLEEP_TIMER);
+                        intent.putExtra("minutes", minutes);
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                            startForegroundService(intent);
+                        } else {
+                            startService(intent);
+                        }
+                    }
+                }
+            });
         }
     }
 

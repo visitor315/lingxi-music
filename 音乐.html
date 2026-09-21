@@ -292,6 +292,9 @@ html, body {
 .listen-header-bar {
   height: 78px; padding: 38px 18px 0; display: flex; align-items: center;
   justify-content: space-between; flex-shrink: 0;
+  background: var(--bg-page);
+  position: relative;
+  z-index: 10;
 }
 .listen-nav-titles { display: flex; align-items: center; gap: 16px; }
 .nav-tag-btn { font-size: 16px; color: var(--ink-light); cursor: pointer; transition: all 0.15s; }
@@ -442,7 +445,7 @@ body.night .stream-disc.stream-disc-add { border-color: #444; }
 .more-dots-btn svg { width: 18px; height: 18px; stroke-width: 1.8; stroke: currentColor; fill: none; }
 
 /* ================== 6. 设置页面 ================== */
-.view-settings-page { display: none; flex-direction: column; padding: 46px 16px 84px; gap: 16px; }
+.view-settings-page { display: none; flex-direction: column; padding: 10px 16px 84px; gap: 16px; }
 .view-settings-page.active { display: flex; }
 .settings-group-header { font-size: 12.5px; color: var(--ink-gray); margin: 6px 6px -6px; font-weight: 500; letter-spacing: 0.3px; }
 .group-menu-card { background: var(--card-bg); border-radius: 14px; overflow: hidden; display: flex; flex-direction: column; flex-shrink: 0; }
@@ -1471,6 +1474,9 @@ body.apk-mode .listen-header-bar {
   min-height: 54px !important;
   padding-top: max(14px, env(safe-area-inset-top, 14px)) !important;
   padding-bottom: 6px !important;
+  background: var(--bg-page) !important;
+  position: relative !important;
+  z-index: 10 !important;
 }
 
 body.apk-mode .xianyin-bottom-nav {
@@ -1619,7 +1625,7 @@ body.in-pip-mode .view-player-full {
 }
 
 .view-settings-page {
-  padding-top: max(12px, env(safe-area-inset-top, 12px)) !important;
+  padding-top: 10px !important;
   padding-bottom: calc(84px + env(safe-area-inset-bottom, 0px)) !important;
 }
 
@@ -1659,10 +1665,13 @@ body.in-pip-mode .view-player-full {
   min-height: 52px !important;
   padding-top: max(12px, env(safe-area-inset-top, 12px)) !important;
   padding-bottom: 6px !important;
+  background: var(--bg-page) !important;
+  position: relative !important;
+  z-index: 10 !important;
 }
 
 .view-settings-page {
-  padding-top: max(12px, env(safe-area-inset-top, 12px)) !important;
+  padding-top: 10px !important;
   padding-bottom: calc(84px + env(safe-area-inset-bottom, 0px)) !important;
 }
 
@@ -1812,6 +1821,13 @@ body.in-pip-mode .view-player-full {
               <span class="settings-sub-desc" id="themeSettingsSummary">跟随系统 · 克莱因蓝</span>
             </div>
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" style="color:var(--ink-light);"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+        </div>
+        <span class="settings-group-header">播放与控制</span>
+        <div class="group-menu-card">
+          <div class="settings-item-row" onclick="openSleepTimerModal()">
+            <div class="settings-item-col"><span class="settings-title-line">定时关闭</span><span class="settings-sub-desc" id="sleepTimerSettingsDesc">未开启</span></div>
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" style="color:var(--ink-light); margin-left:auto;"><polyline points="9 18 15 12 9 6"/></svg>
           </div>
         </div>
         <span class="settings-group-header">乐库与存储</span>
@@ -2178,9 +2194,15 @@ body.in-pip-mode .view-player-full {
         <div class="song-main-title" id="fullPlayerSongTitle">空谷幽兰</div>
         <div class="song-main-artist" id="fullPlayerArtist">系统演示</div>
       </div>
-      <button class="header-btn btn-heart" id="topHeartBtn" onclick="toggleFavCurrent()" title="收藏">
-        <svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-      </button>
+      <div style="display:flex; align-items:center; gap:2px;">
+        <button class="header-btn" id="topSleepTimerBtn" onclick="openSleepTimerModal()" title="定时关闭" style="position: relative;">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <span id="topSleepTimerBadge" style="display:none; position:absolute; top:2px; right:2px; background:var(--brand-terracotta); color:#fff; font-size:9px; padding:1px 4px; border-radius:8px; line-height:1; font-weight:600;"></span>
+        </button>
+        <button class="header-btn btn-heart" id="topHeartBtn" onclick="toggleFavCurrent()" title="收藏">
+          <svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+        </button>
+      </div>
     </nav>
 
     <section class="disc-stage">
@@ -2477,6 +2499,92 @@ body.in-pip-mode .view-player-full {
           <span>标准音质 (128 kbps)</span>
         </div>
         <svg class="color-option-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- 8.9.1 定时关闭选择弹窗 -->
+  <div class="modal-overlay" id="sleepTimerModal" onclick="closeSleepTimerModal(event)">
+    <div class="color-modal-card" onclick="event.stopPropagation()">
+      <div class="color-modal-title">定时关闭</div>
+      
+      <div class="color-option-row selected" id="sleepTimerOpt_off" onclick="selectSleepTimer('off')">
+        <div class="color-option-left">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+          <span>不开启</span>
+        </div>
+        <svg class="color-option-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+
+      <div class="color-option-row" id="sleepTimerOpt_15" onclick="selectSleepTimer('time', 15)">
+        <div class="color-option-left">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <span>15 分钟后</span>
+        </div>
+        <svg class="color-option-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+
+      <div class="color-option-row" id="sleepTimerOpt_30" onclick="selectSleepTimer('time', 30)">
+        <div class="color-option-left">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <span>30 分钟后</span>
+        </div>
+        <svg class="color-option-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+
+      <div class="color-option-row" id="sleepTimerOpt_45" onclick="selectSleepTimer('time', 45)">
+        <div class="color-option-left">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <span>45 分钟后</span>
+        </div>
+        <svg class="color-option-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+
+      <div class="color-option-row" id="sleepTimerOpt_60" onclick="selectSleepTimer('time', 60)">
+        <div class="color-option-left">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <span>60 分钟后</span>
+        </div>
+        <svg class="color-option-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+
+      <div class="color-option-row" id="sleepTimerOpt_90" onclick="selectSleepTimer('time', 90)">
+        <div class="color-option-left">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <span>90 分钟后</span>
+        </div>
+        <svg class="color-option-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+
+      <div class="color-option-row" id="sleepTimerOpt_track" onclick="selectSleepTimer('track')">
+        <div class="color-option-left">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+          <span>播完当前歌曲后</span>
+        </div>
+        <svg class="color-option-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+
+      <div class="color-option-row" id="sleepTimerOpt_custom" onclick="selectSleepTimerCustom()">
+        <div class="color-option-left">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          <span id="sleepTimerCustomLabel">自定义分钟</span>
+        </div>
+        <svg class="color-option-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- 8.9.2 自定义定时分钟弹窗 -->
+  <div class="modern-dialog-backdrop" id="sleepTimerCustomModal" onclick="closeSleepTimerCustomModal(event)">
+    <div class="modern-dialog-card" onclick="event.stopPropagation()" style="max-width:320px; padding:22px 20px 20px;">
+      <div class="modern-dialog-title" style="margin-bottom:8px; font-size:16px;">自定义定时时长</div>
+      <div style="font-size:12.5px; color:var(--ink-gray); line-height:1.5; margin-bottom:14px; text-align:left;">
+        请输入定时关闭的分钟数（1 ~ 720 分钟）：
+      </div>
+      <input type="number" id="sleepTimerCustomInput" class="config-input-box" placeholder="例如：20" min="1" max="720" style="margin-bottom:18px;">
+      <div class="modern-dialog-actions" style="gap:10px;">
+        <button class="modern-pill-btn modern-pill-cancel" onclick="closeSleepTimerCustomModal()">取消</button>
+        <button class="modern-pill-btn modern-pill-primary" onclick="confirmSleepTimerCustom()">确定</button>
       </div>
     </div>
   </div>
@@ -3211,12 +3319,27 @@ function playSongAtQueue(idx) {
   // 每次触发点播，重置错误重试计数器，杜绝因偶发网络波动被永久锁定
   if (song.id) songRetryCounts[song.id] = 0;
 
+  // 确保正在播放的歌曲同步沉淀并保存在“全部歌曲”中
+  const existingIdx = ALL_LIBRARY_SONGS.findIndex(s => s.id === song.id || (s.title === song.title && s.artist === song.artist));
+  if (existingIdx !== -1) {
+    const existing = ALL_LIBRARY_SONGS.splice(existingIdx, 1)[0];
+    Object.assign(existing, song);
+    ALL_LIBRARY_SONGS.unshift(existing);
+  } else {
+    ALL_LIBRARY_SONGS.unshift(song);
+  }
+  if (VINYL_ALBUMS[0]) {
+    VINYL_ALBUMS[0].songs = ALL_LIBRARY_SONGS;
+  }
+  persistData();
+
   stopPlaybackLoop();
 
   // 1. 自动补全歌曲封面（有 onlineId 的网络曲目自 Meting 补充封面直链）
   if (!song.cover && song.onlineId) {
     song.cover = `https://api.injahow.cn/meting/?server=${song.source || 'netease'}&type=pic&id=${song.onlineId}`;
     applySongCoverToUI(song.cover);
+    updateUI();
   } else if (!song.cover && song.title) {
     const query = `${song.title} ${song.artist !== '未知歌手' ? song.artist : ''}`.trim();
     requestOnlineSearch(query, 1).then(matches => {
@@ -3234,7 +3357,15 @@ function playSongAtQueue(idx) {
     }).catch(() => {});
   }
 
-  // 2. 恢复或加载歌词（优先读取 song.lrc 或持久化缓存）
+  // 2. 立即重置为当前曲目占位歌词，彻底消除曲目切换瞬间显示上一首旧歌词的视觉不同步
+  LYRICS_DATA = [{ time: 0, text: (song.title || '灵犀音乐') + ' - ' + (song.artist || '随心听') }];
+  lastActiveIdx = -1;
+  lastInterludeNextIdx = -1;
+  displayedPreviewIdx = -1;
+  initLyricsList();
+  syncCurrentLyricToDesktop();
+
+  // 恢复或加载正式歌词（优先读取 song.lrc 或持久化缓存）
   const cachedLrc = song.lrc || getCachedLyric(song.title, song.artist);
   if (cachedLrc) {
     const parsed = parseLrc(cachedLrc);
@@ -3244,6 +3375,7 @@ function playSongAtQueue(idx) {
       lastInterludeNextIdx = -1;
       displayedPreviewIdx = -1;
       initLyricsList();
+      syncCurrentLyricToDesktop();
     }
   } else if (song.onlineId) {
     fetchLyricForSong(song.onlineId, song.title, song.source || 'netease');
@@ -3377,6 +3509,21 @@ function handleTrackEnd() {
     renderSongList();
     renderVinylDiscs();
     renderDrawerList();
+  }
+
+  // 若开启了播完当前歌曲后停止定时器
+  if (currentSleepTimerType === 'track') {
+    cancelSleepTimer(false);
+    if (isNativeAudioSupported && window.AndroidBridge && window.AndroidBridge.pauseNativeAudio) {
+      window.AndroidBridge.pauseNativeAudio();
+    } else if (audioPlayer) {
+      audioPlayer.pause();
+    }
+    isPlaying = false;
+    stopPlaybackLoop();
+    updateUI();
+    toast('当前歌曲播放完毕，定时已自动停止');
+    return;
   }
 
   if (playMode === 'single') {
@@ -4399,7 +4546,12 @@ function syncProgress() {
     if (!isSeekingAudio) {
       const np = window.AndroidBridge.getNativePosition ? window.AndroidBridge.getNativePosition() : currentSec;
       if (typeof np === 'number' && np >= 0) {
-        currentSec = np;
+        const hasPrepared = window.AndroidBridge.isNativePrepared ? window.AndroidBridge.isNativePrepared() : false;
+        if (hasPrepared || np <= duration) {
+          currentSec = np;
+        } else {
+          currentSec = 0;
+        }
       }
     }
   } else {
@@ -4423,8 +4575,9 @@ function syncProgress() {
     if (totalTimeEl) totalTimeEl.textContent = formatTime(song.duration);
   }
 
-  // 严格校准：如果当前播放秒数超过了预估总时间，说明实际音频流比预设长，动态拓宽总时间，绝不截断或溢出
-  if (currentSec > duration) {
+  // 严格校准：仅在底层真实准备就绪且时长确实偏大时才动态调整
+  const isReallyPrepared = !isNativeAudioSupported || (window.AndroidBridge.isNativePrepared && window.AndroidBridge.isNativePrepared());
+  if (isReallyPrepared && currentSec > duration && duration > 0) {
     duration = Math.ceil(currentSec);
     if (song) {
       song.duration = duration;
@@ -6175,7 +6328,9 @@ function openPlayerFull() {
   collapseIslandCard();
   if (typeof setDragProgressState === 'function') setDragProgressState(false);
   document.getElementById('viewPlayerFull').classList.add('active');
+  updateUI();
   syncProgress();
+  if (typeof updateSleepTimerUI === 'function') updateSleepTimerUI();
   const song = currentPlaybackQueue[currentIndex];
   const isOnlineSong = song && !!(song.onlineId || (song.fileUrl && song.fileUrl.startsWith('http')));
   if (isOnlineSong && song.fileUrl && (!song.urlFetchedAt || (Date.now() - song.urlFetchedAt > 20 * 60 * 1000))) {
@@ -6196,7 +6351,23 @@ async function prefetchOnlineSongSource(song) {
     let targetSource = song.source || 'netease';
     let audioUrl = '';
     if (targetOnlineId) {
-      audioUrl = `https://api.injahow.cn/meting/?server=${targetSource}&type=url&id=${targetOnlineId}`;
+      if (currentApiBase.includes('injahow')) {
+        audioUrl = `https://api.injahow.cn/meting/?server=${targetSource}&type=url&id=${targetOnlineId}`;
+      } else {
+        try {
+          const urlApi = `${currentApiBase}?types=url&id=${targetOnlineId}&source=${targetSource}&br=${currentAudioQuality}`;
+          const uRes = await fetch(urlApi, { signal: AbortSignal.timeout(4500) });
+          if (uRes.ok) {
+            const uData = await uRes.json();
+            if (uData && uData.url && typeof uData.url === 'string' && uData.url.startsWith('http')) {
+              audioUrl = uData.url;
+            }
+          }
+        } catch(e) {}
+        if (!audioUrl) {
+          audioUrl = `https://api.injahow.cn/meting/?server=${targetSource}&type=url&id=${targetOnlineId}`;
+        }
+      }
     } else if (song.title) {
       const query = `${song.title} ${song.artist !== '未知歌手' ? song.artist : ''}`.trim();
       const matches = await requestOnlineSearch(query, 1);
@@ -6344,7 +6515,8 @@ function toggleSongFav(id) {
     if (qSong) qSong.isFav = target.isFav;
     persistData();
     updateUI();
-    toast(target.isFav ? '已收藏' : '已取消收藏');
+    syncCurrentLyricToDesktop();
+    toast(target.isFav ? `已收藏《${target.title}》` : `已取消收藏《${target.title}》`);
   }
 }
 
@@ -6409,10 +6581,12 @@ function triggerSheetAction(action) {
       s.isFav = true;
       ALL_LIBRARY_SONGS.unshift(s);
       persistData();
+      updateUI();
+      syncCurrentLyricToDesktop();
+      toast(`已收藏《${s.title}》`);
     } else {
       toggleSongFav(s.id);
     }
-    toast(`已收藏《${s.title}》`);
     return;
   }
 
@@ -6860,11 +7034,20 @@ async function tryResolveAlternativeFullTrack(song) {
       fetchLyricForSong(altId, song.title, altServer);
 
       const wasPlaying = isPlaying;
-      audioPlayer.src = altAudioUrl;
-      audioPlayer.load();
-      audioPlayer.currentTime = 0;
-      if (wasPlaying) {
-        audioPlayer.play().catch(e => console.warn("Alt track play failed", e));
+      if (isNativeAudioSupported) {
+        if (audioPlayer && !audioPlayer.paused) {
+          try { audioPlayer.pause(); } catch(e) {}
+        }
+        window.AndroidBridge.playNativeAudio(altAudioUrl, 0);
+        isPlaying = true;
+        updateUI();
+      } else {
+        audioPlayer.src = altAudioUrl;
+        audioPlayer.load();
+        audioPlayer.currentTime = 0;
+        if (wasPlaying) {
+          audioPlayer.play().catch(e => console.warn("Alt track play failed", e));
+        }
       }
       toast(`已成功切换至《${song.title}》完整版`);
       return;
@@ -7718,6 +7901,201 @@ function updateQualityDescText() {
   }
 }
 
+/* ================== 定时关闭功能 ================== */
+let currentSleepTimerType = 'off'; // 'off' | 'time' | 'track'
+let sleepTimerTargetTime = 0;
+let sleepTimerTotalMinutes = 0;
+let sleepTimerIntervalId = null;
+
+function openSleepTimerModal() {
+  const modal = document.getElementById('sleepTimerModal');
+  if (!modal) return;
+  updateSleepTimerOptionSelection();
+  modal.classList.add('active');
+}
+
+function closeSleepTimerModal(e) {
+  if (!e || e.target === e.currentTarget || (e.target && e.target.classList && e.target.classList.contains('modal-overlay'))) {
+    const modal = document.getElementById('sleepTimerModal');
+    if (modal) modal.classList.remove('active');
+  }
+}
+
+function updateSleepTimerOptionSelection() {
+  document.querySelectorAll('#sleepTimerModal .color-option-row').forEach(r => r.classList.remove('selected'));
+  if (currentSleepTimerType === 'off') {
+    const opt = document.getElementById('sleepTimerOpt_off');
+    if (opt) opt.classList.add('selected');
+  } else if (currentSleepTimerType === 'track') {
+    const opt = document.getElementById('sleepTimerOpt_track');
+    if (opt) opt.classList.add('selected');
+  } else if (currentSleepTimerType === 'time') {
+    const standardMins = [15, 30, 45, 60, 90];
+    if (standardMins.includes(sleepTimerTotalMinutes)) {
+      const opt = document.getElementById(`sleepTimerOpt_${sleepTimerTotalMinutes}`);
+      if (opt) opt.classList.add('selected');
+    } else {
+      const opt = document.getElementById('sleepTimerOpt_custom');
+      if (opt) opt.classList.add('selected');
+    }
+  }
+}
+
+function selectSleepTimer(type, mins) {
+  if (type === 'off') {
+    cancelSleepTimer(true);
+    closeSleepTimerModal();
+    return;
+  }
+  if (type === 'track') {
+    cancelSleepTimer(false);
+    currentSleepTimerType = 'track';
+    sleepTimerTargetTime = 0;
+    sleepTimerTotalMinutes = 0;
+    updateSleepTimerUI();
+    toast('将在播完当前歌曲后停止播放');
+    closeSleepTimerModal();
+    return;
+  }
+  if (type === 'time' && mins > 0) {
+    startSleepTimerWithMinutes(mins);
+    closeSleepTimerModal();
+  }
+}
+
+function selectSleepTimerCustom() {
+  closeSleepTimerModal();
+  const modal = document.getElementById('sleepTimerCustomModal');
+  const input = document.getElementById('sleepTimerCustomInput');
+  if (input) input.value = (sleepTimerTotalMinutes > 0 ? sleepTimerTotalMinutes : '20');
+  if (modal) modal.classList.add('active');
+}
+
+function closeSleepTimerCustomModal(e) {
+  if (!e || e.target === e.currentTarget || (e.target && e.target.classList && e.target.classList.contains('modern-dialog-backdrop')) || (e.target && e.target.classList && e.target.classList.contains('modern-pill-cancel'))) {
+    const modal = document.getElementById('sleepTimerCustomModal');
+    if (modal) modal.classList.remove('active');
+  }
+}
+
+function confirmSleepTimerCustom() {
+  const input = document.getElementById('sleepTimerCustomInput');
+  const mins = parseInt(input ? input.value : '', 10);
+  if (isNaN(mins) || mins <= 0 || mins > 720) {
+    toast('请输入有效分钟数 (1 ~ 720)');
+    return;
+  }
+  closeSleepTimerCustomModal();
+  const customLabel = document.getElementById('sleepTimerCustomLabel');
+  if (customLabel) customLabel.textContent = `自定义 (${mins} 分钟)`;
+  startSleepTimerWithMinutes(mins);
+}
+
+function startSleepTimerWithMinutes(mins) {
+  cancelSleepTimer(false);
+  currentSleepTimerType = 'time';
+  sleepTimerTotalMinutes = mins;
+  sleepTimerTargetTime = Date.now() + (mins * 60 * 1000);
+
+  // 通知原生 Android MediaPlaybackService 持有唤醒锁并倒计时，保证息屏/后台依然生效
+  if (window.AndroidBridge && window.AndroidBridge.setNativeSleepTimer) {
+    try {
+      window.AndroidBridge.setNativeSleepTimer(mins);
+    } catch(e) {}
+  }
+
+  // 网页端每秒刷新倒计时文案与小胶囊
+  if (sleepTimerIntervalId) clearInterval(sleepTimerIntervalId);
+  sleepTimerIntervalId = setInterval(tickSleepTimer, 1000);
+
+  updateSleepTimerUI();
+  toast(`已设置 ${mins} 分钟后停止播放`);
+}
+
+function cancelSleepTimer(showToast = true) {
+  currentSleepTimerType = 'off';
+  sleepTimerTargetTime = 0;
+  sleepTimerTotalMinutes = 0;
+  if (sleepTimerIntervalId) {
+    clearInterval(sleepTimerIntervalId);
+    sleepTimerIntervalId = null;
+  }
+  if (window.AndroidBridge && window.AndroidBridge.setNativeSleepTimer) {
+    try {
+      window.AndroidBridge.setNativeSleepTimer(0);
+    } catch(e) {}
+  }
+  const customLabel = document.getElementById('sleepTimerCustomLabel');
+  if (customLabel) customLabel.textContent = '自定义分钟';
+  updateSleepTimerUI();
+  if (showToast) {
+    toast('定时关闭已取消');
+  }
+}
+
+function tickSleepTimer() {
+  if (currentSleepTimerType !== 'time') {
+    if (sleepTimerIntervalId) {
+      clearInterval(sleepTimerIntervalId);
+      sleepTimerIntervalId = null;
+    }
+    return;
+  }
+  const remainingMs = sleepTimerTargetTime - Date.now();
+  if (remainingMs <= 0) {
+    fireSleepTimer();
+  } else {
+    updateSleepTimerUI();
+  }
+}
+
+function fireSleepTimer() {
+  cancelSleepTimer(false);
+  if (isNativeAudioSupported && window.AndroidBridge && window.AndroidBridge.pauseNativeAudio) {
+    window.AndroidBridge.pauseNativeAudio();
+  } else if (audioPlayer) {
+    audioPlayer.pause();
+  }
+  isPlaying = false;
+  stopPlaybackLoop();
+  updateUI();
+  toast('定时关闭时间已到，播放已停止');
+}
+
+window.onNativeSleepTimerFired = function() {
+  fireSleepTimer();
+};
+
+function updateSleepTimerUI() {
+  const descEl = document.getElementById('sleepTimerSettingsDesc');
+  const badgeEl = document.getElementById('topSleepTimerBadge');
+  const btnEl = document.getElementById('topSleepTimerBtn');
+
+  if (currentSleepTimerType === 'off') {
+    if (descEl) descEl.textContent = '未开启';
+    if (badgeEl) badgeEl.style.display = 'none';
+    if (btnEl) btnEl.style.color = 'var(--ink-dark)';
+  } else if (currentSleepTimerType === 'track') {
+    if (descEl) descEl.textContent = '播完当前歌曲后停止';
+    if (badgeEl) {
+      badgeEl.textContent = '单曲';
+      badgeEl.style.display = 'block';
+    }
+    if (btnEl) btnEl.style.color = 'var(--brand-terracotta)';
+  } else if (currentSleepTimerType === 'time') {
+    const remainingSec = Math.max(0, Math.ceil((sleepTimerTargetTime - Date.now()) / 1000));
+    const m = Math.floor(remainingSec / 60);
+    const s = remainingSec % 60;
+    const timeStr = `${m}:${String(s).padStart(2, '0')}`;
+    if (descEl) descEl.textContent = `倒计时 ${timeStr} · 停止播放`;
+    if (badgeEl) {
+      badgeEl.textContent = `${m + 1}m`;
+      badgeEl.style.display = 'block';
+    }
+    if (btnEl) btnEl.style.color = 'var(--brand-terracotta)';
+  }
+}
+
 /* 系统与重置功能 */
 function promptResetAppData() {
   openUniversalConfirm({
@@ -7951,10 +8329,14 @@ function switchBottomTab(tab) {
   const headerBar = document.getElementById('listenHeaderBar');
   const btnListen = document.getElementById('tabBtnListen');
   const btnSettings = document.getElementById('tabBtnSettings');
+  const navTitle = document.getElementById('tabNavListen');
+  const headerActions = document.querySelector('.listen-header-actions');
 
   if (tab === 'listen') {
     paneListen.style.display = 'block';
     headerBar.style.display = 'flex';
+    if (navTitle) navTitle.textContent = '灵犀';
+    if (headerActions) headerActions.style.display = 'flex';
     paneSettings.classList.remove('active');
     btnListen.classList.add('active');
     btnSettings.classList.remove('active');
@@ -7964,12 +8346,15 @@ function switchBottomTab(tab) {
   } else {
     exitHomeMultiSelectMode();
     paneListen.style.display = 'none';
-    headerBar.style.display = 'none';
+    headerBar.style.display = 'flex';
+    if (navTitle) navTitle.textContent = '设置';
+    if (headerActions) headerActions.style.display = 'none';
     paneSettings.classList.add('active');
     btnListen.classList.remove('active');
     btnSettings.classList.add('active');
     updateCacheStorageDisplay();
     updateDynamicAppVersion();
+    if (typeof updateSleepTimerUI === 'function') updateSleepTimerUI();
   }
 }
 

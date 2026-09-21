@@ -46,6 +46,7 @@ public class MediaPlaybackService extends Service {
     public static final String ACTION_PAUSE = "com.lingxi.music.ACTION_PAUSE";
     public static final String ACTION_RESUME = "com.lingxi.music.ACTION_RESUME";
     public static final String ACTION_SEEK = "com.lingxi.music.ACTION_SEEK";
+    public static final String ACTION_SLEEP_TIMER = "com.lingxi.music.ACTION_SLEEP_TIMER";
 
     private static MediaPlaybackService sInstance = null;
     public static MediaPlaybackService getInstance() { return sInstance; }
@@ -278,6 +279,7 @@ public class MediaPlaybackService extends Service {
 
         currentAudioUrl = url;
         pendingSeekMs = seekMs;
+        currentPositionMs = (seekMs > 0 ? seekMs : 0);
         isPrepared = false;
         isPreparing = true;
 
@@ -298,6 +300,28 @@ public class MediaPlaybackService extends Service {
             isPreparing = false;
             MainActivity.dispatchWebAction("if (window.onNativeError) window.onNativeError(-1, -1);");
         }
+    }
+
+    private final android.os.Handler sleepTimerHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+    private Runnable sleepTimerRunnable = null;
+
+    public synchronized void setSleepTimer(final double delayMinutes) {
+        if (sleepTimerRunnable != null) {
+            sleepTimerHandler.removeCallbacks(sleepTimerRunnable);
+            sleepTimerRunnable = null;
+        }
+        if (delayMinutes <= 0) {
+            return;
+        }
+        final long delayMs = (long) (delayMinutes * 60 * 1000);
+        sleepTimerRunnable = new Runnable() {
+            @Override
+            public void run() {
+                pausePlayback();
+                MainActivity.dispatchWebAction("if (typeof onNativeSleepTimerFired === 'function') onNativeSleepTimerFired(); else { isPlaying = false; updateUI(); }");
+            }
+        };
+        sleepTimerHandler.postDelayed(sleepTimerRunnable, delayMs);
     }
 
     public synchronized void pausePlayback() {
@@ -414,6 +438,9 @@ public class MediaPlaybackService extends Service {
         } else if (ACTION_SEEK.equals(action)) {
             long seek = intent.getLongExtra("seekMs", 0);
             seekTo(seek);
+        } else if (ACTION_SLEEP_TIMER.equals(action)) {
+            double minutes = intent.getDoubleExtra("minutes", 0.0);
+            setSleepTimer(minutes);
         } else if (ACTION_UPDATE_STATE.equals(action)) {
             currentTitle = intent.getStringExtra("title");
             if (currentTitle == null) currentTitle = "灵犀音乐";
@@ -478,9 +505,15 @@ public class MediaPlaybackService extends Service {
                         cover = rounded;
                     } catch (Exception ignored) {}
                 }
+                final Bitmap finalCover = cover;
                 if (targetUrl != null && targetUrl.equals(currentCoverUrl)) {
-                    currentCoverBitmap = cover;
-                    buildAndPostNotification(cover);
+                    currentCoverBitmap = finalCover;
+                    new android.os.Handler(android.os.Looper.getMainLooper()).post(new Runnable() {
+                        @Override
+                        public void run() {
+                            buildAndPostNotification(finalCover);
+                        }
+                    });
                 }
             }
         }).start();
@@ -512,14 +545,20 @@ public class MediaPlaybackService extends Service {
                     URL url = new URL(currentUrl);
                     HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                     conn.setInstanceFollowRedirects(false); // 支持 HTTPS 与 HTTP 跨域跳转
-                    conn.setConnectTimeout(6000);
-                    conn.setReadTimeout(6000);
+                    conn.setConnectTimeout(8000);
+                    conn.setReadTimeout(8000);
                     conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36");
-                    conn.setRequestProperty("Referer", "https://music.163.com/");
+                    if (currentUrl.contains("163.com") || currentUrl.contains("126.net")) {
+                        conn.setRequestProperty("Referer", "https://music.163.com/");
+                    } else if (currentUrl.contains("qq.com") || currentUrl.contains("gtimg.cn")) {
+                        conn.setRequestProperty("Referer", "https://y.qq.com/");
+                    } else if (currentUrl.contains("kugou.com")) {
+                        conn.setRequestProperty("Referer", "https://www.kugou.com/");
+                    }
                     conn.connect();
 
                     int responseCode = conn.getResponseCode();
-                    if (responseCode == HttpURLConnection.HTTP_MOVED_PERM || responseCode == HttpURLConnection.HTTP_MOVED_TEMP || responseCode == 307 || responseCode == 308) {
+                    if (responseCode >= 300 && responseCode < 400) {
                         String location = conn.getHeaderField("Location");
                         conn.disconnect();
                         if (location != null && !location.isEmpty()) {
