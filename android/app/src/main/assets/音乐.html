@@ -71,6 +71,7 @@
 
   --dark-cold-btn: #2E3034;
   --font-serif: "LXGW WenKai TC", "LXGW WenKai", "霞鹜文楷", serif;
+  --font-system: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "WenQuanYi Micro Hei", system-ui, Roboto, "Helvetica Neue", sans-serif;
 }
 
 body.night {
@@ -112,6 +113,11 @@ body.night {
   -webkit-tap-highlight-color: transparent !important;
   outline: none !important;
   user-select: none;
+}
+
+body.font-system,
+body.font-system * {
+  font-family: var(--font-system) !important;
 }
 
 button:focus, button:active, button:focus-visible {
@@ -733,15 +739,15 @@ body.night .popup-menu-item:active { background: rgba(255, 255, 255, 0.05); }
 
 /* ================== 8.6 外观与主题子页及弹窗 ================== */
 .view-theme-subpage {
-  position: absolute; top: 0; left: 0; width: 100%; height: calc(100% - 44px);
-  background: var(--bg-page); z-index: 57; display: flex; flex-direction: column;
+  position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+  background: var(--bg-page); z-index: 80; display: flex; flex-direction: column;
   transform: translateX(100%); transition: transform 0.28s cubic-bezier(0.2, 0.9, 0.3, 1); overflow: hidden;
   pointer-events: none;
 }
 .view-theme-subpage.active { transform: translateX(0); pointer-events: auto; }
 
 .settings-subview-scroll {
-  flex: 1; overflow-y: auto; padding: 12px 16px calc(76px + var(--safe-bottom, 20px));
+  flex: 1; overflow-y: auto; padding: 12px 16px max(32px, env(safe-area-inset-bottom, 24px));
   display: flex; flex-direction: column; gap: 14px;
 }
 
@@ -830,8 +836,8 @@ body.night .settings-item-row.is-pressed {
 
 /* ================== 8.5 独立编辑歌单页 ================== */
 .view-edit-playlist {
-  position: absolute; top: 0; left: 0; width: 100%; height: calc(100% - 44px);
-  background: var(--bg-page); z-index: 56; display: flex; flex-direction: column;
+  position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+  background: var(--bg-page); z-index: 80; display: flex; flex-direction: column;
   transform: translateX(100%); transition: transform 0.28s cubic-bezier(0.2, 0.9, 0.3, 1); overflow: hidden;
   pointer-events: none;
 }
@@ -889,7 +895,7 @@ body.night .edit-cover-thumbnail {
 
 /* ================== 10. 歌曲内部（全屏播放详情页） ================== */
 .view-player-full {
-  position: absolute; top: 0; left: 0; width: 100%; height: calc(100% - 44px);
+  position: absolute; top: 0; left: 0; width: 100%; height: 100%;
   background: radial-gradient(circle at 50% 20%, #FAF9F7 0%, #EDEDEB 100%);
   z-index: 70; display: flex; flex-direction: column; justify-content: space-between;
   transform: translateY(100%); transition: transform 0.28s cubic-bezier(0.2, 0.9, 0.3, 1); overflow: hidden;
@@ -1330,8 +1336,8 @@ body.night .choose-checkbox.checked {
 
 /* ================== 12. 全屏搜索页面（搜索视图） ================== */
 .view-search-full {
-  position: absolute; top: 0; left: 0; width: 100%; height: calc(100% - 44px);
-  background: var(--bg-page); z-index: 55; display: flex; flex-direction: column;
+  position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+  background: var(--bg-page); z-index: 80; display: flex; flex-direction: column;
   transform: translateX(100%); transition: transform 0.28s cubic-bezier(0.2, 0.9, 0.3, 1); overflow: hidden;
   pointer-events: none;
 }
@@ -2210,6 +2216,13 @@ body.in-pip-mode .view-player-full {
             <span class="settings-sub-desc" id="main-theme-color-display">克莱因蓝</span>
           </div>
         </div>
+        <div class="group-menu-divider"></div>
+        <div class="settings-item-row" onclick="openFontModal()">
+          <div class="settings-item-col">
+            <span class="settings-title-line">应用字体</span>
+            <span class="settings-sub-desc" id="main-font-display">霞鹜文楷</span>
+          </div>
+        </div>
       </div>
 
       <span class="settings-group-header">视觉与交互</span>
@@ -2885,6 +2898,29 @@ body.in-pip-mode .view-player-full {
 
       <div class="color-option-row" data-color-id="black" onclick="selectThemeColor('black', '#171715', '水墨黑', this)">
         <span class="pure-theme-name">水墨黑 (纯粹极简)</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 8.135 应用字体弹窗（严格复用显示模式结构规范与定制SVG） -->
+  <div class="modal-overlay" id="font-modal-overlay" onclick="closeFontModal(event)">
+    <div class="color-modal-card" onclick="event.stopPropagation()">
+      <div class="color-modal-title">应用字体</div>
+      
+      <div class="color-option-row" data-font="lxgw" onclick="selectAppFont('lxgw', this)">
+        <div class="color-option-left">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><line x1="9" y1="7" x2="15" y2="7"/><line x1="9" y1="11" x2="13" y2="11"/></svg>
+          <span style="font-family:'LXGW WenKai', serif;">霞鹜文楷 (默认)</span>
+        </div>
+        <svg class="color-option-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+
+      <div class="color-option-row" data-font="system" onclick="selectAppFont('system', this)">
+        <div class="color-option-left">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="3"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+          <span style="font-family:system-ui, -apple-system, sans-serif;">系统自带</span>
+        </div>
+        <svg class="color-option-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
       </div>
     </div>
   </div>
@@ -5535,12 +5571,60 @@ function closeThemeSettingsSubpage() {
   updateSettingsSummary();
 }
 
+let currentAppFont = localStorage.getItem('yyrc_app_font') || 'lxgw';
+
+function applyAppFont(fontKey) {
+  currentAppFont = fontKey || 'lxgw';
+  if (currentAppFont === 'system') {
+    document.body.classList.add('font-system');
+  } else {
+    document.body.classList.remove('font-system');
+  }
+  const disp = document.getElementById('main-font-display');
+  if (disp) disp.textContent = (currentAppFont === 'system' ? '系统自带' : '霞鹜文楷');
+}
+
+function openFontModal() {
+  const overlay = document.getElementById('font-modal-overlay');
+  if (!overlay) return;
+  const rows = overlay.querySelectorAll('.color-option-row');
+  rows.forEach(r => {
+    const f = r.getAttribute('data-font');
+    r.classList.toggle('selected', f === currentAppFont);
+  });
+  overlay.classList.add('active');
+}
+
+function closeFontModal(e) {
+  if (!e || e.target === e.currentTarget) {
+    const el = document.getElementById('font-modal-overlay');
+    if (el) el.classList.remove('active');
+  }
+}
+
+function selectAppFont(fontKey, rowEl) {
+  document.querySelectorAll('#font-modal-overlay .color-option-row').forEach(r => r.classList.remove('selected'));
+  if (rowEl) rowEl.classList.add('selected');
+
+  currentAppFont = fontKey;
+  localStorage.setItem('yyrc_app_font', fontKey);
+
+  applyAppFont(fontKey);
+
+  const overlay = document.getElementById('font-modal-overlay');
+  if (overlay) overlay.classList.remove('active');
+  toast('已切换字体为 ' + (fontKey === 'system' ? '系统自带' : '霞鹜文楷'));
+}
+
 function updateSettingsSummary() {
   const textMap = { system: '跟随系统', auto: '跟随系统', light: '浅色明亮', dark: '深色夜间' };
   const modeText = textMap[currentThemeMode] || '跟随系统';
   const cInfo = PRESET_THEME_COLORS.find(c => c.id === currentThemeColorId) || PRESET_THEME_COLORS[0];
   const sumEl = document.getElementById('themeSettingsSummary');
   if (sumEl) sumEl.textContent = `${modeText} · ${cInfo.name}`;
+
+  const fontDisp = document.getElementById('main-font-display');
+  if (fontDisp) fontDisp.textContent = (currentAppFont === 'system' ? '系统自带' : '霞鹜文楷');
 }
 
 function openColorModal() {
@@ -5650,6 +5734,7 @@ function initThemeSettings() {
   const cInfo = PRESET_THEME_COLORS.find(c => c.id === savedColorId) || PRESET_THEME_COLORS[0];
   selectThemeColor(cInfo.id, cInfo.color, cInfo.name, null, false);
   applyThemeColorStyles();
+  applyAppFont(currentAppFont);
   updateSettingsSummary();
 }
 

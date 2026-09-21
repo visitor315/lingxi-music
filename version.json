@@ -1,6 +1,6 @@
 {
-  "versionCode": 40,
-  "versionName": "2.0.9",
-  "changelog": "1. 新增应用内智能弹窗升级与极速自更新\n2. 接入多源国内加速镜像，下载更新秒级完成\n3. 优化后台唤醒与系统安装器无缝衔接\n4. 彻底解决后台播放中断与音源切换假死",
+  "versionCode": 41,
+  "versionName": "2.1.0",
+  "changelog": "1. 彻底修复外观与个性化子页底部导航栏透出问题\n2. 外观设置新增应用字体切换（霞鹜文楷 / 系统自带）\n3. 优化全屏子页层级覆盖与底部安全间距\n4. 持续强化应用内极速检测与高速直连下载",
   "downloadUrl": "https://ghfast.top/https://github.com/visitor315/lingxi-music/releases/download/v1.4.0/LingXiMusic.apk"
 }
