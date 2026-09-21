@@ -1219,15 +1219,55 @@ body.night .edit-cover-thumbnail {
   transform: translateY(0);
   pointer-events: auto;
 }
+/* 顶部操作标头（左侧关闭X，居中标题，右侧完成按键） */
+.choose-sheet-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 2px 2px 8px; position: relative;
+}
+.choose-sheet-close-btn {
+  width: 32px; height: 32px; border: none; background: transparent;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--ink-dark); cursor: pointer; padding: 0; border-radius: 50%;
+}
+.choose-sheet-close-btn:active { background: var(--divider); }
+.choose-sheet-close-btn svg { width: 19px; height: 19px; stroke-width: 1.8; }
+.choose-sheet-title {
+  font-size: 16px; font-weight: 600; color: var(--ink-black); text-align: center;
+}
+.choose-sheet-done-btn {
+  border: none; background: transparent; color: var(--brand-blue);
+  font-size: 15px; font-weight: 600; padding: 6px 8px; cursor: pointer;
+  border-radius: 8px;
+}
+.choose-sheet-done-btn:active { opacity: 0.7; }
+
+/* 纯文字胶囊新建歌单按钮（无任何SVG） */
+.choose-capsule-wrap {
+  display: flex; justify-content: center; padding: 4px 0 10px;
+}
+.choose-capsule-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 6px 20px; border-radius: 999px;
+  background: var(--card-bg); border: 1px solid var(--border-input);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  font-size: 13.5px; font-weight: 500; color: var(--ink-black);
+  cursor: pointer; transition: all 0.15s ease;
+}
+.choose-capsule-btn:active {
+  transform: scale(0.96); background: var(--pinned-bg);
+}
+body.night .choose-capsule-btn {
+  background: rgba(255, 255, 255, 0.08); border-color: rgba(255, 255, 255, 0.12); color: #FAF9F5;
+}
+
 .choose-item-row {
-  padding: 12px 8px; border-radius: 14px; background: transparent; cursor: pointer;
+  padding: 12px 10px; border-radius: 14px; background: transparent; cursor: pointer;
   display: flex; align-items: center; justify-content: space-between;
   border-bottom: none !important; border: none !important;
   transition: background 0.15s ease;
 }
 .choose-item-row:active {
   background: rgba(0, 0, 0, 0.05);
-  opacity: 0.8;
 }
 body.night .choose-item-row:active {
   background: rgba(255, 255, 255, 0.08);
@@ -1235,9 +1275,34 @@ body.night .choose-item-row:active {
 .choose-item-title {
   font-size: 15px; font-weight: 500; color: var(--ink-black); line-height: 22px;
 }
-.choose-item-count,
 .choose-item-sub {
   font-size: 13px; color: var(--ink-light);
+}
+
+/* 右侧无“几首”文字，纯净多选勾选框 */
+.choose-checkbox {
+  width: 22px; height: 22px; border-radius: 50%;
+  border: 1.8px solid var(--border-input);
+  display: flex; align-items: center; justify-content: center;
+  box-sizing: border-box; transition: all 0.18s cubic-bezier(0.2, 0.8, 0.2, 1);
+  flex-shrink: 0;
+}
+.choose-checkbox svg {
+  width: 13px; height: 13px; stroke: #FFFFFF;
+  opacity: 0; transform: scale(0.6);
+  transition: all 0.18s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.choose-checkbox.checked {
+  background: var(--brand-blue); border-color: var(--brand-blue);
+}
+.choose-checkbox.checked svg {
+  opacity: 1; transform: scale(1);
+}
+body.night .choose-checkbox {
+  border-color: rgba(255, 255, 255, 0.3);
+}
+body.night .choose-checkbox.checked {
+  background: var(--brand-blue); border-color: var(--brand-blue);
 }
 
 /* 系统虚拟三键与 Toast */
@@ -2394,14 +2459,17 @@ body.in-pip-mode .view-player-full {
   <div class="choose-playlist-modal" id="choosePlaylistModal" onclick="closeChoosePlaylistModal(event)">
     <div class="choose-playlist-card" onclick="event.stopPropagation()">
       <div class="add-sheet-drag-handle"></div>
-      <div class="add-sheet-header">
-        <div style="width:32px;"></div>
-        <div class="add-sheet-title">加入歌单</div>
-        <button class="add-sheet-close-btn" onclick="document.getElementById('choosePlaylistModal').classList.remove('active')">
+      <div class="choose-sheet-header">
+        <button class="choose-sheet-close-btn" onclick="closeChoosePlaylistModalDirect()" title="关闭">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
         </button>
+        <div class="choose-sheet-title">加入歌单</div>
+        <button class="choose-sheet-done-btn" onclick="confirmBatchAddToPlaylists()">完成</button>
       </div>
-      <div id="choosePlaylistItems" style="display:flex; flex-direction:column; gap:4px; margin-top:4px;"></div>
+      <div class="choose-capsule-wrap">
+        <button class="choose-capsule-btn" onclick="openCreatePlaylistFromChoose()">新建歌单</button>
+      </div>
+      <div id="choosePlaylistItems" style="display:flex; flex-direction:column; gap:4px; max-height:50vh; overflow-y:auto;"></div>
     </div>
   </div>
 
@@ -2409,12 +2477,12 @@ body.in-pip-mode .view-player-full {
   <div class="choose-playlist-modal" id="chooseRingtoneModal" onclick="closeChooseRingtoneModal(event)">
     <div class="choose-playlist-card" onclick="event.stopPropagation()">
       <div class="add-sheet-drag-handle"></div>
-      <div class="add-sheet-header">
-        <div style="width:32px;"></div>
-        <div class="add-sheet-title" id="chooseRingtoneSongTitle">设为系统铃声</div>
-        <button class="add-sheet-close-btn" onclick="document.getElementById('chooseRingtoneModal').classList.remove('active')">
+      <div class="choose-sheet-header">
+        <button class="choose-sheet-close-btn" onclick="document.getElementById('chooseRingtoneModal').classList.remove('active')" title="关闭">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
         </button>
+        <div class="choose-sheet-title" id="chooseRingtoneSongTitle">设为系统铃声</div>
+        <div style="width:36px;"></div>
       </div>
       <div style="display:flex; flex-direction:column; gap:4px; margin-top:4px;">
         <div class="choose-item-row" onclick="confirmSetRingtone(1)">
@@ -7869,121 +7937,180 @@ function deleteSong(songId, albumId = null) {
   toast('已移出歌曲');
 }
 
-/* 动态选择加入歌单功能 */
+let selectedPlaylistIndices = new Set();
+let choosePlaylistInitialState = new Map();
+
+/* 动态选择加入歌单功能（多选勾选框、无SVG、纯净胶囊新建按钮） */
 function openChoosePlaylistModal() {
   const modal = document.getElementById('choosePlaylistModal');
-  const itemsBox = document.getElementById('choosePlaylistItems');
-  // 排除全部歌曲（所有歌曲本身已归入全部歌曲），列出收藏夹、本地歌曲与自建歌单
+  selectedPlaylistIndices.clear();
+  choosePlaylistInitialState.clear();
+
   const targetAlbums = VINYL_ALBUMS.map((alb, aIdx) => ({ alb, aIdx })).filter(item => item.alb.id !== 'alb_all');
+  const song = currentActionSong;
+  const batch = window._batchAddSongs;
 
-  let html = targetAlbums.map(({ alb, aIdx }) => `
-    <div class="choose-item-row" onclick="addActiveSongToAlbum(${aIdx})">
-      <div style="display:flex; align-items:center; gap:12px;">
-        <div class="add-clean-icon">
-          ${alb.hasRose ? `<svg viewBox="0 0 512 512" style="width:18px;height:18px;fill:var(--heart-red);"><path d="${ROSE_SVG_PATH}"/></svg>` : `<svg viewBox="0 0 24 24" style="width:19px;height:19px;stroke:currentColor;fill:none;stroke-width:1.55;"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>`}
-        </div>
-        <span class="choose-item-title">${escapeHtml(alb.title)}</span>
-      </div>
-      <span class="choose-item-count">${alb.songs.length} 首</span>
-    </div>
-  `).join('');
+  targetAlbums.forEach(({ alb, aIdx }) => {
+    let initiallyIn = false;
+    if (batch && batch.length > 0) {
+      initiallyIn = batch.every(s => alb.songs.some(as => as.id === s.id));
+    } else if (song) {
+      initiallyIn = alb.songs.some(as => as.id === song.id);
+    }
+    choosePlaylistInitialState.set(aIdx, initiallyIn);
+    if (initiallyIn) {
+      selectedPlaylistIndices.add(aIdx);
+    }
+  });
 
-  html += `
-    <div class="choose-item-row" style="margin-top:6px;" onclick="openCreatePlaylistFromChoose()">
-      <div style="display:flex; align-items:center; gap:12px;">
-        <div class="add-clean-icon" style="color:var(--brand-blue);">
-          <svg viewBox="0 0 24 24" style="width:19px;height:19px;stroke:currentColor;fill:none;stroke-width:1.8;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-        </div>
-        <span class="choose-item-title" style="color:var(--brand-blue); font-weight:600;">新建歌单并加入</span>
-      </div>
-      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" style="color:var(--ink-light);"><polyline points="9 18 15 12 9 6"/></svg>
-    </div>
-  `;
-
-  itemsBox.innerHTML = html;
+  renderChoosePlaylistItems();
   modal.classList.add('active');
 }
 
-function closeChoosePlaylistModal(e) {
-  if (e && e.target !== document.getElementById('choosePlaylistModal')) return;
-  document.getElementById('choosePlaylistModal').classList.remove('active');
+function renderChoosePlaylistItems() {
+  const itemsBox = document.getElementById('choosePlaylistItems');
+  if (!itemsBox) return;
+
+  const targetAlbums = VINYL_ALBUMS.map((alb, aIdx) => ({ alb, aIdx })).filter(item => item.alb.id !== 'alb_all');
+
+  itemsBox.innerHTML = targetAlbums.map(({ alb, aIdx }) => {
+    const isChecked = selectedPlaylistIndices.has(aIdx);
+    return `
+      <div class="choose-item-row" onclick="togglePlaylistSelection(${aIdx})">
+        <span class="choose-item-title">${escapeHtml(alb.title)}</span>
+        <div class="choose-checkbox ${isChecked ? 'checked' : ''}" id="chk_alb_${aIdx}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+      </div>
+    `;
+  }).join('');
 }
 
-function openCreatePlaylistFromChoose() {
-  const batch = window._batchAddSongs;
-  const song = currentActionSong;
-  const name = prompt("请输入新建歌单名称：");
-  if (name && name.trim()) {
-    const trimmedName = name.trim();
-    const songsToAdd = (batch && batch.length > 0) ? [...batch] : (song ? [song] : []);
-    const newAlb = {
-      id: 'alb_custom_' + Date.now(),
-      title: trimmedName,
-      author: '我',
-      sub: '自建私享 · 触碰进入',
-      hasRose: false,
-      songs: songsToAdd
-    };
-    VINYL_ALBUMS.push(newAlb);
-    persistData();
-    renderVinylDiscs();
-    renderSongList();
-    window._batchAddSongs = null;
-    exitMultiSelectMode();
-    exitHomeMultiSelectMode();
-    const newIndex = VINYL_ALBUMS.length - 1;
-    scrollVinylToAlbum(newIndex, true);
-    document.getElementById('choosePlaylistModal').classList.remove('active');
-    toast(`已创建歌单「${trimmedName}」并加入 ${songsToAdd.length} 首歌曲`);
+function togglePlaylistSelection(aIdx) {
+  if (selectedPlaylistIndices.has(aIdx)) {
+    selectedPlaylistIndices.delete(aIdx);
+  } else {
+    selectedPlaylistIndices.add(aIdx);
+  }
+  const chk = document.getElementById(`chk_alb_${aIdx}`);
+  if (chk) {
+    if (selectedPlaylistIndices.has(aIdx)) {
+      chk.classList.add('checked');
+    } else {
+      chk.classList.remove('checked');
+    }
   }
 }
 
-function addActiveSongToAlbum(aIdx) {
-  const alb = VINYL_ALBUMS[aIdx];
-  if (!alb) return;
+function confirmBatchAddToPlaylists() {
+  const targetAlbums = VINYL_ALBUMS.map((alb, aIdx) => ({ alb, aIdx })).filter(item => item.alb.id !== 'alb_all');
+  const song = currentActionSong;
+  const batch = window._batchAddSongs;
 
-  if (window._batchAddSongs && window._batchAddSongs.length > 0) {
-    const batch = window._batchAddSongs;
-    let addedCount = 0;
-    batch.forEach(song => {
-      if (!alb.songs.some(s => s.id === song.id)) {
-        alb.songs.push(song);
-        if (alb.id === 'alb_fav') {
-          song.isFav = true;
-          const songInLib = ALL_LIBRARY_SONGS.find(s => s.id === song.id);
-          if (songInLib) songInLib.isFav = true;
-        }
-        addedCount++;
+  if (batch && batch.length > 0) {
+    targetAlbums.forEach(({ alb, aIdx }) => {
+      const isSelected = selectedPlaylistIndices.has(aIdx);
+      const wasSelected = choosePlaylistInitialState.get(aIdx);
+      if (isSelected && !wasSelected) {
+        batch.forEach(s => {
+          if (!alb.songs.some(as => as.id === s.id)) {
+            alb.songs.push(s);
+            if (alb.id === 'alb_fav') {
+              s.isFav = true;
+              const libS = ALL_LIBRARY_SONGS.find(ls => ls.id === s.id);
+              if (libS) libS.isFav = true;
+            }
+          }
+        });
+      } else if (!isSelected && wasSelected) {
+        batch.forEach(s => {
+          const idx = alb.songs.findIndex(as => as.id === s.id);
+          if (idx !== -1) {
+            alb.songs.splice(idx, 1);
+            if (alb.id === 'alb_fav') {
+              s.isFav = false;
+              const libS = ALL_LIBRARY_SONGS.find(ls => ls.id === s.id);
+              if (libS) libS.isFav = false;
+            }
+          }
+        });
       }
     });
     window._batchAddSongs = null;
     persistData();
     renderSongList();
     updateUI();
-    toast(`已将 ${addedCount} 首歌曲加入歌单「${alb.title}」`);
     exitMultiSelectMode();
     exitHomeMultiSelectMode();
-    document.getElementById('choosePlaylistModal').classList.remove('active');
+    closeChoosePlaylistModalDirect();
+    toast('歌单设置已更新');
     return;
   }
 
-  const song = currentActionSong;
-  if (!song) return;
-  if (!alb.songs.some(s => s.id === song.id)) {
-    alb.songs.push(song);
-    if (alb.id === 'alb_fav') {
-      song.isFav = true;
-      const songInLib = ALL_LIBRARY_SONGS.find(s => s.id === song.id);
-      if (songInLib) songInLib.isFav = true;
-    }
+  if (song) {
+    targetAlbums.forEach(({ alb, aIdx }) => {
+      const isSelected = selectedPlaylistIndices.has(aIdx);
+      const wasSelected = choosePlaylistInitialState.get(aIdx);
+      if (isSelected && !wasSelected) {
+        if (!alb.songs.some(as => as.id === song.id)) {
+          alb.songs.push(song);
+          if (alb.id === 'alb_fav') {
+            song.isFav = true;
+            const libS = ALL_LIBRARY_SONGS.find(ls => ls.id === song.id);
+            if (libS) libS.isFav = true;
+          }
+        }
+      } else if (!isSelected && wasSelected) {
+        const idx = alb.songs.findIndex(as => as.id === song.id);
+        if (idx !== -1) {
+          alb.songs.splice(idx, 1);
+          if (alb.id === 'alb_fav') {
+            song.isFav = false;
+            const libS = ALL_LIBRARY_SONGS.find(ls => ls.id === song.id);
+            if (libS) libS.isFav = false;
+          }
+        }
+      }
+    });
     persistData();
     renderSongList();
     updateUI();
-    toast(`已将《${song.title}》加入歌单「${alb.title}」`);
-  } else {
-    toast(`《${song.title}》已在歌单「${alb.title}」中`);
+    closeChoosePlaylistModalDirect();
+    toast('歌单设置已更新');
   }
-  document.getElementById('choosePlaylistModal').classList.remove('active');
+}
+
+function closeChoosePlaylistModalDirect() {
+  const modal = document.getElementById('choosePlaylistModal');
+  if (modal) modal.classList.remove('active');
+}
+
+function closeChoosePlaylistModal(e) {
+  if (e && e.target !== document.getElementById('choosePlaylistModal')) return;
+  closeChoosePlaylistModalDirect();
+}
+
+function openCreatePlaylistFromChoose() {
+  const name = prompt("请输入新建歌单名称：");
+  if (name && name.trim()) {
+    const trimmedName = name.trim();
+    const newAlb = {
+      id: 'alb_custom_' + Date.now(),
+      title: trimmedName,
+      author: '我',
+      sub: '自建私享 · 触碰进入',
+      hasRose: false,
+      songs: []
+    };
+    VINYL_ALBUMS.push(newAlb);
+    persistData();
+    renderVinylDiscs();
+    renderSongList();
+    const newAIdx = VINYL_ALBUMS.length - 1;
+    selectedPlaylistIndices.add(newAIdx);
+    renderChoosePlaylistItems();
+    toast(`已创建歌单「${trimmedName}」`);
+  }
 }
 
 /* 新手入门指南：滑动式引导卡片，一信息一页 */
