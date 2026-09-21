@@ -30,10 +30,6 @@ jobs:
           yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
           echo "sdk.dir=$ANDROID_HOME" > android/local.properties
 
-      - name: Generate Signing Keystore
-        run: |
-          keytool -genkey -v -keystore android/app/debug.keystore -alias androiddebugkey -keyalg RSA -keysize 2048 -validity 10000 -storepass android -keypass android -dname "CN=LingXi, OU=Music, O=LingXi, L=Beijing, S=Beijing, C=CN"
-
       - name: Build APK with Gradle
         run: |
           cd android

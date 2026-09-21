@@ -64,11 +64,16 @@ if run:
                 devices = [l.split()[0] for l in lines if "\tdevice" in l]
 
                 if devices:
-                    print(f"Found connected ADB device(s): {devices}, uninstalling old & reinstalling...", flush=True)
-                    subprocess.run(["adb", "uninstall", "com.lingxi.music"], capture_output=True, text=True)
+                    print(f"Found connected ADB device(s): {devices}, installing update (retaining user data)...", flush=True)
                     res = subprocess.run(["adb", "install", "-r", dest1], capture_output=True, text=True)
                     print("ADB install stdout:", res.stdout, flush=True)
                     print("ADB install stderr:", res.stderr, flush=True)
+                    if "INSTALL_FAILED_UPDATE_INCOMPATIBLE" in res.stdout or "INSTALL_FAILED_UPDATE_INCOMPATIBLE" in res.stderr:
+                        print("Notice: Legacy ephemeral signature detected. Performing one-time migration to permanent signature...", flush=True)
+                        subprocess.run(["adb", "uninstall", "com.lingxi.music"], capture_output=True, text=True)
+                        res = subprocess.run(["adb", "install", "-r", dest1], capture_output=True, text=True)
+                        print("Migration ADB install stdout:", res.stdout, flush=True)
+                        print("Migration ADB install stderr:", res.stderr, flush=True)
 
                     print("Setting appops permissions...", flush=True)
                     subprocess.run(["adb", "shell", "appops", "set", "com.lingxi.music", "SYSTEM_ALERT_WINDOW", "allow"])
