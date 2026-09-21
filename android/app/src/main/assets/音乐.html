@@ -3097,6 +3097,53 @@ const audioPlayer = new Audio();
 audioPlayer.preload = 'auto';
 const RING_PERIMETER = 2 * Math.PI * 22.5;
 
+/* 保持后台运行免休眠静音音频锚点 */
+let bgMediaAnchor = null;
+function keepBackgroundAlive() {
+  try {
+    if (!bgMediaAnchor) {
+      bgMediaAnchor = new Audio("data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA");
+      bgMediaAnchor.loop = true;
+      bgMediaAnchor.volume = 0.0001;
+    }
+    if (bgMediaAnchor.paused) {
+      bgMediaAnchor.play().catch(() => {});
+    }
+  } catch(e) {}
+}
+
+/* 全平台通用安全网络请求：在 Android 原生环境下直通系统级 HttpURLConnection，彻底避开 Chromium 后台挂起 */
+async function universalFetch(url, options = {}) {
+  const timeoutMs = options.timeout || 6000;
+  if (window.AndroidBridge && window.AndroidBridge.fetchHttpSync) {
+    try {
+      const respStr = window.AndroidBridge.fetchHttpSync(url, timeoutMs);
+      if (respStr) {
+        const jsonResp = JSON.parse(respStr);
+        return {
+          ok: !!jsonResp.ok,
+          status: jsonResp.status,
+          json: async () => JSON.parse(jsonResp.data || '{}'),
+          text: async () => jsonResp.data || '',
+          finalUrl: jsonResp.finalUrl || url
+        };
+      }
+    } catch(e) {
+      console.warn("Native fetchHttpSync fallback to browser fetch:", e);
+    }
+  }
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, { ...options, signal: controller.signal });
+    clearTimeout(timer);
+    return res;
+  } catch(err) {
+    clearTimeout(timer);
+    throw err;
+  }
+}
+
 function calibrateSystemInsets() {
   let sbHeight = 38;
   let nbHeight = 0;
@@ -3348,6 +3395,7 @@ function initNativeAudioEngine() {
 
 window.onNativePlay = function() {
   isPlaying = true;
+  keepBackgroundAlive();
   updateUI();
   startLyricSmoothSync();
 };
@@ -3360,6 +3408,7 @@ window.onNativePause = function() {
 
 window.onNativePrepared = function(durationSec) {
   isPlaying = true;
+  keepBackgroundAlive();
   const song = currentPlaybackQueue[currentIndex];
   if (song && durationSec > 0) {
     song.duration = Math.floor(durationSec);
@@ -3397,9 +3446,16 @@ window.onNativeError = function(what, extra) {
     resolveAndPlayOnlineSong(song, true);
   } else {
     songRetryCounts[song.id] = 0;
-    toast(`《${song.title}》音源加载异常，点击可重试`);
-    isPlaying = false;
-    updateUI();
+    if (currentPlaybackQueue.length > 1) {
+      toast(`《${song.title}》音源暂不可达，自动播放下一首...`);
+      setTimeout(() => {
+        playNext();
+      }, 1200);
+    } else {
+      toast(`《${song.title}》音源加载异常，点击可重试`);
+      isPlaying = false;
+      updateUI();
+    }
   }
 };
 
@@ -3616,6 +3672,7 @@ function playSongAtQueue(idx) {
       if (audioPlayer && !audioPlayer.paused) {
         try { audioPlayer.pause(); } catch(e) {}
       }
+      keepBackgroundAlive();
       window.AndroidBridge.playNativeAudio(song.fileUrl, 0);
       isPlaying = true;
       updateUI();
@@ -3640,7 +3697,12 @@ function playSongAtQueue(idx) {
   } else if (song.onlineId || song.title) {
     resolveAndPlayOnlineSong(song);
   } else {
-    toast('《' + song.title + '》暂无可用音源');
+    if (currentPlaybackQueue.length > 1) {
+      toast('《' + song.title + '》暂无可用音源，自动切换下一首...');
+      setTimeout(() => playNext(), 1200);
+    } else {
+      toast('《' + song.title + '》暂无可用音源');
+    }
   }
 
   updateMediaSession(song);
@@ -4043,10 +4105,7 @@ async function requestOnlineSearch(keyword, count = 30) {
 
   for (const c of candidates) {
     try {
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 4500);
-      const res = await fetch(c.url, { method: 'GET', signal: controller.signal });
-      clearTimeout(timer);
+      const res = await universalFetch(c.url, { timeout: 4500 });
       if (!res.ok) continue;
       const data = await res.json();
       if (!Array.isArray(data) || data.length === 0) continue;
@@ -4162,7 +4221,7 @@ async function playOnlineTrack(idx) {
   let realAudioUrl = '';
   try {
     const urlApi = `${currentApiBase}?types=url&id=${item.url_id}&source=${item.source}&br=${currentAudioQuality}`;
-    const urlRes = await fetch(urlApi, { signal: AbortSignal.timeout(1800) });
+    const urlRes = await universalFetch(urlApi, { timeout: 2500 });
     if (urlRes.ok) {
       const uData = await urlRes.json();
       if (uData && uData.url && typeof uData.url === 'string' && uData.url.startsWith('http')) {
@@ -4185,7 +4244,7 @@ async function playOnlineTrack(idx) {
   } else if (item.pic_id) {
     try {
       const picApi = `${currentApiBase}?types=pic&id=${item.pic_id}&source=${item.source}`;
-      const picRes = await fetch(picApi, { signal: AbortSignal.timeout(1800) });
+      const picRes = await universalFetch(picApi, { timeout: 2500 });
       if (picRes.ok) {
         const picData = await picRes.json();
         if (picData && picData.url) {
@@ -4262,7 +4321,7 @@ async function fetchLyricForSong(songId, songTitle, source = 'netease') {
   let rawLrc = '';
   try {
     const apiLrcUrl = `${currentApiBase}?types=lyric&id=${songId}&source=${source}`;
-    const res = await fetch(apiLrcUrl, { signal: AbortSignal.timeout(1800) });
+    const res = await universalFetch(apiLrcUrl, { timeout: 2500 });
     if (res.ok) {
       const data = await res.json();
       if (data && data.lyric) {
@@ -4276,7 +4335,7 @@ async function fetchLyricForSong(songId, songTitle, source = 'netease') {
   if (!rawLrc) {
     try {
       const lyricApi = `https://music.163.com/api/song/lyric?id=${songId}&lv=1&kv=1&tv=-1`;
-      const res = await fetch(lyricApi);
+      const res = await universalFetch(lyricApi, { timeout: 2500 });
       if (res.ok) {
         const data = await res.json();
         if (data && data.lrc && data.lrc.lyric) rawLrc = data.lrc.lyric;
@@ -4286,7 +4345,7 @@ async function fetchLyricForSong(songId, songTitle, source = 'netease') {
 
   if (!rawLrc && songId) {
     try {
-      const res = await fetch(`https://api.injahow.cn/meting/?server=${source}&type=lrc&id=${songId}`);
+      const res = await universalFetch(`https://api.injahow.cn/meting/?server=${source}&type=lrc&id=${songId}`, { timeout: 2500 });
       if (res.ok) {
         const text = await res.text();
         if (text && text.includes('[')) rawLrc = text;
@@ -6605,7 +6664,7 @@ async function prefetchOnlineSongSource(song) {
       } else {
         try {
           const urlApi = `${currentApiBase}?types=url&id=${targetOnlineId}&source=${targetSource}&br=${currentAudioQuality}`;
-          const uRes = await fetch(urlApi, { signal: AbortSignal.timeout(4500) });
+          const uRes = await universalFetch(urlApi, { timeout: 4500 });
           if (uRes.ok) {
             const uData = await uRes.json();
             if (uData && uData.url && typeof uData.url === 'string' && uData.url.startsWith('http')) {
@@ -6925,7 +6984,7 @@ async function confirmSetRingtone(type) {
     try {
       const source = s.source || 'netease';
       const urlApi = `${currentApiBase}?types=url&id=${onlineId}&source=${source}&br=${currentAudioQuality}`;
-      const urlRes = await fetch(urlApi);
+      const urlRes = await universalFetch(urlApi, { timeout: 3500 });
       if (urlRes.ok) {
         const uData = await urlRes.json();
         if (uData && uData.url) {
@@ -6966,7 +7025,7 @@ async function downloadSongFile(song) {
     try {
       const source = song.source || 'netease';
       const urlApi = `${currentApiBase}?types=url&id=${onlineId}&source=${source}&br=${currentAudioQuality}`;
-      const urlRes = await fetch(urlApi);
+      const urlRes = await universalFetch(urlApi, { timeout: 3500 });
       if (urlRes.ok) {
         const uData = await urlRes.json();
         if (uData && uData.url) {
@@ -7204,6 +7263,7 @@ async function resolveAndPlayOnlineSong(song, isRetry = false) {
   if (!isRetry) {
     toast(`正在获取《${song.title}》播放源...`);
   }
+  keepBackgroundAlive();
   try {
     let audioUrl = '';
     let targetOnlineId = song.onlineId;
@@ -7216,7 +7276,7 @@ async function resolveAndPlayOnlineSong(song, isRetry = false) {
       } else {
         try {
           const urlApi = `${currentApiBase}?types=url&id=${targetOnlineId}&source=${targetSource}&br=${currentAudioQuality}`;
-          const uRes = await fetch(urlApi, { signal: AbortSignal.timeout(4500) });
+          const uRes = await universalFetch(urlApi, { timeout: 4500 });
           if (uRes.ok) {
             const uData = await uRes.json();
             if (uData && uData.url && typeof uData.url === 'string' && uData.url.startsWith('http')) {
@@ -7228,39 +7288,46 @@ async function resolveAndPlayOnlineSong(song, isRetry = false) {
         }
 
         // 若主接口未能解析（服务器宕机或超时），无缝自动走高可用 Meting 镜像通道
-        if (!audioUrl) {
+        if (!audioUrl && !isRetry) {
           audioUrl = `https://api.injahow.cn/meting/?server=${targetSource}&type=url&id=${targetOnlineId}`;
         }
       }
     }
 
-    // 2. 如果无 onlineId，执行多源全网检索匹配
-    if (!audioUrl && !targetOnlineId) {
+    // 2. 如果无 onlineId，或者已有 ID 在重试时解析失败，执行多源全网检索匹配（QQ/网易/酷狗跨平台互备）
+    if (!audioUrl || isRetry) {
       const query = `${song.title} ${song.artist !== '未知歌手' ? song.artist : ''}`.trim();
       try {
-        const matches = await requestOnlineSearch(query, 1);
+        const matches = await requestOnlineSearch(query, 5);
         if (matches && matches.length) {
-          const item = matches[0];
-          targetOnlineId = item.url_id || item.id;
-          targetSource = item.source || 'netease';
-          song.onlineId = targetOnlineId;
-          song.source = targetSource;
-          if (item.cover && !song.cover) song.cover = item.cover;
-
-          if (!currentApiBase.includes('injahow')) {
-            try {
-              const urlApi = `${currentApiBase}?types=url&id=${targetOnlineId}&source=${targetSource}&br=${currentAudioQuality}`;
-              const uRes = await fetch(urlApi, { signal: AbortSignal.timeout(4500) });
-              if (uRes.ok) {
-                const uData = await uRes.json();
-                if (uData && uData.url && typeof uData.url === 'string' && uData.url.startsWith('http')) {
-                  audioUrl = uData.url;
-                }
+          for (const item of matches) {
+            const candId = item.url_id || item.id;
+            const candSource = item.source || 'netease';
+            if (candId && (candId !== targetOnlineId || candSource !== targetSource)) {
+              if (!currentApiBase.includes('injahow')) {
+                try {
+                  const candUrlApi = `${currentApiBase}?types=url&id=${candId}&source=${candSource}&br=${currentAudioQuality}`;
+                  const cRes = await universalFetch(candUrlApi, { timeout: 4000 });
+                  if (cRes.ok) {
+                    const cData = await cRes.json();
+                    if (cData && cData.url && typeof cData.url === 'string' && cData.url.startsWith('http')) {
+                      audioUrl = cData.url;
+                    }
+                  }
+                } catch(e) {}
               }
-            } catch(e){}
-          }
-          if (!audioUrl) {
-            audioUrl = `https://api.injahow.cn/meting/?server=${targetSource}&type=url&id=${targetOnlineId}`;
+              if (!audioUrl) {
+                audioUrl = `https://api.injahow.cn/meting/?server=${candSource}&type=url&id=${candId}`;
+              }
+              if (audioUrl) {
+                targetOnlineId = candId;
+                targetSource = candSource;
+                song.onlineId = targetOnlineId;
+                song.source = targetSource;
+                if (item.cover && !song.cover) song.cover = item.cover;
+                break;
+              }
+            }
           }
         }
       } catch(e) {
@@ -7269,9 +7336,14 @@ async function resolveAndPlayOnlineSong(song, isRetry = false) {
     }
 
     if (!audioUrl) {
-      toast(`《${song.title}》暂未获取到可用音源`);
-      isPlaying = false;
-      updateUI();
+      if (currentPlaybackQueue.length > 1) {
+        toast(`《${song.title}》暂未获取到可用音源，自动播放下一首...`);
+        setTimeout(() => playNext(), 1200);
+      } else {
+        toast(`《${song.title}》暂未获取到可用音源`);
+        isPlaying = false;
+        updateUI();
+      }
       return;
     }
 
@@ -7291,6 +7363,7 @@ async function resolveAndPlayOnlineSong(song, isRetry = false) {
 
     // 5. 播放音频流
     stopPlaybackLoop();
+    keepBackgroundAlive();
     if (isNativeAudioSupported) {
       if (audioPlayer && !audioPlayer.paused) {
         try { audioPlayer.pause(); } catch(e) {}
@@ -7319,9 +7392,14 @@ async function resolveAndPlayOnlineSong(song, isRetry = false) {
     updateUI();
   } catch(err) {
     console.warn("Online resolve failed:", err);
-    toast(`《${song.title}》网络流解析异常，可在设置中更换接口`);
-    isPlaying = false;
-    updateUI();
+    if (currentPlaybackQueue.length > 1) {
+      toast(`《${song.title}》网络流解析异常，自动播放下一首...`);
+      setTimeout(() => playNext(), 1200);
+    } else {
+      toast(`《${song.title}》网络流解析异常，可在设置中更换接口`);
+      isPlaying = false;
+      updateUI();
+    }
   }
 }
 
@@ -7338,7 +7416,7 @@ async function tryResolveAlternativeFullTrack(song) {
   for (const altServer of alternativeServers) {
     try {
       const searchUrl = `https://api.i-meto.com/meting/api?server=${altServer}&type=search&id=${encodedQuery}`;
-      const res = await fetch(searchUrl, { signal: AbortSignal.timeout(3500) });
+      const res = await universalFetch(searchUrl, { timeout: 3500 });
       if (!res.ok) continue;
       const list = await res.json();
       if (!Array.isArray(list) || list.length === 0) continue;
@@ -7370,6 +7448,7 @@ async function tryResolveAlternativeFullTrack(song) {
         if (audioPlayer && !audioPlayer.paused) {
           try { audioPlayer.pause(); } catch(e) {}
         }
+        keepBackgroundAlive();
         window.AndroidBridge.playNativeAudio(altAudioUrl, 0);
         isPlaying = true;
         updateUI();
@@ -8145,7 +8224,7 @@ async function ensureSongCover(song) {
   if (song.pic_id) {
     try {
       const picApi = `${currentApiBase}?types=pic&id=${song.pic_id}&source=${song.source || 'netease'}`;
-      const res = await fetch(picApi, { signal: AbortSignal.timeout(3000) });
+      const res = await universalFetch(picApi, { timeout: 3000 });
       if (res.ok) {
         const data = await res.json();
         if (data && data.url && data.url.startsWith('http')) {
@@ -8171,7 +8250,7 @@ async function ensureSongCover(song) {
           song.pic_id = match.pic_id;
           try {
             const picApi = `${currentApiBase}?types=pic&id=${match.pic_id}&source=${match.source || 'netease'}`;
-            const res = await fetch(picApi, { signal: AbortSignal.timeout(3000) });
+            const res = await universalFetch(picApi, { timeout: 3000 });
             if (res.ok) {
               const data = await res.json();
               if (data && data.url && data.url.startsWith('http')) {

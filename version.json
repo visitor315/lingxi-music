@@ -1,6 +1,6 @@
 {
-  "versionCode": 38,
-  "versionName": "2.0.7",
-  "changelog": "1. 移除音乐详情页底部多余空白，控制栏比例舒展自然\n2. 新增应用内检测更新与无感覆盖安装功能\n3. 修复直接收藏歌曲在列表播放时不提取封面的问题\n4. 优化曲库播放排序：后听的歌曲始终保持排在上方",
+  "versionCode": 39,
+  "versionName": "2.0.8",
+  "changelog": "1. 彻底解决后台播放中断与切歌受阻问题\n2. 引入 KeepAliveWebView 阻止 Chromium 后台休眠挂起\n3. 新增原生 HTTP 请求通道与 302 重定向直连解析\n4. 优化后台锁控与自动跳过失效音源机制",
   "downloadUrl": "https://github.com/visitor315/lingxi-music/releases/download/v1.4.0/LingXiMusic.apk"
 }

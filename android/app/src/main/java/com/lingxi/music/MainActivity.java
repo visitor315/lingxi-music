@@ -102,10 +102,35 @@ public class MainActivity extends Activity {
                 @Override
                 public void run() {
                     if (sInstance != null && sInstance.webView != null) {
+                        try {
+                            sInstance.webView.resumeTimers();
+                        } catch (Exception ignored) {}
                         sInstance.webView.evaluateJavascript(jsCode, null);
                     }
                 }
             });
+        }
+    }
+
+    public static class KeepAliveWebView extends WebView {
+        public KeepAliveWebView(Context context) {
+            super(context);
+        }
+
+        @Override
+        protected void onWindowVisibilityChanged(int visibility) {
+            // 始终向底层 Chromium 报告 View.VISIBLE，彻底禁止 Chromium 在后台将页面休眠挂起
+            super.onWindowVisibilityChanged(View.VISIBLE);
+        }
+
+        @Override
+        public void dispatchWindowVisibilityChanged(int visibility) {
+            super.dispatchWindowVisibilityChanged(View.VISIBLE);
+        }
+
+        @Override
+        protected void onVisibilityChanged(View changedView, int visibility) {
+            super.onVisibilityChanged(changedView, View.VISIBLE);
         }
     }
 
@@ -252,7 +277,7 @@ public class MainActivity extends Activity {
             Process.setThreadPriority(Process.THREAD_PRIORITY_AUDIO);
         } catch (Exception ignored) {}
 
-        webView = new WebView(this);
+        webView = new KeepAliveWebView(this);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             // 核心解决切应用“抢不过人家”：严禁在离开前台时向系统弃权降级，强制让 WebView 渲染进程在后台维持与前台相同的最高优先级！
             webView.setRendererPriorityPolicy(WebView.RENDERER_PRIORITY_IMPORTANT, false);
@@ -282,7 +307,7 @@ public class MainActivity extends Activity {
             @Override
             public void onPageFinished(WebView view, String url) {
                 super.onPageFinished(view, url);
-                String ver = "2.0.7";
+                String ver = "2.0.8";
                 try {
                     ver = getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
                 } catch (Exception ignored) {}
@@ -394,6 +419,9 @@ public class MainActivity extends Activity {
         super.onPause();
         isActivityForeground = false;
         updateFloatingWindowState();
+        if (webView != null) {
+            try { webView.resumeTimers(); } catch (Exception ignored) {}
+        }
     }
 
     @Override
@@ -401,6 +429,9 @@ public class MainActivity extends Activity {
         super.onStop();
         isActivityForeground = false;
         updateFloatingWindowState();
+        if (webView != null) {
+            try { webView.resumeTimers(); } catch (Exception ignored) {}
+        }
     }
 
     @Override
@@ -1058,7 +1089,7 @@ public class MainActivity extends Activity {
         try {
             return getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
         } catch (Exception e) {
-            return "2.0.7";
+            return "2.0.8";
         }
     }
 
@@ -1914,12 +1945,63 @@ public class MainActivity extends Activity {
         }
 
         @JavascriptInterface
+        public String fetchHttpSync(final String urlStr, final int timeoutMs) {
+            try {
+                java.net.URL url = new java.net.URL(urlStr);
+                java.net.HttpURLConnection conn = (java.net.HttpURLConnection) url.openConnection();
+                int t = timeoutMs > 0 ? timeoutMs : 6000;
+                conn.setConnectTimeout(t);
+                conn.setReadTimeout(t + 2000);
+                conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36");
+                conn.setRequestProperty("Referer", "https://music.163.com/");
+                conn.setInstanceFollowRedirects(true);
+
+                int code = conn.getResponseCode();
+                int redirects = 0;
+                while ((code == 301 || code == 302 || code == 303 || code == 307 || code == 308) && redirects < 5) {
+                    String loc = conn.getHeaderField("Location");
+                    if (loc == null || loc.isEmpty()) break;
+                    conn.disconnect();
+                    url = new java.net.URL(loc);
+                    conn = (java.net.HttpURLConnection) url.openConnection();
+                    conn.setConnectTimeout(t);
+                    conn.setReadTimeout(t + 2000);
+                    conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36");
+                    conn.setRequestProperty("Referer", "https://music.163.com/");
+                    code = conn.getResponseCode();
+                    redirects++;
+                }
+
+                java.io.InputStream in = (code >= 200 && code < 400) ? conn.getInputStream() : conn.getErrorStream();
+                if (in == null) return "{\"ok\":false,\"status\":" + code + ",\"error\":\"no_stream\"}";
+
+                java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.InputStreamReader(in, "UTF-8"));
+                java.lang.StringBuilder sb = new java.lang.StringBuilder();
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    sb.append(line).append("\n");
+                }
+                reader.close();
+                conn.disconnect();
+
+                org.json.JSONObject result = new org.json.JSONObject();
+                result.put("ok", code >= 200 && code < 400);
+                result.put("status", code);
+                result.put("data", sb.toString());
+                result.put("finalUrl", url.toString());
+                return result.toString();
+            } catch (Exception e) {
+                return "{\"ok\":false,\"status\":-1,\"error\":\"" + (e.getMessage() != null ? e.getMessage().replace("\"", "'") : "network_error") + "\"}";
+            }
+        }
+
+        @JavascriptInterface
         public String getAppVersion() {
             try {
                 PackageInfo pInfo = getPackageManager().getPackageInfo(getPackageName(), 0);
                 return pInfo.versionName;
             } catch (Exception e) {
-                return "2.0.7";
+                return "2.0.8";
             }
         }
 
@@ -1933,7 +2015,7 @@ public class MainActivity extends Activity {
                     return pInfo.versionCode;
                 }
             } catch (Exception e) {
-                return 38;
+                return 39;
             }
         }
 

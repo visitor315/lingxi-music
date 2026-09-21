@@ -77,6 +77,7 @@ public class MediaPlaybackService extends Service {
     private final android.util.LruCache<String, Bitmap> coverCache = new android.util.LruCache<>(30);
 
     private final android.os.Handler lockHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+    private final android.os.Handler mainHandler = new android.os.Handler(android.os.Looper.getMainLooper());
     private final Runnable delayedReleaseLocksRunnable = new Runnable() {
         @Override
         public void run() {
@@ -212,8 +213,8 @@ public class MediaPlaybackService extends Service {
                 @Override
                 public void onCompletion(MediaPlayer mp) {
                     isPlaying = false;
-                    // 保持 WakeLock/WifiLock 活跃 90 秒，给后台切歌、网络拉流留足时间，防止 CPU 深度休眠截断播放队列
-                    releaseLocksDelayed(90000);
+                    acquireLocks(); // 立即抢占 WakeLock & WifiLock，确保后台切歌拉流全速进行
+                    releaseLocksDelayed(120000);
                     buildAndPostNotification(currentCoverBitmap != null ? currentCoverBitmap : getRoundedDefaultCover());
                     MainActivity.setNativePlaybackState(false);
                     MainActivity.dispatchWebAction("if (window.onNativeCompletion) window.onNativeCompletion(); else if (typeof handleTrackEnd === 'function') handleTrackEnd();");
@@ -229,8 +230,8 @@ public class MediaPlaybackService extends Service {
                     isPrepared = false;
                     isPreparing = false;
                     isPlaying = false;
-                    // 延时释放，给自动重试和通道切换留足网络拉流时间
-                    releaseLocksDelayed(45000);
+                    acquireLocks(); // 立即抢占锁以供切换高可用音源与重试拉流
+                    releaseLocksDelayed(60000);
                     MainActivity.setNativePlaybackState(false);
                     MainActivity.dispatchWebAction("if (window.onNativeError) window.onNativeError(" + what + ", " + extra + ");");
                     return true;
@@ -258,7 +259,7 @@ public class MediaPlaybackService extends Service {
         }
     }
 
-    public synchronized void playUrl(String url, long seekMs) {
+    public synchronized void playUrl(final String url, final long seekMs) {
         if (url == null || url.isEmpty()) return;
         initMediaPlayerIfNeeded();
 
@@ -284,24 +285,71 @@ public class MediaPlaybackService extends Service {
         currentPositionMs = (seekMs > 0 ? seekMs : 0);
         isPrepared = false;
         isPreparing = true;
+        acquireLocks(); // 准备与缓冲期间持续锁定 CPU 与 Wi-Fi
 
-        try {
-            mediaPlayer.reset();
-            if (url.startsWith("content://")) {
-                mediaPlayer.setDataSource(getApplicationContext(), Uri.parse(url));
-            } else {
-                java.util.Map<String, String> headers = new java.util.HashMap<>();
-                headers.put("User-Agent", "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36");
-                headers.put("Referer", "https://music.163.com/");
-                mediaPlayer.setDataSource(getApplicationContext(), Uri.parse(url), headers);
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                String targetStreamUrl = url;
+                if (url.startsWith("http://") || url.startsWith("https://")) {
+                    try {
+                        java.net.URL u = new java.net.URL(url);
+                        java.net.HttpURLConnection conn = (java.net.HttpURLConnection) u.openConnection();
+                        conn.setConnectTimeout(6000);
+                        conn.setReadTimeout(8000);
+                        conn.setInstanceFollowRedirects(false);
+                        conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36");
+                        conn.setRequestProperty("Referer", "https://music.163.com/");
+                        int code = conn.getResponseCode();
+                        int redirectCount = 0;
+                        while ((code == 301 || code == 302 || code == 303 || code == 307 || code == 308) && redirectCount < 5) {
+                            String loc = conn.getHeaderField("Location");
+                            if (loc == null || loc.isEmpty()) break;
+                            conn.disconnect();
+                            targetStreamUrl = loc;
+                            u = new java.net.URL(targetStreamUrl);
+                            conn = (java.net.HttpURLConnection) u.openConnection();
+                            conn.setConnectTimeout(6000);
+                            conn.setReadTimeout(8000);
+                            conn.setInstanceFollowRedirects(false);
+                            conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36");
+                            conn.setRequestProperty("Referer", "https://music.163.com/");
+                            code = conn.getResponseCode();
+                            redirectCount++;
+                        }
+                        conn.disconnect();
+                    } catch (Exception ignored) {}
+                }
+
+                final String finalPlayUrl = targetStreamUrl;
+                mainHandler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (!url.equals(currentAudioUrl)) {
+                            return;
+                        }
+                        try {
+                            if (mediaPlayer == null) return;
+                            mediaPlayer.reset();
+                            if (finalPlayUrl.startsWith("content://")) {
+                                mediaPlayer.setDataSource(getApplicationContext(), Uri.parse(finalPlayUrl));
+                            } else {
+                                java.util.Map<String, String> headers = new java.util.HashMap<>();
+                                headers.put("User-Agent", "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36");
+                                headers.put("Referer", "https://music.163.com/");
+                                mediaPlayer.setDataSource(getApplicationContext(), Uri.parse(finalPlayUrl), headers);
+                            }
+                            mediaPlayer.prepareAsync();
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                            try { if (mediaPlayer != null) mediaPlayer.reset(); } catch (Exception ignored) {}
+                            isPreparing = false;
+                            MainActivity.dispatchWebAction("if (window.onNativeError) window.onNativeError(-1, -1);");
+                        }
+                    }
+                });
             }
-            mediaPlayer.prepareAsync();
-        } catch (Exception e) {
-            e.printStackTrace();
-            try { mediaPlayer.reset(); } catch (Exception ignored) {}
-            isPreparing = false;
-            MainActivity.dispatchWebAction("if (window.onNativeError) window.onNativeError(-1, -1);");
-        }
+        }).start();
     }
 
     private final android.os.Handler sleepTimerHandler = new android.os.Handler(android.os.Looper.getMainLooper());
