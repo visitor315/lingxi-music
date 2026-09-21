@@ -1129,18 +1129,6 @@ public class MainActivity extends Activity {
         }
     }
 
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == REQUEST_CODE_INSTALL_PERMISSION) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                if (getPackageManager().canRequestPackageInstalls() && pendingInstallApk != null && pendingInstallApk.exists()) {
-                    installApk(pendingInstallApk);
-                }
-            }
-        }
-    }
-
     public void toggleDesktopLyrics() {
         runOnUiThread(new Runnable() {
             @Override
@@ -2142,6 +2130,12 @@ public class MainActivity extends Activity {
                 uploadMessage.onReceiveValue(result != null ? new Uri[]{result} : null);
             }
             uploadMessage = null;
+        } else if (requestCode == REQUEST_CODE_INSTALL_PERMISSION) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                if (getPackageManager().canRequestPackageInstalls() && pendingInstallApk != null && pendingInstallApk.exists()) {
+                    installApk(pendingInstallApk);
+                }
+            }
         }
     }
 
