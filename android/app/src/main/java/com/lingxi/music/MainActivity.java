@@ -1055,22 +1055,6 @@ public class MainActivity extends Activity {
         floatingParams.y = dp2px(130);
 
         final int touchSlop = ViewConfiguration.get(this).getScaledTouchSlop();
-        final GestureDetector gestureDetector = new GestureDetector(this, new GestureDetector.SimpleOnGestureListener() {
-            @Override
-            public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
-                if (e1 == null || e2 == null) return false;
-                float dy = e2.getRawY() - e1.getRawY();
-                if (Math.abs(dy) > dp2px(30) && Math.abs(velocityY) > 800) {
-                    if (dy < 0) {
-                        dispatchWebAction("seekToNextLyricLine()");
-                    } else {
-                        dispatchWebAction("seekToPrevLyricLine()");
-                    }
-                    return true;
-                }
-                return false;
-            }
-        });
 
         floatingRootLayout.setOnTouchListener(new View.OnTouchListener() {
             private int initialY;
@@ -1080,8 +1064,6 @@ public class MainActivity extends Activity {
 
             @Override
             public boolean onTouch(View v, MotionEvent event) {
-                gestureDetector.onTouchEvent(event);
-
                 switch (event.getAction()) {
                     case MotionEvent.ACTION_DOWN:
                         initialY = floatingParams.y;
@@ -1097,15 +1079,7 @@ public class MainActivity extends Activity {
                         if (isDragging) {
                             if (!isFloatingLocked) {
                                 floatingParams.x = 0; // 严格禁止左右移动
-                                int statusBarHeight = 0;
-                                int resId = getResources().getIdentifier("status_bar_height", "dimen", "android");
-                                if (resId > 0) {
-                                    statusBarHeight = getResources().getDimensionPixelSize(resId);
-                                }
-                                if (statusBarHeight <= 0) {
-                                    statusBarHeight = dp2px(32);
-                                }
-                                int minY = statusBarHeight + dp2px(8);
+                                int minY = dp2px(4);
                                 DisplayMetrics dm = getResources().getDisplayMetrics();
                                 int maxY = (dm != null && dm.heightPixels > 0) ? (dm.heightPixels - dp2px(120)) : dp2px(600);
                                 int targetY = initialY + (int) dy;
@@ -1408,7 +1382,7 @@ public class MainActivity extends Activity {
                 PackageInfo pInfo = getPackageManager().getPackageInfo(getPackageName(), 0);
                 return pInfo.versionName;
             } catch (Exception e) {
-                return "1.9.8";
+                return "1.9.9";
             }
         }
 

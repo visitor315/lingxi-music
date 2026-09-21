@@ -2194,15 +2194,9 @@ body.in-pip-mode .view-player-full {
         <div class="song-main-title" id="fullPlayerSongTitle">空谷幽兰</div>
         <div class="song-main-artist" id="fullPlayerArtist">系统演示</div>
       </div>
-      <div style="display:flex; align-items:center; gap:2px;">
-        <button class="header-btn" id="topSleepTimerBtn" onclick="openSleepTimerModal()" title="定时关闭" style="position: relative;">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-          <span id="topSleepTimerBadge" style="display:none; position:absolute; top:2px; right:2px; background:var(--brand-terracotta); color:#fff; font-size:9px; padding:1px 4px; border-radius:8px; line-height:1; font-weight:600;"></span>
-        </button>
-        <button class="header-btn btn-heart" id="topHeartBtn" onclick="toggleFavCurrent()" title="收藏">
-          <svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-        </button>
-      </div>
+      <button class="header-btn btn-heart" id="topHeartBtn" onclick="toggleFavCurrent()" title="收藏">
+        <svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+      </button>
     </nav>
 
     <section class="disc-stage">
@@ -3319,14 +3313,12 @@ function playSongAtQueue(idx) {
   // 每次触发点播，重置错误重试计数器，杜绝因偶发网络波动被永久锁定
   if (song.id) songRetryCounts[song.id] = 0;
 
-  // 确保正在播放的歌曲同步沉淀并保存在“全部歌曲”中
+  // 确保正在播放的歌曲属性同步更新，严禁在曲库中自动置顶打乱原有顺序
   const existingIdx = ALL_LIBRARY_SONGS.findIndex(s => s.id === song.id || (s.title === song.title && s.artist === song.artist));
   if (existingIdx !== -1) {
-    const existing = ALL_LIBRARY_SONGS.splice(existingIdx, 1)[0];
-    Object.assign(existing, song);
-    ALL_LIBRARY_SONGS.unshift(existing);
+    Object.assign(ALL_LIBRARY_SONGS[existingIdx], song);
   } else {
-    ALL_LIBRARY_SONGS.unshift(song);
+    ALL_LIBRARY_SONGS.push(song);
   }
   if (VINYL_ALBUMS[0]) {
     VINYL_ALBUMS[0].songs = ALL_LIBRARY_SONGS;
@@ -3504,7 +3496,7 @@ function stopPlaybackLoop() {
 function handleTrackEnd() {
   const finishedSong = currentPlaybackQueue[currentIndex];
   if (finishedSong && !ALL_LIBRARY_SONGS.some(s => s.id === finishedSong.id || (s.title === finishedSong.title && s.artist === finishedSong.artist))) {
-    ALL_LIBRARY_SONGS.unshift(finishedSong);
+    ALL_LIBRARY_SONGS.push(finishedSong);
     persistData();
     renderSongList();
     renderVinylDiscs();
@@ -4004,22 +3996,26 @@ async function playOnlineTrack(idx) {
   // 4. 异步拉取真实 LRC 歌词并解析
   fetchLyricForSong(item.lyric_id || item.id, trackObj.title, item.source || 'netease');
 
-  // 5. 插入主曲库并置顶，加入当前队列播放，并持久化到本地存储
+  // 5. 插入主曲库，加入当前队列播放，并持久化到本地存储（已存在歌曲保持原有顺序，严禁置顶）
   const existingIdx = ALL_LIBRARY_SONGS.findIndex(s => s.id === trackObj.id || (s.title === trackObj.title && s.artist === trackObj.artist));
   if (existingIdx !== -1) {
-    const existing = ALL_LIBRARY_SONGS.splice(existingIdx, 1)[0];
-    Object.assign(existing, trackObj);
-    ALL_LIBRARY_SONGS.unshift(existing);
+    Object.assign(ALL_LIBRARY_SONGS[existingIdx], trackObj);
   } else {
-    ALL_LIBRARY_SONGS.unshift(trackObj);
+    ALL_LIBRARY_SONGS.push(trackObj);
   }
   persistData();
   renderSongList();
   renderVinylDiscs();
   renderDrawerList();
 
-  currentPlaybackQueue.unshift(trackObj);
-  playSongAtQueue(0);
+  let qIdx = currentPlaybackQueue.findIndex(s => s.id === trackObj.id || (s.title === trackObj.title && s.artist === trackObj.artist));
+  if (qIdx !== -1) {
+    Object.assign(currentPlaybackQueue[qIdx], trackObj);
+  } else {
+    currentPlaybackQueue.push(trackObj);
+    qIdx = currentPlaybackQueue.length - 1;
+  }
+  playSongAtQueue(qIdx);
 
   // 6. 若成功获取到封面，同步装点黑胶唱片与详情页并通知通知栏
   if (coverUrl) {
