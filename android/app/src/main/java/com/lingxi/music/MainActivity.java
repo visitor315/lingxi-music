@@ -217,16 +217,26 @@ public class MainActivity extends Activity {
                     final float density = getResources().getDisplayMetrics().density;
                     final float d = density > 0 ? density : 1.0f;
                     final int topDp = Math.round(topPx / d);
-                    final int bottomDp = Math.round(bottomPx / d);
+                    int bottomDp = Math.round(bottomPx / d);
+
+                    // Filter out IME (soft keyboard) height spikes to prevent layout jumping
+                    if (bottomDp > 100) {
+                        bottomDp = getNavigationBarHeightDp();
+                    } else if (bottomDp <= 0 && !isGestureNavigation(MainActivity.this)) {
+                        bottomDp = getNavigationBarHeightDp();
+                    }
+
+                    final int finalTopDp = topDp;
+                    final int finalBottomDp = bottomDp;
                     if (webView != null) {
                         webView.post(new Runnable() {
                             @Override
                             public void run() {
                                 if (webView != null) {
                                     webView.evaluateJavascript(
-                                        "document.documentElement.style.setProperty('--status-bar-height', '" + (topDp > 0 ? topDp : 38) + "px');" +
-                                        "document.documentElement.style.setProperty('--nav-bar-height', '" + bottomDp + "px');" +
-                                        "if (window.onSystemInsetsUpdated) window.onSystemInsetsUpdated(" + topDp + ", " + bottomDp + ");",
+                                        "document.documentElement.style.setProperty('--status-bar-height', '" + (finalTopDp > 0 ? finalTopDp : 38) + "px');" +
+                                        "document.documentElement.style.setProperty('--nav-bar-height', '" + finalBottomDp + "px');" +
+                                        "if (window.onSystemInsetsUpdated) window.onSystemInsetsUpdated(" + finalTopDp + ", " + finalBottomDp + ");",
                                         null
                                     );
                                 }
@@ -272,7 +282,7 @@ public class MainActivity extends Activity {
             @Override
             public void onPageFinished(WebView view, String url) {
                 super.onPageFinished(view, url);
-                String ver = "2.0.5";
+                String ver = "2.0.6";
                 try {
                     ver = getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
                 } catch (Exception ignored) {}
@@ -858,8 +868,39 @@ public class MainActivity extends Activity {
         return Math.round(statusBarHeight / density);
     }
 
+    public static boolean isGestureNavigation(Context context) {
+        if (context == null) return false;
+        try {
+            int mode = android.provider.Settings.Secure.getInt(context.getContentResolver(), "navigation_mode", -1);
+            if (mode == 2) return true;
+            if (mode == 0 || mode == 1) return false;
+        } catch (Exception ignored) {}
+
+        try {
+            int vivoGesture = android.provider.Settings.Secure.getInt(context.getContentResolver(), "navigation_gesture_on", -1);
+            if (vivoGesture > 0) return true;
+            if (vivoGesture == 0) return false;
+        } catch (Exception ignored) {}
+
+        try {
+            int miuiGesture = android.provider.Settings.Global.getInt(context.getContentResolver(), "force_fsg_nav_bar", -1);
+            if (miuiGesture > 0) return true;
+            if (miuiGesture == 0) return false;
+        } catch (Exception ignored) {}
+
+        try {
+            int hwGesture = android.provider.Settings.Global.getInt(context.getContentResolver(), "navigationbar_is_min", -1);
+            if (hwGesture > 0) return true;
+            if (hwGesture == 0) return false;
+        } catch (Exception ignored) {}
+
+        return false;
+    }
+
     public int getNavigationBarHeightDp() {
+        boolean gesture = isGestureNavigation(this);
         int navHeightPx = 0;
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             try {
                 WindowInsets insets = getWindowManager().getCurrentWindowMetrics().getWindowInsets();
@@ -868,52 +909,52 @@ public class MainActivity extends Activity {
                 }
             } catch (Exception ignored) {}
         }
+
         if (navHeightPx <= 0) {
             try {
                 View decorView = getWindow().getDecorView();
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                     WindowInsets insets = decorView.getRootWindowInsets();
                     if (insets != null) {
-                        navHeightPx = insets.getSystemWindowInsetBottom();
-                    }
-                }
-            } catch (Exception ignored) {}
-        }
-        if (navHeightPx <= 0) {
-            try {
-                Display display = getWindowManager().getDefaultDisplay();
-                DisplayMetrics realMetrics = new DisplayMetrics();
-                display.getRealMetrics(realMetrics);
-                DisplayMetrics appMetrics = new DisplayMetrics();
-                display.getMetrics(appMetrics);
-                int diff = realMetrics.heightPixels - appMetrics.heightPixels;
-                if (diff > 0) {
-                    navHeightPx = diff;
-                }
-            } catch (Exception ignored) {}
-        }
-        if (navHeightPx <= 0) {
-            try {
-                boolean hasNavBar = true;
-                int id = getResources().getIdentifier("config_showNavigationBar", "bool", "android");
-                if (id > 0) {
-                    hasNavBar = getResources().getBoolean(id);
-                } else {
-                    hasNavBar = !ViewConfiguration.get(this).hasPermanentMenuKey();
-                }
-                if (hasNavBar) {
-                    int vivoGesture = android.provider.Settings.Secure.getInt(getContentResolver(), "navigation_gesture_on", 0);
-                    if (vivoGesture == 0) {
-                        int resId = getResources().getIdentifier("navigation_bar_height", "dimen", "android");
-                        if (resId > 0) {
-                            navHeightPx = getResources().getDimensionPixelSize(resId);
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                            navHeightPx = insets.getInsets(WindowInsets.Type.navigationBars()).bottom;
+                        } else {
+                            navHeightPx = insets.getSystemWindowInsetBottom();
                         }
                     }
                 }
             } catch (Exception ignored) {}
         }
+
         float density = getResources().getDisplayMetrics().density;
         if (density <= 0) density = 1.0f;
+
+        if (navHeightPx > 0) {
+            return Math.round(navHeightPx / density);
+        }
+
+        // In gesture navigation mode, nav bar height is 0 (or real indicator if detected)
+        if (gesture) {
+            return 0;
+        }
+
+        // In traditional 3-button mode, read system dimension resource as fallback
+        try {
+            boolean hasNavBar = true;
+            int id = getResources().getIdentifier("config_showNavigationBar", "bool", "android");
+            if (id > 0) {
+                hasNavBar = getResources().getBoolean(id);
+            } else {
+                hasNavBar = !ViewConfiguration.get(this).hasPermanentMenuKey();
+            }
+            if (hasNavBar) {
+                int resId = getResources().getIdentifier("navigation_bar_height", "dimen", "android");
+                if (resId > 0) {
+                    navHeightPx = getResources().getDimensionPixelSize(resId);
+                }
+            }
+        } catch (Exception ignored) {}
+
         return Math.round(navHeightPx / density);
     }
 
@@ -1707,7 +1748,7 @@ public class MainActivity extends Activity {
                 PackageInfo pInfo = getPackageManager().getPackageInfo(getPackageName(), 0);
                 return pInfo.versionName;
             } catch (Exception e) {
-                return "2.0.5";
+                return "2.0.6";
             }
         }
 
