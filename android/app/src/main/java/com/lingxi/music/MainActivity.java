@@ -35,6 +35,7 @@ import android.provider.MediaStore;
 import android.provider.Settings;
 import android.text.TextUtils;
 import android.util.Base64;
+import android.util.DisplayMetrics;
 import android.util.Rational;
 import android.util.TypedValue;
 import android.view.Gravity;
