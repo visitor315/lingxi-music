@@ -94,6 +94,8 @@ public class MainActivity extends Activity {
     public static final String ACTION_LYRICS = "com.lingxi.music.ACTION_LYRICS";
     public static final String ACTION_PIP = "com.lingxi.music.ACTION_PIP";
 
+    private static final java.util.concurrent.ExecutorService HTTP_EXECUTOR = java.util.concurrent.Executors.newCachedThreadPool();
+
     private static MainActivity sInstance = null;
     public static MainActivity getInstance() { return sInstance; }
     public static void dispatchWebAction(final String jsCode) {
@@ -2051,12 +2053,35 @@ public class MainActivity extends Activity {
         }
 
         @JavascriptInterface
+        public void fetchHttpAsync(final String urlStr, final int timeoutMs, final String callbackId) {
+            HTTP_EXECUTOR.execute(new Runnable() {
+                @Override
+                public void run() {
+                    final String result = fetchHttpSync(urlStr, timeoutMs);
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            if (webView != null) {
+                                try {
+                                    String escapedCallbackId = callbackId != null ? callbackId.replace("'", "\\'") : "";
+                                    String js = "if (window.__onFetchHttpCallback) { window.__onFetchHttpCallback('" 
+                                        + escapedCallbackId + "', " + result + "); }";
+                                    webView.evaluateJavascript(js, null);
+                                } catch (Exception ignored) {}
+                            }
+                        }
+                    });
+                }
+            });
+        }
+
+        @JavascriptInterface
         public String getAppVersion() {
             try {
                 PackageInfo pInfo = getPackageManager().getPackageInfo(getPackageName(), 0);
                 return pInfo.versionName;
             } catch (Exception e) {
-                return "2.1.0";
+                return "2.1.1";
             }
         }
 
@@ -2070,7 +2095,7 @@ public class MainActivity extends Activity {
                     return pInfo.versionCode;
                 }
             } catch (Exception e) {
-                return 41;
+                return 42;
             }
         }
 

@@ -1,6 +1,6 @@
 {
-  "versionCode": 41,
-  "versionName": "2.1.0",
-  "changelog": "1. 彻底修复外观与个性化子页底部导航栏透出问题\n2. 外观设置新增应用字体切换（霞鹜文楷 / 系统自带）\n3. 优化全屏子页层级覆盖与底部安全间距\n4. 持续强化应用内极速检测与高速直连下载",
+  "versionCode": 42,
+  "versionName": "2.1.1",
+  "changelog": "1. 彻底解决搜索卡顿：重构 Android 原生非阻塞异步网络桥接，UI 保持流畅高刷\n2. 修复搜索点击层级错位：点击歌曲立即平滑滑出全屏播放页\n3. 优化系统返回键层级：播放详情页按返回平滑回到搜索页，再次返回退出搜索\n4. 新增全网搜索内存缓存与本地曲库零延迟秒出",
   "downloadUrl": "https://ghfast.top/https://github.com/visitor315/lingxi-music/releases/download/v1.4.0/LingXiMusic.apk"
 }

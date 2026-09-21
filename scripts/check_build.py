@@ -59,6 +59,7 @@ if run:
                 print(f"Successfully downloaded APK! Size: {len(apk_data)} bytes", flush=True)
 
                 # Check if ADB device is connected
+                subprocess.run(["adb", "connect", "192.168.2.44:5555"], capture_output=True, text=True)
                 res_dev = subprocess.run(["adb", "devices"], capture_output=True, text=True)
                 lines = [l.strip() for l in res_dev.stdout.splitlines() if l.strip() and not l.startswith("List of devices")]
                 devices = [l.split()[0] for l in lines if "\tdevice" in l]

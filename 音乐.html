@@ -897,7 +897,7 @@ body.night .edit-cover-thumbnail {
 .view-player-full {
   position: absolute; top: 0; left: 0; width: 100%; height: 100%;
   background: radial-gradient(circle at 50% 20%, #FAF9F7 0%, #EDEDEB 100%);
-  z-index: 70; display: flex; flex-direction: column; justify-content: space-between;
+  z-index: 500; display: flex; flex-direction: column; justify-content: space-between;
   transform: translateY(100%); transition: transform 0.28s cubic-bezier(0.2, 0.9, 0.3, 1); overflow: hidden;
   pointer-events: none;
 }
@@ -3149,9 +3149,52 @@ function keepBackgroundAlive() {
   } catch(e) {}
 }
 
-/* 全平台通用安全网络请求：在 Android 原生环境下直通系统级 HttpURLConnection，彻底避开 Chromium 后台挂起 */
+let fetchCallbackSeq = 0;
+const pendingFetchCallbacks = new Map();
+
+window.__onFetchHttpCallback = function(callbackId, result) {
+  const cb = pendingFetchCallbacks.get(callbackId);
+  if (cb) {
+    pendingFetchCallbacks.delete(callbackId);
+    if (cb.timer) clearTimeout(cb.timer);
+    cb.resolve({
+      ok: !!result.ok,
+      status: result.status,
+      json: async () => {
+        try {
+          return typeof result.data === 'string' ? JSON.parse(result.data) : (result.data || {});
+        } catch(e) {
+          return {};
+        }
+      },
+      text: async () => result.data || '',
+      finalUrl: result.finalUrl || ''
+    });
+  }
+};
+
+/* 全平台通用安全网络请求：在 Android 原生环境下直通系统级 HttpURLConnection，非阻塞异步处理，彻底避开 Chromium JS 线程冻结 */
 async function universalFetch(url, options = {}) {
   const timeoutMs = options.timeout || 6000;
+  if (window.AndroidBridge && window.AndroidBridge.fetchHttpAsync) {
+    return new Promise((resolve, reject) => {
+      const callbackId = 'fetch_' + (++fetchCallbackSeq) + '_' + Date.now();
+      const timer = setTimeout(() => {
+        if (pendingFetchCallbacks.has(callbackId)) {
+          pendingFetchCallbacks.delete(callbackId);
+          fallbackFetch(url, options, timeoutMs).then(resolve).catch(reject);
+        }
+      }, timeoutMs + 2500);
+      pendingFetchCallbacks.set(callbackId, { resolve, reject, timer });
+      try {
+        window.AndroidBridge.fetchHttpAsync(url, timeoutMs, callbackId);
+      } catch (err) {
+        clearTimeout(timer);
+        pendingFetchCallbacks.delete(callbackId);
+        fallbackFetch(url, options, timeoutMs).then(resolve).catch(reject);
+      }
+    });
+  }
   if (window.AndroidBridge && window.AndroidBridge.fetchHttpSync) {
     try {
       const respStr = window.AndroidBridge.fetchHttpSync(url, timeoutMs);
@@ -3169,6 +3212,10 @@ async function universalFetch(url, options = {}) {
       console.warn("Native fetchHttpSync fallback to browser fetch:", e);
     }
   }
+  return fallbackFetch(url, options, timeoutMs);
+}
+
+async function fallbackFetch(url, options, timeoutMs) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
@@ -4057,13 +4104,13 @@ function escapeHtml(str) {
   return String(str).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-/* 核心异步搜索请求：融合本地已存曲库与全网检索 */
+const searchResultCache = new Map();
+
+/* 核心异步搜索请求：融合本地已存曲库与全网检索（本地秒出+全网无阻塞异步汇流） */
 async function executeSearch(keyword) {
   saveSearchHistory(keyword);
   document.getElementById('searchDiscoverSection').style.display = 'none';
-  document.getElementById('searchResultsBox').style.display = 'none';
   document.getElementById('searchEmptyState').classList.remove('active');
-  document.getElementById('searchLoadingState').classList.add('active');
 
   // 1. 优先实时检索本地音频曲库（自动过滤50秒以下与试听片段）
   const lowerKw = keyword.toLowerCase().trim();
@@ -4085,6 +4132,16 @@ async function executeSearch(keyword) {
     lrc: s.lrc
   }));
 
+  // 本地曲库命中时立即呈现，实现 0ms 秒出
+  if (localMatches.length > 0) {
+    currentSearchResults = [...localMatches];
+    renderSearchResults();
+  } else {
+    document.getElementById('searchResultsBox').style.display = 'none';
+  }
+
+  document.getElementById('searchLoadingState').classList.add('active');
+
   try {
     const onlineResults = await requestOnlineSearch(keyword, 30);
     document.getElementById('searchLoadingState').classList.remove('active');
@@ -4094,6 +4151,7 @@ async function executeSearch(keyword) {
     if (currentSearchResults.length > 0) {
       renderSearchResults();
     } else {
+      document.getElementById('searchResultsBox').style.display = 'none';
       document.getElementById('searchEmptyMsg').textContent = `未找到「${keyword}」，可尝试换个关键词`;
       document.getElementById('searchEmptyState').classList.add('active');
     }
@@ -4103,16 +4161,23 @@ async function executeSearch(keyword) {
     if (localMatches.length > 0) {
       currentSearchResults = [...localMatches];
       renderSearchResults();
-      toast(`网络离线，已为您呈现本地 ${localMatches.length} 首匹配曲目`);
+      toast(`网络波动，已为您呈现本地 ${localMatches.length} 首匹配曲目`);
     } else {
+      document.getElementById('searchResultsBox').style.display = 'none';
       document.getElementById('searchEmptyMsg').textContent = `网络搜索失败，本地亦无匹配曲目`;
       document.getElementById('searchEmptyState').classList.add('active');
     }
   }
 }
 
-// 多源高可用全网音乐检索服务（智能级联：用户自建API -> Meting官方云源 -> 多平台备用源）
+// 多源高可用全网音乐检索服务（智能级联：用户自建API -> Meting官方云源 -> 多平台备用源，全异步无阻塞）
 async function requestOnlineSearch(keyword, count = 30) {
+  const cacheKey = keyword.toLowerCase().trim();
+  if (searchResultCache.has(cacheKey)) {
+    const cached = searchResultCache.get(cacheKey);
+    if (cached && cached.length > 0) return cached;
+  }
+
   const encodedKw = encodeURIComponent(keyword);
   const candidates = [];
 
@@ -4120,29 +4185,28 @@ async function requestOnlineSearch(keyword, count = 30) {
   if (currentApiBase && !currentApiBase.includes('injahow')) {
     candidates.push({
       url: `${currentApiBase}?types=search&count=${count}&source=netease&pages=1&name=${encodedKw}`,
-      defaultSource: 'netease'
-    });
-    candidates.push({
-      url: `${currentApiBase}?server=netease&type=search&id=${encodedKw}`,
-      defaultSource: 'netease'
+      defaultSource: 'netease',
+      timeout: 3200
     });
   }
 
   // 2. Meting 高可用公共搜索解析通道（网易云平台）
   candidates.push({
     url: `https://api.i-meto.com/meting/api?server=netease&type=search&id=${encodedKw}`,
-    defaultSource: 'netease'
+    defaultSource: 'netease',
+    timeout: 3200
   });
 
   // 3. Meting 高可用公共搜索解析通道（QQ音乐备用源）
   candidates.push({
     url: `https://api.i-meto.com/meting/api?server=tencent&type=search&id=${encodedKw}`,
-    defaultSource: 'tencent'
+    defaultSource: 'tencent',
+    timeout: 3200
   });
 
   for (const c of candidates) {
     try {
-      const res = await universalFetch(c.url, { timeout: 4500 });
+      const res = await universalFetch(c.url, { timeout: c.timeout || 3200 });
       if (!res.ok) continue;
       const data = await res.json();
       if (!Array.isArray(data) || data.length === 0) continue;
@@ -4186,6 +4250,11 @@ async function requestOnlineSearch(keyword, count = 30) {
       });
 
       if (normalized.length > 0) {
+        if (searchResultCache.size > 50) {
+          const firstKey = searchResultCache.keys().next().value;
+          searchResultCache.delete(firstKey);
+        }
+        searchResultCache.set(cacheKey, normalized);
         return normalized;
       }
     } catch(e) {
@@ -4233,7 +4302,7 @@ function renderSearchResults() {
   `).join('');
 }
 
-/* 核心：点播全网检索曲目（异步拉取真实音频与歌词，若为本地曲目则直接极速解码播放） */
+/* 核心：点播全网检索曲目（点击瞬间即刻滑出全屏详情页，后台异步拉取真实音频与歌词） */
 async function playOnlineTrack(idx) {
   const item = currentSearchResults[idx];
   if (!item) return;
@@ -4252,9 +4321,56 @@ async function playOnlineTrack(idx) {
     return;
   }
 
+  // 1. 立即构建歌曲对象并入队，瞬间展开全屏播放页，提供丝滑即时反馈
+  const initialCover = item.cover || '';
+  const trackObj = {
+    id: 'online_' + item.id,
+    onlineId: item.url_id || item.id,
+    source: item.source || 'netease',
+    title: item.name,
+    artist: item.artist,
+    album: item.album || '',
+    duration: item.duration || 240,
+    fileUrl: '',
+    urlFetchedAt: 0,
+    cover: initialCover,
+    isFav: false
+  };
+
+  // 插入曲库与播放队列
+  const existingIdx = ALL_LIBRARY_SONGS.findIndex(s => s.id === trackObj.id || (s.title === trackObj.title && s.artist === trackObj.artist));
+  if (existingIdx !== -1) {
+    const [removed] = ALL_LIBRARY_SONGS.splice(existingIdx, 1);
+    Object.assign(removed, trackObj);
+    ALL_LIBRARY_SONGS.unshift(removed);
+  } else {
+    ALL_LIBRARY_SONGS.unshift(trackObj);
+  }
+  if (VINYL_ALBUMS[0]) {
+    VINYL_ALBUMS[0].songs = ALL_LIBRARY_SONGS;
+  }
+
+  let qIdx = currentPlaybackQueue.findIndex(s => s.id === trackObj.id || (s.title === trackObj.title && s.artist === trackObj.artist));
+  if (qIdx !== -1) {
+    const [removed] = currentPlaybackQueue.splice(qIdx, 1);
+    Object.assign(removed, trackObj);
+    currentPlaybackQueue.unshift(removed);
+  } else {
+    currentPlaybackQueue.unshift(trackObj);
+  }
+  currentIndex = 0;
+
+  // 立即滑出全屏播放页与黑胶唱片
+  openedPlayerFromSearch = true;
+  openPlayerFull();
+  updateUI();
+  if (initialCover) {
+    applySongCoverToUI(initialCover);
+  }
+
   toast(`正在加载《${item.name}》...`);
 
-  // 1. 尝试解析真实音频播放 URL（带当前选定音质参数）
+  // 2. 异步拉取真实音频播放 URL
   let realAudioUrl = '';
   try {
     const urlApi = `${currentApiBase}?types=url&id=${item.url_id}&source=${item.source}&br=${currentAudioQuality}`;
@@ -4269,16 +4385,13 @@ async function playOnlineTrack(idx) {
     console.warn("Direct URL resolve failed, fallback to meting", e);
   }
 
-  // 若主接口未解析出，使用高可用镜像通道
   if (!realAudioUrl) {
     realAudioUrl = `https://api.injahow.cn/meting/?server=${item.source || 'netease'}&type=url&id=${item.url_id || item.id}`;
   }
 
-  // 2. 尝试获取真实封面图片
-  let coverUrl = '';
-  if (item.cover) {
-    coverUrl = item.cover;
-  } else if (item.pic_id) {
+  // 3. 异步获取真实封面
+  let coverUrl = initialCover;
+  if (!coverUrl && item.pic_id) {
     try {
       const picApi = `${currentApiBase}?types=pic&id=${item.pic_id}&source=${item.source}`;
       const picRes = await universalFetch(picApi, { timeout: 2500 });
@@ -4288,70 +4401,35 @@ async function playOnlineTrack(idx) {
           coverUrl = picData.url;
         }
       }
-    } catch(e) {
-      console.warn("Direct pic resolve failed", e);
-    }
+    } catch(e) {}
   }
   if (!coverUrl && (item.url_id || item.id)) {
     coverUrl = `https://api.injahow.cn/meting/?server=${item.source || 'netease'}&type=pic&id=${item.url_id || item.id}`;
   }
+
+  // 4. 更新歌曲数据并启动播放
   item.cover = coverUrl;
+  trackObj.fileUrl = realAudioUrl;
+  trackObj.urlFetchedAt = Date.now();
+  if (coverUrl) {
+    trackObj.cover = coverUrl;
+  }
 
-  // 3. 构造歌曲对象
-  const trackObj = {
-    id: 'online_' + item.id,
-    onlineId: item.url_id || item.id,
-    source: item.source || 'netease',
-    title: item.name,
-    artist: item.artist,
-    album: item.album,
-    duration: 240, // 初始预估，后续由 audioPlayer 自动校准
-    fileUrl: realAudioUrl,
-    urlFetchedAt: Date.now(),
-    cover: coverUrl,
-    isFav: false
-  };
-
-  // 4. 异步拉取真实 LRC 歌词并解析
+  // 5. 异步拉取歌词
   fetchLyricForSong(item.lyric_id || item.id, trackObj.title, item.source || 'netease');
 
-  // 5. 插入主曲库，加入当前队列播放，并持久化到本地存储（后听的歌曲排在上面）
-  const existingIdx = ALL_LIBRARY_SONGS.findIndex(s => s.id === trackObj.id || (s.title === trackObj.title && s.artist === trackObj.artist));
-  if (existingIdx !== -1) {
-    const [removed] = ALL_LIBRARY_SONGS.splice(existingIdx, 1);
-    Object.assign(removed, trackObj);
-    ALL_LIBRARY_SONGS.unshift(removed);
-  } else {
-    ALL_LIBRARY_SONGS.unshift(trackObj);
-  }
-  if (VINYL_ALBUMS[0]) {
-    VINYL_ALBUMS[0].songs = ALL_LIBRARY_SONGS;
-  }
   persistData();
   renderSongList();
   renderVinylDiscs();
   renderDrawerList();
 
-  let qIdx = currentPlaybackQueue.findIndex(s => s.id === trackObj.id || (s.title === trackObj.title && s.artist === trackObj.artist));
-  if (qIdx !== -1) {
-    const [removed] = currentPlaybackQueue.splice(qIdx, 1);
-    Object.assign(removed, trackObj);
-    currentPlaybackQueue.unshift(removed);
-  } else {
-    currentPlaybackQueue.unshift(trackObj);
-  }
-  currentIndex = 0;
-  playSongAtQueue(0);
-
-  // 6. 若成功获取到封面，同步装点黑胶唱片与详情页并通知通知栏
   if (coverUrl) {
     applySongCoverToUI(coverUrl);
     updateUI();
   }
 
-  // 7. 记录来源于搜索页，保留搜索页在底层，平滑打开全屏播放详情页
-  openedPlayerFromSearch = true;
-  openPlayerFull();
+  // 开始播放歌曲
+  playSongAtQueue(0);
 }
 
 async function fetchLyricForSong(songId, songTitle, source = 'netease') {
@@ -8970,9 +9048,10 @@ function handleSystemBack() {
   const menu = document.getElementById('songMenuOverlay');
   const playlistMenu = document.getElementById('playlistCornerMenu');
   const drawer = document.getElementById('playlistDrawer');
+  const fullP = document.getElementById('viewPlayerFull');
+  const themeP = document.getElementById('viewThemeSettings');
   const searchP = document.getElementById('viewSearchFull');
   const editP = document.getElementById('viewEditPlaylist');
-  const fullP = document.getElementById('viewPlayerFull');
   const detailP = document.getElementById('viewPlaylistDetail');
 
   if (guideM && guideM.classList.contains('active')) closeBeginnerGuideModal();
@@ -8986,9 +9065,10 @@ function handleSystemBack() {
   else if (menu && menu.classList.contains('active')) closeSongMenu();
   else if (playlistMenu && playlistMenu.classList.contains('active')) closePlaylistMenu();
   else if (drawer && drawer.classList.contains('open')) closePlaylistDrawer();
+  else if (fullP && fullP.classList.contains('active')) handleHeaderBackClick();
+  else if (themeP && themeP.classList.contains('active')) closeThemeSettingsSubpage();
   else if (searchP && searchP.classList.contains('active')) closeSearchView();
   else if (editP && editP.classList.contains('active')) closeEditPlaylistPage();
-  else if (fullP && fullP.classList.contains('active')) handleHeaderBackClick();
   else if (detailP && detailP.classList.contains('active')) closePlaylistDetail();
   else {
     // 已经位于应用主界面，按返回键直接退回手机桌面
