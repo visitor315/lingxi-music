@@ -1098,8 +1098,8 @@ body.night .edit-cover-thumbnail {
 
 /* 详情页底部工具栏 */
 .player-controls-panel {
-  padding: 16px 24px calc(24px + var(--safe-bottom, 0px));
-  display: flex; flex-direction: column; gap: 24px; flex-shrink: 0; z-index: 30;
+  padding: 10px 24px calc(14px + var(--safe-bottom, 0px));
+  display: flex; flex-direction: column; gap: 20px; flex-shrink: 0; z-index: 30;
 }
 
 
@@ -1743,7 +1743,7 @@ body.in-pip-mode .view-player-full {
 }
 
 .view-player-full {
-  padding-bottom: max(16px, calc(16px + var(--safe-bottom, 0px))) !important;
+  padding-bottom: 0 !important;
 }
 
 .playlist-content-scroll {
@@ -1810,7 +1810,7 @@ body.in-pip-mode .view-player-full {
 }
 
 .view-player-full {
-  padding-bottom: max(16px, calc(16px + var(--safe-bottom, 0px))) !important;
+  padding-bottom: 0 !important;
 }
 
 </style>
@@ -1972,10 +1972,11 @@ body.in-pip-mode .view-player-full {
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" style="color:var(--ink-light); margin-left:auto;"><polyline points="9 18 15 12 9 6"/></svg>
           </div>
         </div>
-        <span class="settings-group-header">关于</span>
+        <span class="settings-group-header">关于与更新</span>
         <div class="group-menu-card">
-          <div class="settings-item-row" onclick="toast(APP_CONFIG.name + ' · v' + APP_CONFIG.version + ' (' + APP_CONFIG.build + ')')">
-            <div class="settings-item-col"><span class="settings-title-line">关于灵犀</span><span class="settings-sub-desc" id="aboutAppVersionDesc">自用无损音乐播放器 · v1.9.0</span></div>
+          <div class="settings-item-row" onclick="checkAppUpdate(true)">
+            <div class="settings-item-col"><span class="settings-title-line">检查版本更新</span><span class="settings-sub-desc" id="aboutAppVersionDesc">自用无损音乐播放器 · v2.0.7</span></div>
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" style="color:var(--ink-light); margin-left:auto;"><polyline points="9 18 15 12 9 6"/></svg>
           </div>
         </div>
         <span class="settings-group-header">系统与调试</span>
@@ -2512,6 +2513,39 @@ body.in-pip-mode .view-player-full {
             <span class="choose-item-title">闹钟铃声</span>
           </div>
           <span class="choose-item-sub">设为系统闹铃</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 8.56 应用内版本更新升级弹窗（底部滑出、高级卡片、下载进度平滑展示） -->
+  <div class="choose-playlist-modal" id="appUpdateModal" onclick="closeAppUpdateModal(event)">
+    <div class="choose-playlist-card" onclick="event.stopPropagation()" style="max-height:85vh;">
+      <div class="add-sheet-drag-handle"></div>
+      <div class="choose-sheet-header">
+        <button class="choose-sheet-close-btn" onclick="closeAppUpdateModalDirect()" title="关闭">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+        <div class="choose-sheet-title">发现新版本</div>
+        <div style="width:32px;"></div>
+      </div>
+      <div style="display:flex; flex-direction:column; align-items:center; padding:6px 0 14px;">
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:10px;">
+          <span style="font-size:18px; font-weight:700; color:var(--ink-black);" id="updateVersionTitle">v2.0.7</span>
+          <span style="font-size:11.5px; font-weight:600; background:rgba(33,150,243,0.12); color:var(--brand-blue); padding:2px 8px; border-radius:12px;" id="updateVersionBadge">最新版本</span>
+        </div>
+        <div id="updateChangelogBox" style="width:100%; box-sizing:border-box; background:var(--card-bg); border:1px solid var(--border-input); border-radius:16px; padding:12px 14px; font-size:13.5px; line-height:1.65; color:var(--ink-gray); white-space:pre-line; max-height:36vh; overflow-y:auto;"></div>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:10px; width:100%; padding-bottom:4px;">
+        <button id="btnStartAppUpdate" class="choose-capsule-btn" onclick="executeAppUpdate()" style="background:var(--brand-blue); border-color:var(--brand-blue); color:#FFFFFF; font-weight:600;">立即升级</button>
+        <div id="updateProgressWrap" style="display:none; width:100%; flex-direction:column; gap:6px;">
+          <div style="width:100%; height:8px; background:var(--border-input); border-radius:999px; overflow:hidden;">
+            <div id="updateProgressBar" style="width:0%; height:100%; background:var(--brand-blue); border-radius:999px; transition:width 0.15s ease;"></div>
+          </div>
+          <div style="display:flex; justify-content:space-between; font-size:12px; color:var(--ink-light);">
+            <span id="updateProgressPercent">下载中 0%</span>
+            <span id="updateProgressBytes">正在连接...</span>
+          </div>
         </div>
       </div>
     </div>
@@ -3517,12 +3551,12 @@ function playSongAtQueue(idx) {
   // 每次触发点播，重置错误重试计数器，杜绝因偶发网络波动被永久锁定
   if (song.id) songRetryCounts[song.id] = 0;
 
-  // 确保正在播放的歌曲属性同步更新，严禁在曲库中自动置顶打乱原有顺序
+  // 确保正在播放的歌曲属性同步更新，若为新点播歌曲加入主曲库顶部（后听的在上面）
   const existingIdx = ALL_LIBRARY_SONGS.findIndex(s => s.id === song.id || (s.title === song.title && s.artist === song.artist));
   if (existingIdx !== -1) {
     Object.assign(ALL_LIBRARY_SONGS[existingIdx], song);
   } else {
-    ALL_LIBRARY_SONGS.push(song);
+    ALL_LIBRARY_SONGS.unshift(song);
   }
   if (VINYL_ALBUMS[0]) {
     VINYL_ALBUMS[0].songs = ALL_LIBRARY_SONGS;
@@ -3531,26 +3565,11 @@ function playSongAtQueue(idx) {
 
   stopPlaybackLoop();
 
-  // 1. 自动补全歌曲封面（有 onlineId 的网络曲目自 Meting 补充封面直链）
-  if (!song.cover && song.onlineId) {
-    song.cover = `https://api.injahow.cn/meting/?server=${song.source || 'netease'}&type=pic&id=${song.onlineId}`;
+  // 1. 自动补全歌曲封面（高可用解析真实高清封面）
+  if (!song.cover || !song.cover.startsWith('http') || song.cover.includes('injahow.cn/meting/?server=')) {
+    ensureSongCover(song);
+  } else {
     applySongCoverToUI(song.cover);
-    updateUI();
-  } else if (!song.cover && song.title) {
-    const query = `${song.title} ${song.artist !== '未知歌手' ? song.artist : ''}`.trim();
-    requestOnlineSearch(query, 1).then(matches => {
-      if (matches && matches.length && matches[0].cover) {
-        song.cover = matches[0].cover;
-        if (!song.onlineId) {
-          song.onlineId = matches[0].url_id || matches[0].id;
-          song.source = matches[0].source || 'netease';
-        }
-        applySongCoverToUI(song.cover);
-        persistData();
-        updateUI();
-        renderSongList();
-      }
-    }).catch(() => {});
   }
 
   // 2. 立即重置为当前曲目占位歌词，彻底消除曲目切换瞬间显示上一首旧歌词的视觉不同步
@@ -4200,12 +4219,17 @@ async function playOnlineTrack(idx) {
   // 4. 异步拉取真实 LRC 歌词并解析
   fetchLyricForSong(item.lyric_id || item.id, trackObj.title, item.source || 'netease');
 
-  // 5. 插入主曲库，加入当前队列播放，并持久化到本地存储（已存在歌曲保持原有顺序，严禁置顶）
+  // 5. 插入主曲库，加入当前队列播放，并持久化到本地存储（后听的歌曲排在上面）
   const existingIdx = ALL_LIBRARY_SONGS.findIndex(s => s.id === trackObj.id || (s.title === trackObj.title && s.artist === trackObj.artist));
   if (existingIdx !== -1) {
-    Object.assign(ALL_LIBRARY_SONGS[existingIdx], trackObj);
+    const [removed] = ALL_LIBRARY_SONGS.splice(existingIdx, 1);
+    Object.assign(removed, trackObj);
+    ALL_LIBRARY_SONGS.unshift(removed);
   } else {
-    ALL_LIBRARY_SONGS.push(trackObj);
+    ALL_LIBRARY_SONGS.unshift(trackObj);
+  }
+  if (VINYL_ALBUMS[0]) {
+    VINYL_ALBUMS[0].songs = ALL_LIBRARY_SONGS;
   }
   persistData();
   renderSongList();
@@ -4214,12 +4238,14 @@ async function playOnlineTrack(idx) {
 
   let qIdx = currentPlaybackQueue.findIndex(s => s.id === trackObj.id || (s.title === trackObj.title && s.artist === trackObj.artist));
   if (qIdx !== -1) {
-    Object.assign(currentPlaybackQueue[qIdx], trackObj);
+    const [removed] = currentPlaybackQueue.splice(qIdx, 1);
+    Object.assign(removed, trackObj);
+    currentPlaybackQueue.unshift(removed);
   } else {
-    currentPlaybackQueue.push(trackObj);
-    qIdx = currentPlaybackQueue.length - 1;
+    currentPlaybackQueue.unshift(trackObj);
   }
-  playSongAtQueue(qIdx);
+  currentIndex = 0;
+  playSongAtQueue(0);
 
   // 6. 若成功获取到封面，同步装点黑胶唱片与详情页并通知通知栏
   if (coverUrl) {
@@ -4395,6 +4421,9 @@ function openSearchResultMenu(e, idx) {
     cover: item.cover || '',
     isFav: false
   };
+  if (!currentActionSong.cover && (currentActionSong.pic_id || currentActionSong.onlineId)) {
+    ensureSongCover(currentActionSong);
+  }
   const isFav = ALL_LIBRARY_SONGS.some(itemInLib => 
     (itemInLib.id === currentActionSong.id || 
      (itemInLib.title === currentActionSong.title && itemInLib.artist === currentActionSong.artist)) && 
@@ -6807,20 +6836,28 @@ function triggerSheetAction(action) {
       ALL_LIBRARY_SONGS.unshift(s);
       persistData();
     }
+    ensureSongCover(s);
     openChoosePlaylistModal();
     return;
   }
 
   if (action === 'fav') {
+    const favAlb = VINYL_ALBUMS.find(a => a.id === 'alb_fav') || VINYL_ALBUMS[1];
     if (!ALL_LIBRARY_SONGS.some(item => item.id === s.id)) {
       s.isFav = true;
       ALL_LIBRARY_SONGS.unshift(s);
+      if (favAlb && !favAlb.songs.some(item => item.id === s.id)) {
+        favAlb.songs.unshift(s);
+      }
+      ensureSongCover(s);
       persistData();
+      renderSongList();
       updateUI();
       syncCurrentLyricToDesktop();
       toast(`已收藏《${s.title}》`);
     } else {
       toggleSongFav(s.id);
+      ensureSongCover(s);
     }
     return;
   }
@@ -8097,6 +8134,237 @@ function closeChoosePlaylistModal(e) {
   closeChoosePlaylistModalDirect();
 }
 
+/* ================= 歌曲封面高可用解析保障 ================= */
+async function ensureSongCover(song) {
+  if (!song) return '';
+  if (song.cover && song.cover.startsWith('http') && !song.cover.includes('injahow.cn/meting/?server=')) {
+    return song.cover;
+  }
+
+  // 1. 如果有 pic_id，直接从当前音乐 API 解析高清真实封面
+  if (song.pic_id) {
+    try {
+      const picApi = `${currentApiBase}?types=pic&id=${song.pic_id}&source=${song.source || 'netease'}`;
+      const res = await fetch(picApi, { signal: AbortSignal.timeout(3000) });
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.url && data.url.startsWith('http')) {
+          song.cover = data.url;
+          applySongCoverToUI(song.cover);
+          persistData();
+          renderSongList();
+          renderDrawerList();
+          return song.cover;
+        }
+      }
+    } catch(e) {}
+  }
+
+  // 2. 通过标题与歌手在线检索匹配 pic_id 与封面
+  if (song.title) {
+    const query = `${song.title} ${song.artist !== '未知歌手' ? song.artist : ''}`.trim();
+    try {
+      const matches = await requestOnlineSearch(query, 1);
+      if (matches && matches.length) {
+        const match = matches[0];
+        if (match.pic_id) {
+          song.pic_id = match.pic_id;
+          try {
+            const picApi = `${currentApiBase}?types=pic&id=${match.pic_id}&source=${match.source || 'netease'}`;
+            const res = await fetch(picApi, { signal: AbortSignal.timeout(3000) });
+            if (res.ok) {
+              const data = await res.json();
+              if (data && data.url && data.url.startsWith('http')) {
+                song.cover = data.url;
+                applySongCoverToUI(song.cover);
+                persistData();
+                renderSongList();
+                renderDrawerList();
+                return song.cover;
+              }
+            }
+          } catch(e) {}
+        }
+        if (match.cover) {
+          song.cover = match.cover;
+          applySongCoverToUI(song.cover);
+          persistData();
+          renderSongList();
+          renderDrawerList();
+          return song.cover;
+        }
+      }
+    } catch(e) {}
+  }
+
+  return song.cover || '';
+}
+
+/* ================= 应用内版本检测与自动更新管理 ================= */
+let currentPendingUpdate = null;
+
+async function checkAppUpdate(isManual = false) {
+  let localCode = 38;
+  if (window.AndroidBridge && window.AndroidBridge.getAppVersionCode) {
+    try {
+      const code = window.AndroidBridge.getAppVersionCode();
+      if (typeof code === 'number' && code > 0) localCode = code;
+    } catch(e) {}
+  }
+
+  if (isManual) {
+    toast('正在检查版本更新...');
+  }
+
+  let remoteData = null;
+  const ts = Date.now();
+  const cdnUrl = 'https://cdn.jsdelivr.net/gh/visitor315/lingxi-music@main/version.json?t=' + ts;
+  const rawUrl = 'https://raw.githubusercontent.com/visitor315/lingxi-music/main/version.json?t=' + ts;
+  const releaseUrl = 'https://api.github.com/repos/visitor315/lingxi-music/releases/latest';
+
+  const endpoints = [cdnUrl, rawUrl, releaseUrl];
+  for (let u of endpoints) {
+    try {
+      const res = await fetch(u, { signal: AbortSignal.timeout(4500) });
+      if (res.ok) {
+        const json = await res.json();
+        if (json && json.versionCode) {
+          remoteData = json;
+          break;
+        } else if (json && json.tag_name) {
+          const vCode = parseInt((json.name || json.tag_name).replace(/[^0-9]/g, '')) || 0;
+          let dUrl = 'https://github.com/visitor315/lingxi-music/releases/download/v1.4.0/LingXiMusic.apk';
+          if (json.assets && json.assets.length) {
+            const apkAsset = json.assets.find(a => a.name && a.name.endsWith('.apk'));
+            if (apkAsset && apkAsset.browser_download_url) {
+              dUrl = apkAsset.browser_download_url;
+            }
+          }
+          remoteData = {
+            versionCode: vCode,
+            versionName: json.tag_name,
+            changelog: json.body || '功能优化与体验改进',
+            downloadUrl: dUrl
+          };
+          break;
+        }
+      }
+    } catch(e) {}
+  }
+
+  if (!remoteData || !remoteData.versionCode) {
+    if (isManual) toast('未能获取到更新信息，请检查网络');
+    return;
+  }
+
+  if (remoteData.versionCode > localCode) {
+    currentPendingUpdate = remoteData;
+    openAppUpdateModal(remoteData);
+  } else {
+    if (isManual) {
+      toast(`当前已是最新版本 (v${APP_CONFIG.version || '2.0.7'})`);
+    }
+  }
+}
+
+function openAppUpdateModal(data) {
+  const modal = document.getElementById('appUpdateModal');
+  const titleEl = document.getElementById('updateVersionTitle');
+  const badgeEl = document.getElementById('updateVersionBadge');
+  const logEl = document.getElementById('updateChangelogBox');
+  const btn = document.getElementById('btnStartAppUpdate');
+  const progressWrap = document.getElementById('updateProgressWrap');
+
+  if (titleEl) titleEl.textContent = data.versionName ? (data.versionName.startsWith('v') ? data.versionName : 'v' + data.versionName) : '新版本';
+  if (badgeEl) badgeEl.textContent = `发现新版 (Build ${data.versionCode})`;
+  if (logEl) logEl.textContent = data.changelog || '功能优化与体验改进';
+  if (btn) {
+    btn.style.display = 'block';
+    btn.textContent = '立即升级';
+    btn.disabled = false;
+  }
+  if (progressWrap) progressWrap.style.display = 'none';
+
+  if (modal) modal.classList.add('active');
+}
+
+function closeAppUpdateModalDirect() {
+  const modal = document.getElementById('appUpdateModal');
+  if (modal) modal.classList.remove('active');
+}
+
+function closeAppUpdateModal(e) {
+  if (e && e.target !== document.getElementById('appUpdateModal')) return;
+  closeAppUpdateModalDirect();
+}
+
+function executeAppUpdate() {
+  if (!currentPendingUpdate || !currentPendingUpdate.downloadUrl) {
+    toast('下载链接不可用');
+    return;
+  }
+
+  const btn = document.getElementById('btnStartAppUpdate');
+  const progressWrap = document.getElementById('updateProgressWrap');
+  const percentEl = document.getElementById('updateProgressPercent');
+  const bytesEl = document.getElementById('updateProgressBytes');
+  const bar = document.getElementById('updateProgressBar');
+
+  if (btn) btn.style.display = 'none';
+  if (progressWrap) progressWrap.style.display = 'flex';
+  if (bar) bar.style.width = '0%';
+  if (percentEl) percentEl.textContent = '准备下载...';
+  if (bytesEl) bytesEl.textContent = '正在连接云端节点...';
+
+  if (window.AndroidBridge && window.AndroidBridge.startAppUpdate) {
+    window.AndroidBridge.startAppUpdate(currentPendingUpdate.downloadUrl);
+  } else {
+    window.open(currentPendingUpdate.downloadUrl, '_blank');
+    toast('已打开浏览器下载');
+  }
+}
+
+window.onAppUpdateProgress = function(percent, readBytes, totalBytes) {
+  const bar = document.getElementById('updateProgressBar');
+  const percentEl = document.getElementById('updateProgressPercent');
+  const bytesEl = document.getElementById('updateProgressBytes');
+
+  if (bar && percent >= 0) {
+    bar.style.width = Math.min(100, Math.max(0, percent)) + '%';
+  }
+  if (percentEl) {
+    percentEl.textContent = percent >= 0 ? `正在下载 ${percent}%` : '正在下载...';
+  }
+  if (bytesEl && totalBytes > 0) {
+    const mbRead = (readBytes / (1024 * 1024)).toFixed(1);
+    const mbTotal = (totalBytes / (1024 * 1024)).toFixed(1);
+    bytesEl.textContent = `${mbRead}MB / ${mbTotal}MB`;
+  }
+};
+
+window.onAppUpdateCompleted = function() {
+  const bar = document.getElementById('updateProgressBar');
+  const percentEl = document.getElementById('updateProgressPercent');
+  const bytesEl = document.getElementById('updateProgressBytes');
+
+  if (bar) bar.style.width = '100%';
+  if (percentEl) percentEl.textContent = '下载完成';
+  if (bytesEl) bytesEl.textContent = '正在调起系统覆盖安装...';
+  toast('安装包已就绪，正在调起系统升级');
+};
+
+window.onAppUpdateFailed = function(err) {
+  const btn = document.getElementById('btnStartAppUpdate');
+  const progressWrap = document.getElementById('updateProgressWrap');
+  if (btn) {
+    btn.style.display = 'block';
+    btn.textContent = '重试升级';
+    btn.disabled = false;
+  }
+  if (progressWrap) progressWrap.style.display = 'none';
+  toast('更新失败: ' + (err || '网络异常'));
+};
+
 function openCreatePlaylistFromChoose() {
   const name = prompt("请输入新建歌单名称：");
   if (name && name.trim()) {
@@ -8518,6 +8786,7 @@ function handleSystemBack() {
   const uniConfirm = document.getElementById('universalConfirmModal');
   const configM = document.getElementById('apiConfigModal');
   const customApiM = document.getElementById('customApiModal');
+  const updateModal = document.getElementById('appUpdateModal');
   const chooseModal = document.getElementById('choosePlaylistModal');
   const menu = document.getElementById('songMenuOverlay');
   const playlistMenu = document.getElementById('playlistCornerMenu');
@@ -8533,6 +8802,7 @@ function handleSystemBack() {
   else if (uniConfirm && uniConfirm.classList.contains('active')) closeUniversalConfirm();
   else if (customApiM && customApiM.classList.contains('active')) closeCustomApiModal();
   else if (configM && configM.classList.contains('active')) closeApiConfigModal();
+  else if (updateModal && updateModal.classList.contains('active')) closeAppUpdateModalDirect();
   else if (chooseModal && chooseModal.classList.contains('active')) chooseModal.classList.remove('active');
   else if (menu && menu.classList.contains('active')) closeSongMenu();
   else if (playlistMenu && playlistMenu.classList.contains('active')) closePlaylistMenu();
@@ -8556,6 +8826,7 @@ function handleSystemHome() {
   const uniConfirm = document.getElementById('universalConfirmModal');
   const configM = document.getElementById('apiConfigModal');
   const customApiM = document.getElementById('customApiModal');
+  const updateModal = document.getElementById('appUpdateModal');
   const searchP = document.getElementById('viewSearchFull');
   if (guideM) guideM.classList.remove('active');
   if (qualityM) qualityM.classList.remove('active');
@@ -8563,6 +8834,7 @@ function handleSystemHome() {
   if (uniConfirm) uniConfirm.classList.remove('active');
   if (customApiM) customApiM.classList.remove('active');
   if (configM) configM.classList.remove('active');
+  if (updateModal) updateModal.classList.remove('active');
   if (searchP) searchP.classList.remove('active');
   document.getElementById('choosePlaylistModal').classList.remove('active');
   closeSongMenu();
@@ -9134,6 +9406,7 @@ function checkFirstLaunchTutorial() {
 window.addEventListener('load', () => {
   checkFirstLaunchTutorial();
   if (typeof initProgressBarDrag === 'function') initProgressBarDrag();
+  setTimeout(() => checkAppUpdate(false), 2500);
 });
 </script>
 

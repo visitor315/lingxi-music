@@ -282,7 +282,7 @@ public class MainActivity extends Activity {
             @Override
             public void onPageFinished(WebView view, String url) {
                 super.onPageFinished(view, url);
-                String ver = "2.0.6";
+                String ver = "2.0.7";
                 try {
                     ver = getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
                 } catch (Exception ignored) {}
@@ -956,6 +956,189 @@ public class MainActivity extends Activity {
         } catch (Exception ignored) {}
 
         return Math.round(navHeightPx / density);
+    }
+
+    private File pendingInstallApk = null;
+    private static final int REQUEST_CODE_INSTALL_PERMISSION = 2001;
+
+    public void startAppUpdate(final String downloadUrl) {
+        if (downloadUrl == null || downloadUrl.isEmpty()) {
+            notifyUpdateFailed("下载链接无效");
+            return;
+        }
+
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                java.io.InputStream in = null;
+                java.io.FileOutputStream out = null;
+                java.net.HttpURLConnection conn = null;
+                try {
+                    File downloadDir = getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS);
+                    if (downloadDir == null) {
+                        downloadDir = new File(getFilesDir(), "downloads");
+                    }
+                    if (!downloadDir.exists()) downloadDir.mkdirs();
+                    final File apkFile = new File(downloadDir, "LingXiMusic_update.apk");
+                    if (apkFile.exists()) apkFile.delete();
+
+                    String currentUrl = downloadUrl;
+                    int redirectCount = 0;
+                    while (redirectCount < 6) {
+                        java.net.URL url = new java.net.URL(currentUrl);
+                        conn = (java.net.HttpURLConnection) url.openConnection();
+                        conn.setInstanceFollowRedirects(false);
+                        conn.setConnectTimeout(15000);
+                        conn.setReadTimeout(20000);
+                        conn.setRequestProperty("User-Agent", "LingXiMusic/" + getAppVersionNameSafe());
+                        conn.connect();
+
+                        int responseCode = conn.getResponseCode();
+                        if (responseCode == java.net.HttpURLConnection.HTTP_MOVED_PERM
+                                || responseCode == java.net.HttpURLConnection.HTTP_MOVED_TEMP
+                                || responseCode == 307
+                                || responseCode == 308) {
+                            String location = conn.getHeaderField("Location");
+                            if (location != null && !location.isEmpty()) {
+                                currentUrl = location;
+                                redirectCount++;
+                                conn.disconnect();
+                                continue;
+                            }
+                        }
+                        break;
+                    }
+
+                    int totalBytes = conn.getContentLength();
+                    in = conn.getInputStream();
+                    out = new java.io.FileOutputStream(apkFile);
+
+                    byte[] buffer = new byte[8192];
+                    int bytesRead;
+                    long totalRead = 0;
+                    long lastUpdateTime = 0;
+
+                    while ((bytesRead = in.read(buffer)) != -1) {
+                        out.write(buffer, 0, bytesRead);
+                        totalRead += bytesRead;
+
+                        long now = System.currentTimeMillis();
+                        if (now - lastUpdateTime > 200 || (totalBytes > 0 && totalRead == totalBytes)) {
+                            lastUpdateTime = now;
+                            final int percent = totalBytes > 0 ? (int) ((totalRead * 100) / totalBytes) : -1;
+                            notifyUpdateProgress(percent, totalRead, totalBytes);
+                        }
+                    }
+                    out.flush();
+
+                    if (apkFile.length() < 1024 * 1024) {
+                        throw new Exception("下载安装包不完整");
+                    }
+
+                    notifyUpdateCompleted();
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            installApk(apkFile);
+                        }
+                    });
+
+                } catch (final Exception e) {
+                    notifyUpdateFailed(e.getMessage() != null ? e.getMessage() : "下载安装包失败");
+                } finally {
+                    try { if (in != null) in.close(); } catch (Exception ignored) {}
+                    try { if (out != null) out.close(); } catch (Exception ignored) {}
+                    try { if (conn != null) conn.disconnect(); } catch (Exception ignored) {}
+                }
+            }
+        }).start();
+    }
+
+    private String getAppVersionNameSafe() {
+        try {
+            return getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
+        } catch (Exception e) {
+            return "2.0.7";
+        }
+    }
+
+    private void notifyUpdateProgress(final int percent, final long readBytes, final long totalBytes) {
+        if (webView != null) {
+            webView.post(new Runnable() {
+                @Override
+                public void run() {
+                    if (webView != null) {
+                        webView.evaluateJavascript("if (window.onAppUpdateProgress) window.onAppUpdateProgress(" + percent + ", " + readBytes + ", " + totalBytes + ");", null);
+                    }
+                }
+            });
+        }
+    }
+
+    private void notifyUpdateCompleted() {
+        if (webView != null) {
+            webView.post(new Runnable() {
+                @Override
+                public void run() {
+                    if (webView != null) {
+                        webView.evaluateJavascript("if (window.onAppUpdateCompleted) window.onAppUpdateCompleted();", null);
+                    }
+                }
+            });
+        }
+    }
+
+    private void notifyUpdateFailed(final String msg) {
+        if (webView != null) {
+            webView.post(new Runnable() {
+                @Override
+                public void run() {
+                    if (webView != null) {
+                        String safeMsg = msg != null ? msg.replace("'", "\\'") : "未知错误";
+                        webView.evaluateJavascript("if (window.onAppUpdateFailed) window.onAppUpdateFailed('" + safeMsg + "');", null);
+                    }
+                }
+            });
+        }
+    }
+
+    public void installApk(File apkFile) {
+        if (apkFile == null || !apkFile.exists()) return;
+        pendingInstallApk = apkFile;
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            if (!getPackageManager().canRequestPackageInstalls()) {
+                try {
+                    Intent reqIntent = new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
+                            Uri.parse("package:" + getPackageName()));
+                    startActivityForResult(reqIntent, REQUEST_CODE_INSTALL_PERMISSION);
+                    return;
+                } catch (Exception ignored) {}
+            }
+        }
+
+        try {
+            Uri apkUri = LingXiFileProvider.getUriForFile(this, apkFile);
+            Intent intent = new Intent(Intent.ACTION_VIEW);
+            intent.setDataAndType(apkUri, "application/vnd.android.package-archive");
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            startActivity(intent);
+        } catch (Exception e) {
+            notifyUpdateFailed("唤起安装程序失败: " + e.getMessage());
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == REQUEST_CODE_INSTALL_PERMISSION) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                if (getPackageManager().canRequestPackageInstalls() && pendingInstallApk != null && pendingInstallApk.exists()) {
+                    installApk(pendingInstallApk);
+                }
+            }
+        }
     }
 
     public void toggleDesktopLyrics() {
@@ -1748,8 +1931,35 @@ public class MainActivity extends Activity {
                 PackageInfo pInfo = getPackageManager().getPackageInfo(getPackageName(), 0);
                 return pInfo.versionName;
             } catch (Exception e) {
-                return "2.0.6";
+                return "2.0.7";
             }
+        }
+
+        @JavascriptInterface
+        public int getAppVersionCode() {
+            try {
+                PackageInfo pInfo = getPackageManager().getPackageInfo(getPackageName(), 0);
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                    return (int) pInfo.getLongVersionCode();
+                } else {
+                    return pInfo.versionCode;
+                }
+            } catch (Exception e) {
+                return 38;
+            }
+        }
+
+        @JavascriptInterface
+        public void startAppUpdate(String downloadUrl) {
+            MainActivity.this.startAppUpdate(downloadUrl);
+        }
+
+        @JavascriptInterface
+        public boolean checkInstallPermission() {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                return getPackageManager().canRequestPackageInstalls();
+            }
+            return true;
         }
 
         @JavascriptInterface
