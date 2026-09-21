@@ -1182,6 +1182,14 @@ body.night .edit-cover-thumbnail {
 }
 .add-clean-icon svg { width: 19px; height: 19px; stroke-width: 1.55; stroke: currentColor; fill: none; }
 .add-clean-label { font-size: 15px; font-weight: 500; color: var(--ink-black); line-height: 22px; display: flex; align-items: center; }
+.add-clean-icon.is-favorited svg {
+  stroke: var(--brand-terracotta) !important;
+  fill: var(--brand-terracotta) !important;
+}
+.add-clean-label.is-favorited {
+  color: var(--brand-terracotta) !important;
+  font-weight: 600;
+}
 
 /* 悬浮选择歌单子弹窗 */
 .choose-playlist-modal {
@@ -2322,12 +2330,16 @@ body.in-pip-mode .view-player-full {
           <span class="add-clean-label">加入歌单</span>
         </div>
         <div class="add-clean-row" onclick="triggerSheetAction('fav')">
-          <div class="add-clean-icon"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></div>
+          <div class="add-clean-icon" id="sheetFavIcon"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></div>
           <span class="add-clean-label" id="sheetFavText">收藏歌曲</span>
         </div>
         <div class="add-clean-row" onclick="triggerSheetAction('download')">
           <div class="add-clean-icon"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></div>
           <span class="add-clean-label">离线下载</span>
+        </div>
+        <div class="add-clean-row" onclick="triggerSheetAction('ringtone')">
+          <div class="add-clean-icon"><svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></div>
+          <span class="add-clean-label">设为系统铃声</span>
         </div>
         <div class="add-clean-row" onclick="triggerSheetAction('extract_cover')">
           <div class="add-clean-icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>
@@ -2350,6 +2362,36 @@ body.in-pip-mode .view-player-full {
     <div class="choose-playlist-card" onclick="event.stopPropagation()">
       <div class="choose-playlist-title">选择要加入的歌单</div>
       <div id="choosePlaylistItems" style="display:flex; flex-direction:column; gap:8px;"></div>
+    </div>
+  </div>
+
+  <!-- 8.55 设为系统铃声类型选择子弹窗 -->
+  <div class="choose-playlist-modal" id="chooseRingtoneModal" onclick="closeChooseRingtoneModal(event)">
+    <div class="choose-playlist-card" onclick="event.stopPropagation()">
+      <div class="choose-playlist-title" id="chooseRingtoneSongTitle">设为系统铃声</div>
+      <div style="display:flex; flex-direction:column; gap:8px;">
+        <div class="choose-item-row" onclick="confirmSetRingtone(1)">
+          <div style="display:flex; align-items:center; gap:10px;">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+            <span>来电铃声 (默认)</span>
+          </div>
+          <span style="font-size:12px; color:var(--ink-gray);">设为电话铃声</span>
+        </div>
+        <div class="choose-item-row" onclick="confirmSetRingtone(2)">
+          <div style="display:flex; align-items:center; gap:10px;">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+            <span>通知提示音</span>
+          </div>
+          <span style="font-size:12px; color:var(--ink-gray);">设为系统通知音</span>
+        </div>
+        <div class="choose-item-row" onclick="confirmSetRingtone(4)">
+          <div style="display:flex; align-items:center; gap:10px;">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2"/><path d="m5 3 4 4"/><path d="m19 3-4 4"/></svg>
+            <span>闹钟铃声</span>
+          </div>
+          <span style="font-size:12px; color:var(--ink-gray);">设为系统闹铃</span>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -4191,8 +4233,28 @@ function openSearchResultMenu(e, idx) {
     cover: item.cover || '',
     isFav: false
   };
+  const isFav = ALL_LIBRARY_SONGS.some(itemInLib => 
+    (itemInLib.id === currentActionSong.id || 
+     (itemInLib.title === currentActionSong.title && itemInLib.artist === currentActionSong.artist)) && 
+    itemInLib.isFav
+  );
+  currentActionSong.isFav = isFav;
   document.getElementById('sheetSongTitle').textContent = `歌曲：${item.name}`;
-  document.getElementById('sheetFavText').textContent = '收藏歌曲';
+  const favIconEl = document.getElementById('sheetFavIcon');
+  const favTextEl = document.getElementById('sheetFavText');
+  if (isFav) {
+    if (favIconEl) favIconEl.classList.add('is-favorited');
+    if (favTextEl) {
+      favTextEl.classList.add('is-favorited');
+      favTextEl.textContent = '已收藏歌曲';
+    }
+  } else {
+    if (favIconEl) favIconEl.classList.remove('is-favorited');
+    if (favTextEl) {
+      favTextEl.classList.remove('is-favorited');
+      favTextEl.textContent = '收藏歌曲';
+    }
+  }
   document.getElementById('songMenuOverlay').classList.add('active');
 }
 
@@ -6525,7 +6587,22 @@ function openSongMenu(e, idx) {
   currentActionSong = s;
   if (!s) return;
   document.getElementById('sheetSongTitle').textContent = `歌曲：${s.title}`;
-  document.getElementById('sheetFavText').textContent = s.isFav ? '已收藏歌曲' : '收藏歌曲';
+  const isFav = !!(s && (s.isFav || ALL_LIBRARY_SONGS.some(item => (item.id === s.id || (item.title === s.title && item.artist === s.artist)) && item.isFav)));
+  const favIconEl = document.getElementById('sheetFavIcon');
+  const favTextEl = document.getElementById('sheetFavText');
+  if (isFav) {
+    if (favIconEl) favIconEl.classList.add('is-favorited');
+    if (favTextEl) {
+      favTextEl.classList.add('is-favorited');
+      favTextEl.textContent = '已收藏歌曲';
+    }
+  } else {
+    if (favIconEl) favIconEl.classList.remove('is-favorited');
+    if (favTextEl) {
+      favTextEl.classList.remove('is-favorited');
+      favTextEl.textContent = '收藏歌曲';
+    }
+  }
   const isSpecificSubAlbum = (activeRadioIndex > 0 && activeAlb && activeAlb.id !== 'alb_all');
   const deleteTextEl = document.getElementById('sheetDeleteText');
   if (deleteTextEl) deleteTextEl.textContent = isSpecificSubAlbum ? '移出此歌曲' : '删除此歌曲';
@@ -6603,10 +6680,70 @@ function triggerSheetAction(action) {
     return;
   }
 
+  if (action === 'ringtone') {
+    openChooseRingtoneModal(s);
+    return;
+  }
+
   if (action === 'extract_cover') {
     openCoverPreviewModal(s);
     return;
   }
+}
+
+function openChooseRingtoneModal(song) {
+  const modal = document.getElementById('chooseRingtoneModal');
+  const titleEl = document.getElementById('chooseRingtoneSongTitle');
+  if (titleEl && song) {
+    titleEl.textContent = `设为系统铃声 · 《${song.title}》`;
+  }
+  if (modal) modal.classList.add('active');
+}
+
+function closeChooseRingtoneModal(e) {
+  if (!e || e.target === e.currentTarget || (e.target && e.target.classList && e.target.classList.contains('choose-playlist-modal'))) {
+    const modal = document.getElementById('chooseRingtoneModal');
+    if (modal) modal.classList.remove('active');
+  }
+}
+
+async function confirmSetRingtone(type) {
+  const s = currentActionSong;
+  closeChooseRingtoneModal();
+  if (!s) return;
+
+  if (!window.AndroidBridge || !window.AndroidBridge.setAsRingtone) {
+    toast('当前为网页环境，请在 Android 手机客户端中使用设为铃声功能');
+    return;
+  }
+
+  toast(`正在准备音频并配置系统铃声...`);
+
+  let audioUrl = s.fileUrl || '';
+  const onlineId = s.onlineId || (s.id && s.id.startsWith('online_') ? s.id.replace('online_', '') : null);
+
+  if (onlineId) {
+    try {
+      const source = s.source || 'netease';
+      const urlApi = `${currentApiBase}?types=url&id=${onlineId}&source=${source}&br=${currentAudioQuality}`;
+      const urlRes = await fetch(urlApi);
+      if (urlRes.ok) {
+        const uData = await urlRes.json();
+        if (uData && uData.url) {
+          audioUrl = uData.url;
+        }
+      }
+    } catch(e) {
+      console.warn("Resolve audio URL for ringtone failed, trying fallback", e);
+    }
+  }
+
+  if (!audioUrl) {
+    toast(`未能获取《${s.title}》的真实音频地址`);
+    return;
+  }
+
+  window.AndroidBridge.setAsRingtone(audioUrl, s.title, s.artist || '未知歌手', type);
 }
 
 async function downloadSongFile(song) {

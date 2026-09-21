@@ -25,8 +25,10 @@ import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.media.MediaMetadata;
 import android.media.MediaScannerConnection;
+import android.media.RingtoneManager;
 import android.media.session.MediaSession;
 import android.media.session.PlaybackState;
+import android.content.ContentValues;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -70,8 +72,10 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
@@ -591,6 +595,195 @@ public class MainActivity extends Activity {
                 }
             }
         }).start();
+    }
+
+    public void setAsRingtone(final String urlStr, final String title, final String artist, final int type) {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                // 1. 检查修改系统设置权限 (WRITE_SETTINGS)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    if (!Settings.System.canWrite(MainActivity.this)) {
+                        Toast.makeText(MainActivity.this, "请在接下来的系统页面中开启「允许修改系统设置」权限以设置铃声", Toast.LENGTH_LONG).show();
+                        try {
+                            Intent intent = new Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS);
+                            intent.setData(Uri.parse("package:" + getPackageName()));
+                            startActivity(intent);
+                        } catch (Exception e) {
+                            try {
+                                Intent intent = new Intent(Settings.ACTION_SETTINGS);
+                                startActivity(intent);
+                            } catch (Exception ignored) {}
+                        }
+                        return;
+                    }
+                }
+
+                Toast.makeText(MainActivity.this, "正在准备音频并配置系统铃声...", Toast.LENGTH_SHORT).show();
+
+                // 2. 异步下载或读取音频并写入系统 MediaStore
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        File tempFile = null;
+                        try {
+                            File cacheDir = getExternalCacheDir();
+                            if (cacheDir == null) cacheDir = getCacheDir();
+                            tempFile = new File(cacheDir, "ringtone_" + System.currentTimeMillis() + ".mp3");
+
+                            // 读取音频流
+                            if (urlStr.startsWith("http://") || urlStr.startsWith("https://")) {
+                                URL u = new URL(urlStr);
+                                HttpURLConnection conn = (HttpURLConnection) u.openConnection();
+                                conn.setConnectTimeout(15000);
+                                conn.setReadTimeout(20000);
+                                conn.setInstanceFollowRedirects(true);
+                                conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android 10; Mobile) AppleWebKit/537.36");
+                                int responseCode = conn.getResponseCode();
+                                if (responseCode >= 300 && responseCode <= 308) {
+                                    String redirectUrl = conn.getHeaderField("Location");
+                                    if (redirectUrl != null && !redirectUrl.isEmpty()) {
+                                        conn.disconnect();
+                                        u = new URL(redirectUrl);
+                                        conn = (HttpURLConnection) u.openConnection();
+                                        conn.setConnectTimeout(15000);
+                                        conn.setReadTimeout(20000);
+                                        conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android 10; Mobile) AppleWebKit/537.36");
+                                    }
+                                }
+                                InputStream in = conn.getInputStream();
+                                FileOutputStream out = new FileOutputStream(tempFile);
+                                byte[] buf = new byte[8192];
+                                int len;
+                                while ((len = in.read(buf)) != -1) {
+                                    out.write(buf, 0, len);
+                                }
+                                out.flush();
+                                out.close();
+                                in.close();
+                                conn.disconnect();
+                            } else if (urlStr.startsWith("content://")) {
+                                InputStream in = getContentResolver().openInputStream(Uri.parse(urlStr));
+                                if (in != null) {
+                                    FileOutputStream out = new FileOutputStream(tempFile);
+                                    byte[] buf = new byte[8192];
+                                    int len;
+                                    while ((len = in.read(buf)) != -1) {
+                                        out.write(buf, 0, len);
+                                    }
+                                    out.flush();
+                                    out.close();
+                                    in.close();
+                                }
+                            } else {
+                                File srcFile = new File(urlStr.replace("file://", ""));
+                                if (srcFile.exists()) {
+                                    FileInputStream in = new FileInputStream(srcFile);
+                                    FileOutputStream out = new FileOutputStream(tempFile);
+                                    byte[] buf = new byte[8192];
+                                    int len;
+                                    while ((len = in.read(buf)) != -1) {
+                                        out.write(buf, 0, len);
+                                    }
+                                    out.flush();
+                                    out.close();
+                                    in.close();
+                                }
+                            }
+
+                            if (!tempFile.exists() || tempFile.length() <= 0) {
+                                throw new Exception("获取音频文件失败");
+                            }
+
+                            final String safeTitle = (title != null && !title.isEmpty()) ? title.replaceAll("[\\\\/:*?\"<>|]", "_") : "灵犀铃声";
+                            final String safeArtist = (artist != null && !artist.isEmpty()) ? artist.replaceAll("[\\\\/:*?\"<>|]", "_") : "未知歌手";
+                            final String displayName = safeArtist + " - " + safeTitle + ".mp3";
+                            final int targetType = (type > 0) ? type : RingtoneManager.TYPE_RINGTONE;
+
+                            ContentValues values = new ContentValues();
+                            values.put(MediaStore.MediaColumns.DISPLAY_NAME, displayName);
+                            values.put(MediaStore.MediaColumns.TITLE, safeTitle);
+                            values.put(MediaStore.MediaColumns.MIME_TYPE, "audio/mpeg");
+                            values.put(MediaStore.Audio.Media.IS_RINGTONE, (targetType == RingtoneManager.TYPE_RINGTONE));
+                            values.put(MediaStore.Audio.Media.IS_NOTIFICATION, (targetType == RingtoneManager.TYPE_NOTIFICATION));
+                            values.put(MediaStore.Audio.Media.IS_ALARM, (targetType == RingtoneManager.TYPE_ALARM));
+                            values.put(MediaStore.Audio.Media.IS_MUSIC, false);
+
+                            Uri ringtoneUri = null;
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                                values.put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_RINGTONES + "/LingXi");
+                                try {
+                                    getContentResolver().delete(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
+                                            MediaStore.MediaColumns.DISPLAY_NAME + "=?", new String[]{displayName});
+                                } catch (Exception ignored) {}
+                                ringtoneUri = getContentResolver().insert(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, values);
+                                if (ringtoneUri != null) {
+                                    OutputStream os = getContentResolver().openOutputStream(ringtoneUri);
+                                    FileInputStream fis = new FileInputStream(tempFile);
+                                    byte[] buf = new byte[8192];
+                                    int len;
+                                    while ((len = fis.read(buf)) != -1) {
+                                        os.write(buf, 0, len);
+                                    }
+                                    os.flush();
+                                    os.close();
+                                    fis.close();
+                                }
+                            } else {
+                                File ringtonesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_RINGTONES);
+                                if (!ringtonesDir.exists()) ringtonesDir.mkdirs();
+                                File destFile = new File(ringtonesDir, displayName);
+                                FileInputStream fis = new FileInputStream(tempFile);
+                                FileOutputStream fos = new FileOutputStream(destFile);
+                                byte[] buf = new byte[8192];
+                                int len;
+                                while ((len = fis.read(buf)) != -1) {
+                                    fos.write(buf, 0, len);
+                                }
+                                fos.flush();
+                                fos.close();
+                                fis.close();
+
+                                values.put(MediaStore.MediaColumns.DATA, destFile.getAbsolutePath());
+                                try {
+                                    getContentResolver().delete(MediaStore.Audio.Media.getContentUriForPath(destFile.getAbsolutePath()),
+                                            MediaStore.MediaColumns.DATA + "=?", new String[]{destFile.getAbsolutePath()});
+                                } catch (Exception ignored) {}
+                                ringtoneUri = getContentResolver().insert(MediaStore.Audio.Media.getContentUriForPath(destFile.getAbsolutePath()), values);
+                                if (ringtoneUri == null) {
+                                    ringtoneUri = Uri.fromFile(destFile);
+                                }
+                            }
+
+                            if (ringtoneUri != null) {
+                                RingtoneManager.setActualDefaultRingtoneUri(MainActivity.this, targetType, ringtoneUri);
+                                final String typeDesc = (targetType == RingtoneManager.TYPE_NOTIFICATION) ? "通知提示音" :
+                                        ((targetType == RingtoneManager.TYPE_ALARM) ? "闹钟铃声" : "来电铃声");
+                                runOnUiThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        Toast.makeText(MainActivity.this, "已成功将《" + safeTitle + "》设为系统" + typeDesc, Toast.LENGTH_LONG).show();
+                                    }
+                                });
+                            } else {
+                                throw new Exception("未能写入系统铃声库");
+                            }
+                        } catch (final Exception e) {
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    Toast.makeText(MainActivity.this, "设置系统铃声失败：" + e.getMessage(), Toast.LENGTH_SHORT).show();
+                                }
+                            });
+                        } finally {
+                            if (tempFile != null && tempFile.exists()) {
+                                try { tempFile.delete(); } catch (Exception ignored) {}
+                            }
+                        }
+                    }
+                }).start();
+            }
+        });
     }
 
     private int dp2px(float dp) {
@@ -1289,6 +1482,11 @@ public class MainActivity extends Activity {
         }
 
         @JavascriptInterface
+        public void setAsRingtone(final String url, final String title, final String artist, final int type) {
+            MainActivity.this.setAsRingtone(url, title, artist, type);
+        }
+
+        @JavascriptInterface
         public void minimizeApp() {
             runOnUiThread(new Runnable() {
                 @Override
@@ -1382,7 +1580,7 @@ public class MainActivity extends Activity {
                 PackageInfo pInfo = getPackageManager().getPackageInfo(getPackageName(), 0);
                 return pInfo.versionName;
             } catch (Exception e) {
-                return "1.9.9";
+                return "2.0.0";
             }
         }
 
