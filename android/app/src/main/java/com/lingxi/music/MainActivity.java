@@ -307,7 +307,7 @@ public class MainActivity extends Activity {
             @Override
             public void onPageFinished(WebView view, String url) {
                 super.onPageFinished(view, url);
-                String ver = "2.0.8";
+                String ver = "2.0.9";
                 try {
                     ver = getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
                 } catch (Exception ignored) {}
@@ -412,6 +412,24 @@ public class MainActivity extends Activity {
         }
         removeFloatingLyricViewInternal();
         handleIntentNavigation(getIntent());
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            if (pendingInstallApk != null && pendingInstallApk.exists() && getPackageManager().canRequestPackageInstalls()) {
+                File toInstall = pendingInstallApk;
+                pendingInstallApk = null;
+                installApk(toInstall);
+            }
+        }
+        if (webView != null) {
+            webView.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    if (webView != null) {
+                        webView.evaluateJavascript("if (window.checkAppUpdateOnResume) window.checkAppUpdateOnResume();", null);
+                    }
+                }
+            }, 800);
+        }
     }
 
     @Override
@@ -1001,71 +1019,113 @@ public class MainActivity extends Activity {
         new Thread(new Runnable() {
             @Override
             public void run() {
-                java.io.InputStream in = null;
-                java.io.FileOutputStream out = null;
-                java.net.HttpURLConnection conn = null;
-                try {
-                    File downloadDir = getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS);
-                    if (downloadDir == null) {
-                        downloadDir = new File(getFilesDir(), "downloads");
-                    }
-                    if (!downloadDir.exists()) downloadDir.mkdirs();
-                    final File apkFile = new File(downloadDir, "LingXiMusic_update.apk");
-                    if (apkFile.exists()) apkFile.delete();
+                java.util.List<String> candidateUrls = new java.util.ArrayList<>();
+                if (downloadUrl.contains("github.com/")) {
+                    candidateUrls.add("https://ghfast.top/" + downloadUrl);
+                    candidateUrls.add("https://ghproxy.net/" + downloadUrl);
+                    candidateUrls.add(downloadUrl);
+                } else if (downloadUrl.contains("ghfast.top/") || downloadUrl.contains("ghproxy.net/")) {
+                    candidateUrls.add(downloadUrl);
+                    String raw = downloadUrl.replace("https://ghfast.top/", "").replace("https://ghproxy.net/", "");
+                    candidateUrls.add("https://ghfast.top/" + raw);
+                    candidateUrls.add("https://ghproxy.net/" + raw);
+                    candidateUrls.add(raw);
+                } else {
+                    candidateUrls.add(downloadUrl);
+                }
 
-                    String currentUrl = downloadUrl;
-                    int redirectCount = 0;
-                    while (redirectCount < 6) {
-                        java.net.URL url = new java.net.URL(currentUrl);
-                        conn = (java.net.HttpURLConnection) url.openConnection();
-                        conn.setInstanceFollowRedirects(false);
-                        conn.setConnectTimeout(15000);
-                        conn.setReadTimeout(20000);
-                        conn.setRequestProperty("User-Agent", "LingXiMusic/" + getAppVersionNameSafe());
-                        conn.connect();
+                java.util.List<String> finalUrls = new java.util.ArrayList<>();
+                for (String u : candidateUrls) {
+                    if (!finalUrls.contains(u)) finalUrls.add(u);
+                }
 
-                        int responseCode = conn.getResponseCode();
-                        if (responseCode == java.net.HttpURLConnection.HTTP_MOVED_PERM
-                                || responseCode == java.net.HttpURLConnection.HTTP_MOVED_TEMP
-                                || responseCode == 307
-                                || responseCode == 308) {
-                            String location = conn.getHeaderField("Location");
-                            if (location != null && !location.isEmpty()) {
-                                currentUrl = location;
-                                redirectCount++;
-                                conn.disconnect();
-                                continue;
+                File downloadDir = getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS);
+                if (downloadDir == null) {
+                    downloadDir = new File(getFilesDir(), "downloads");
+                }
+                if (!downloadDir.exists()) downloadDir.mkdirs();
+                final File apkFile = new File(downloadDir, "LingXiMusic_update.apk");
+
+                boolean downloadSuccess = false;
+                String lastError = "下载超时";
+
+                for (String candidateUrl : finalUrls) {
+                    java.io.InputStream in = null;
+                    java.io.FileOutputStream out = null;
+                    java.net.HttpURLConnection conn = null;
+                    try {
+                        if (apkFile.exists()) apkFile.delete();
+
+                        String currentUrl = candidateUrl;
+                        int redirectCount = 0;
+                        while (redirectCount < 6) {
+                            java.net.URL url = new java.net.URL(currentUrl);
+                            conn = (java.net.HttpURLConnection) url.openConnection();
+                            conn.setInstanceFollowRedirects(false);
+                            conn.setConnectTimeout(8000);
+                            conn.setReadTimeout(15000);
+                            conn.setRequestProperty("User-Agent", "LingXiMusic/" + getAppVersionNameSafe());
+                            conn.connect();
+
+                            int responseCode = conn.getResponseCode();
+                            if (responseCode == java.net.HttpURLConnection.HTTP_MOVED_PERM
+                                    || responseCode == java.net.HttpURLConnection.HTTP_MOVED_TEMP
+                                    || responseCode == 307
+                                    || responseCode == 308) {
+                                String location = conn.getHeaderField("Location");
+                                if (location != null && !location.isEmpty()) {
+                                    currentUrl = location;
+                                    redirectCount++;
+                                    conn.disconnect();
+                                    continue;
+                                }
+                            }
+                            break;
+                        }
+
+                        if (conn.getResponseCode() < 200 || conn.getResponseCode() >= 400) {
+                            conn.disconnect();
+                            continue;
+                        }
+
+                        int totalBytes = conn.getContentLength();
+                        in = conn.getInputStream();
+                        out = new java.io.FileOutputStream(apkFile);
+
+                        byte[] buffer = new byte[8192];
+                        int bytesRead;
+                        long totalRead = 0;
+                        long lastUpdateTime = 0;
+
+                        while ((bytesRead = in.read(buffer)) != -1) {
+                            out.write(buffer, 0, bytesRead);
+                            totalRead += bytesRead;
+
+                            long now = System.currentTimeMillis();
+                            if (now - lastUpdateTime > 150 || (totalBytes > 0 && totalRead == totalBytes)) {
+                                lastUpdateTime = now;
+                                final int percent = totalBytes > 0 ? (int) ((totalRead * 100) / totalBytes) : -1;
+                                notifyUpdateProgress(percent, totalRead, totalBytes);
                             }
                         }
-                        break;
-                    }
+                        out.flush();
 
-                    int totalBytes = conn.getContentLength();
-                    in = conn.getInputStream();
-                    out = new java.io.FileOutputStream(apkFile);
-
-                    byte[] buffer = new byte[8192];
-                    int bytesRead;
-                    long totalRead = 0;
-                    long lastUpdateTime = 0;
-
-                    while ((bytesRead = in.read(buffer)) != -1) {
-                        out.write(buffer, 0, bytesRead);
-                        totalRead += bytesRead;
-
-                        long now = System.currentTimeMillis();
-                        if (now - lastUpdateTime > 200 || (totalBytes > 0 && totalRead == totalBytes)) {
-                            lastUpdateTime = now;
-                            final int percent = totalBytes > 0 ? (int) ((totalRead * 100) / totalBytes) : -1;
-                            notifyUpdateProgress(percent, totalRead, totalBytes);
+                        if (apkFile.length() < 1024 * 1024) {
+                            throw new Exception("安装包大小异常");
                         }
-                    }
-                    out.flush();
 
-                    if (apkFile.length() < 1024 * 1024) {
-                        throw new Exception("下载安装包不完整");
+                        downloadSuccess = true;
+                        break;
+                    } catch (final Exception e) {
+                        lastError = (e.getMessage() != null ? e.getMessage() : "网络节点连接超时");
+                    } finally {
+                        try { if (in != null) in.close(); } catch (Exception ignored) {}
+                        try { if (out != null) out.close(); } catch (Exception ignored) {}
+                        try { if (conn != null) conn.disconnect(); } catch (Exception ignored) {}
                     }
+                }
 
+                if (downloadSuccess) {
                     notifyUpdateCompleted();
                     runOnUiThread(new Runnable() {
                         @Override
@@ -1073,13 +1133,8 @@ public class MainActivity extends Activity {
                             installApk(apkFile);
                         }
                     });
-
-                } catch (final Exception e) {
-                    notifyUpdateFailed(e.getMessage() != null ? e.getMessage() : "下载安装包失败");
-                } finally {
-                    try { if (in != null) in.close(); } catch (Exception ignored) {}
-                    try { if (out != null) out.close(); } catch (Exception ignored) {}
-                    try { if (conn != null) conn.disconnect(); } catch (Exception ignored) {}
+                } else {
+                    notifyUpdateFailed("下载安装包失败: " + lastError);
                 }
             }
         }).start();
@@ -1089,7 +1144,7 @@ public class MainActivity extends Activity {
         try {
             return getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
         } catch (Exception e) {
-            return "2.0.8";
+            return "2.0.9";
         }
     }
 
@@ -2001,7 +2056,7 @@ public class MainActivity extends Activity {
                 PackageInfo pInfo = getPackageManager().getPackageInfo(getPackageName(), 0);
                 return pInfo.versionName;
             } catch (Exception e) {
-                return "2.0.8";
+                return "2.0.9";
             }
         }
 
@@ -2015,7 +2070,7 @@ public class MainActivity extends Activity {
                     return pInfo.versionCode;
                 }
             } catch (Exception e) {
-                return 39;
+                return 40;
             }
         }
 
