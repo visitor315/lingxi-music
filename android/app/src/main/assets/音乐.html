@@ -38,6 +38,8 @@
 
 /* ================= 1. 色彩体系（YYRC 统一标准规范） ================= */
 :root {
+  --status-bar-height: 38px;
+  --safe-top: max(var(--status-bar-height, 38px), env(safe-area-inset-top, 38px));
   --bg-page: #F7F7F5;
   --paper-bg: #F7F7F5;
   --card-bg: #FFFFFF;
@@ -1479,9 +1481,9 @@ body.apk-mode .view-xianyin {
 
 body.apk-mode .listen-header-bar {
   height: auto !important;
-  min-height: 54px !important;
-  padding-top: max(14px, env(safe-area-inset-top, 14px)) !important;
-  padding-bottom: 6px !important;
+  min-height: 52px !important;
+  padding-top: calc(var(--safe-top, 38px) + 8px) !important;
+  padding-bottom: 8px !important;
   background: var(--bg-page) !important;
   position: relative !important;
   z-index: 10 !important;
@@ -1534,9 +1536,9 @@ body.apk-mode .xianyin-content-scroll {
 
   .listen-header-bar {
     height: auto !important;
-    min-height: 54px !important;
-    padding-top: max(14px, env(safe-area-inset-top, 14px)) !important;
-    padding-bottom: 6px !important;
+    min-height: 52px !important;
+    padding-top: calc(var(--safe-top, 38px) + 8px) !important;
+    padding-bottom: 8px !important;
   }
 
   .xianyin-bottom-nav {
@@ -1556,7 +1558,7 @@ body.apk-mode .xianyin-content-scroll {
 /* ================= 灵动岛通用层级与真机适配 ================= */
 .island-capsule {
   position: absolute !important;
-  top: max(10px, env(safe-area-inset-top, 10px)) !important;
+  top: calc(var(--safe-top, 38px) + 6px) !important;
   left: 50% !important;
   transform: translateX(-50%) scale(0.9);
   width: 138px !important;
@@ -1586,7 +1588,7 @@ body.apk-mode .xianyin-content-scroll {
 }
 .island-expanded-card {
   position: absolute !important;
-  top: max(10px, env(safe-area-inset-top, 10px)) !important;
+  top: calc(var(--safe-top, 38px) + 6px) !important;
   left: 10px !important;
   right: 10px !important;
   z-index: 160 !important;
@@ -1628,8 +1630,8 @@ body.in-pip-mode .view-player-full {
 .playlist-header-nav {
   height: auto !important;
   min-height: 52px !important;
-  padding-top: max(12px, env(safe-area-inset-top, 12px)) !important;
-  padding-bottom: 6px !important;
+  padding-top: calc(var(--safe-top, 38px) + 8px) !important;
+  padding-bottom: 8px !important;
 }
 
 .view-settings-page {
@@ -1671,8 +1673,8 @@ body.in-pip-mode .view-player-full {
 .listen-header-bar {
   height: auto !important;
   min-height: 52px !important;
-  padding-top: max(12px, env(safe-area-inset-top, 12px)) !important;
-  padding-bottom: 6px !important;
+  padding-top: calc(var(--safe-top, 38px) + 8px) !important;
+  padding-bottom: 8px !important;
   background: var(--bg-page) !important;
   position: relative !important;
   z-index: 10 !important;
@@ -1700,8 +1702,8 @@ body.in-pip-mode .view-player-full {
 .playlist-header-nav {
   height: auto !important;
   min-height: 52px !important;
-  padding-top: max(12px, env(safe-area-inset-top, 12px)) !important;
-  padding-bottom: 6px !important;
+  padding-top: calc(var(--safe-top, 38px) + 8px) !important;
+  padding-bottom: 8px !important;
 }
 
 .view-player-full {
@@ -2941,7 +2943,26 @@ const audioPlayer = new Audio();
 audioPlayer.preload = 'auto';
 const RING_PERIMETER = 2 * Math.PI * 22.5;
 
+function calibrateStatusBarPadding() {
+  let sbHeight = 38;
+  if (window.AndroidBridge && window.AndroidBridge.getStatusBarHeightDp) {
+    try {
+      const nativeH = window.AndroidBridge.getStatusBarHeightDp();
+      if (nativeH && nativeH > 0) {
+        sbHeight = nativeH;
+      }
+    } catch(e) {}
+  }
+  document.documentElement.style.setProperty('--status-bar-height', sbHeight + 'px');
+}
+window.onStatusBarHeightUpdated = function(h) {
+  if (h && h > 0) {
+    document.documentElement.style.setProperty('--status-bar-height', h + 'px');
+  }
+};
+
 function init() {
+  calibrateStatusBarPadding();
   initNativeAudioEngine();
   initAudioEngine();
   renderVinylDiscs();

@@ -50,6 +50,7 @@ import android.view.ViewOutlineProvider;
 import android.graphics.Outline;
 import android.animation.LayoutTransition;
 import android.view.Window;
+import android.view.WindowInsets;
 import android.view.WindowManager;
 import android.webkit.DownloadListener;
 import android.webkit.JavascriptInterface;
@@ -179,6 +180,12 @@ public class MainActivity extends Activity {
             window.setStatusBarColor(Color.TRANSPARENT);
             window.setNavigationBarColor(Color.TRANSPARENT);
 
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                WindowManager.LayoutParams lp = window.getAttributes();
+                lp.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
+                window.setAttributes(lp);
+            }
+
             int flags = View.SYSTEM_UI_FLAG_LAYOUT_STABLE
                       | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN;
 
@@ -189,6 +196,35 @@ public class MainActivity extends Activity {
                 flags |= View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
             }
             window.getDecorView().setSystemUiVisibility(flags);
+
+            window.getDecorView().setOnApplyWindowInsetsListener(new View.OnApplyWindowInsetsListener() {
+                @Override
+                public WindowInsets onApplyWindowInsets(View v, WindowInsets insets) {
+                    int topPx = 0;
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                        topPx = insets.getInsets(WindowInsets.Type.statusBars()).top;
+                    } else {
+                        topPx = insets.getSystemWindowInsetTop();
+                    }
+                    if (topPx > 0 && webView != null) {
+                        final float density = getResources().getDisplayMetrics().density;
+                        final int topDp = Math.round(topPx / (density > 0 ? density : 1.0f));
+                        webView.post(new Runnable() {
+                            @Override
+                            public void run() {
+                                if (webView != null) {
+                                    webView.evaluateJavascript(
+                                        "document.documentElement.style.setProperty('--status-bar-height', '" + topDp + "px');" +
+                                        "if (window.onStatusBarHeightUpdated) window.onStatusBarHeightUpdated(" + topDp + ");",
+                                        null
+                                    );
+                                }
+                            }
+                        });
+                    }
+                    return insets;
+                }
+            });
         }
 
         try {
@@ -225,11 +261,16 @@ public class MainActivity extends Activity {
             @Override
             public void onPageFinished(WebView view, String url) {
                 super.onPageFinished(view, url);
-                String ver = "1.9.0";
+                String ver = "2.0.2";
                 try {
                     ver = getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
                 } catch (Exception ignored) {}
-                webView.evaluateJavascript("if (typeof updateDynamicAppVersion === 'function') updateDynamicAppVersion('" + ver + "');", null);
+                final int sbDp = getStatusBarHeightDp();
+                webView.evaluateJavascript(
+                    "document.documentElement.style.setProperty('--status-bar-height', '" + sbDp + "px');" +
+                    "if (typeof updateDynamicAppVersion === 'function') updateDynamicAppVersion('" + ver + "');",
+                    null
+                );
             }
         });
         webView.setWebChromeClient(new WebChromeClient() {
@@ -788,6 +829,20 @@ public class MainActivity extends Activity {
 
     private int dp2px(float dp) {
         return (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, dp, getResources().getDisplayMetrics());
+    }
+
+    public int getStatusBarHeightDp() {
+        int statusBarHeight = 0;
+        int resId = getResources().getIdentifier("status_bar_height", "dimen", "android");
+        if (resId > 0) {
+            statusBarHeight = getResources().getDimensionPixelSize(resId);
+        }
+        if (statusBarHeight <= 0) {
+            statusBarHeight = dp2px(38);
+        }
+        float density = getResources().getDisplayMetrics().density;
+        if (density <= 0) density = 1.0f;
+        return Math.round(statusBarHeight / density);
     }
 
     public void toggleDesktopLyrics() {
@@ -1580,8 +1635,13 @@ public class MainActivity extends Activity {
                 PackageInfo pInfo = getPackageManager().getPackageInfo(getPackageName(), 0);
                 return pInfo.versionName;
             } catch (Exception e) {
-                return "2.0.1";
+                return "2.0.2";
             }
+        }
+
+        @JavascriptInterface
+        public int getStatusBarHeightDp() {
+            return MainActivity.this.getStatusBarHeightDp();
         }
 
         @JavascriptInterface
