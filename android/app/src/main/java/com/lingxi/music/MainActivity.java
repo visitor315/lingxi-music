@@ -49,6 +49,7 @@ import android.view.ViewConfiguration;
 import android.view.ViewOutlineProvider;
 import android.graphics.Outline;
 import android.animation.LayoutTransition;
+import android.view.Display;
 import android.view.Window;
 import android.view.WindowInsets;
 import android.view.WindowManager;
@@ -187,7 +188,8 @@ public class MainActivity extends Activity {
             }
 
             int flags = View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-                      | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN;
+                      | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                      | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION;
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 flags |= View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
@@ -201,21 +203,30 @@ public class MainActivity extends Activity {
                 @Override
                 public WindowInsets onApplyWindowInsets(View v, WindowInsets insets) {
                     int topPx = 0;
+                    int bottomPx = 0;
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                         topPx = insets.getInsets(WindowInsets.Type.statusBars()).top;
+                        bottomPx = insets.getInsets(WindowInsets.Type.navigationBars()).bottom;
                     } else {
                         topPx = insets.getSystemWindowInsetTop();
+                        bottomPx = insets.getSystemWindowInsetBottom();
                     }
-                    if (topPx > 0 && webView != null) {
-                        final float density = getResources().getDisplayMetrics().density;
-                        final int topDp = Math.round(topPx / (density > 0 ? density : 1.0f));
+                    if (topPx <= 0) {
+                        topPx = dp2px(getStatusBarHeightDp());
+                    }
+                    final float density = getResources().getDisplayMetrics().density;
+                    final float d = density > 0 ? density : 1.0f;
+                    final int topDp = Math.round(topPx / d);
+                    final int bottomDp = Math.round(bottomPx / d);
+                    if (webView != null) {
                         webView.post(new Runnable() {
                             @Override
                             public void run() {
                                 if (webView != null) {
                                     webView.evaluateJavascript(
-                                        "document.documentElement.style.setProperty('--status-bar-height', '" + topDp + "px');" +
-                                        "if (window.onStatusBarHeightUpdated) window.onStatusBarHeightUpdated(" + topDp + ");",
+                                        "document.documentElement.style.setProperty('--status-bar-height', '" + (topDp > 0 ? topDp : 38) + "px');" +
+                                        "document.documentElement.style.setProperty('--nav-bar-height', '" + bottomDp + "px');" +
+                                        "if (window.onSystemInsetsUpdated) window.onSystemInsetsUpdated(" + topDp + ", " + bottomDp + ");",
                                         null
                                     );
                                 }
@@ -261,13 +272,15 @@ public class MainActivity extends Activity {
             @Override
             public void onPageFinished(WebView view, String url) {
                 super.onPageFinished(view, url);
-                String ver = "2.0.3";
+                String ver = "2.0.4";
                 try {
                     ver = getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
                 } catch (Exception ignored) {}
                 final int sbDp = getStatusBarHeightDp();
+                final int nbDp = getNavigationBarHeightDp();
                 webView.evaluateJavascript(
                     "document.documentElement.style.setProperty('--status-bar-height', '" + sbDp + "px');" +
+                    "document.documentElement.style.setProperty('--nav-bar-height', '" + nbDp + "px');" +
                     "if (typeof updateDynamicAppVersion === 'function') updateDynamicAppVersion('" + ver + "');",
                     null
                 );
@@ -843,6 +856,65 @@ public class MainActivity extends Activity {
         float density = getResources().getDisplayMetrics().density;
         if (density <= 0) density = 1.0f;
         return Math.round(statusBarHeight / density);
+    }
+
+    public int getNavigationBarHeightDp() {
+        int navHeightPx = 0;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            try {
+                WindowInsets insets = getWindowManager().getCurrentWindowMetrics().getWindowInsets();
+                if (insets != null) {
+                    navHeightPx = insets.getInsets(WindowInsets.Type.navigationBars()).bottom;
+                }
+            } catch (Exception ignored) {}
+        }
+        if (navHeightPx <= 0) {
+            try {
+                View decorView = getWindow().getDecorView();
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    WindowInsets insets = decorView.getRootWindowInsets();
+                    if (insets != null) {
+                        navHeightPx = insets.getSystemWindowInsetBottom();
+                    }
+                }
+            } catch (Exception ignored) {}
+        }
+        if (navHeightPx <= 0) {
+            try {
+                Display display = getWindowManager().getDefaultDisplay();
+                DisplayMetrics realMetrics = new DisplayMetrics();
+                display.getRealMetrics(realMetrics);
+                DisplayMetrics appMetrics = new DisplayMetrics();
+                display.getMetrics(appMetrics);
+                int diff = realMetrics.heightPixels - appMetrics.heightPixels;
+                if (diff > 0) {
+                    navHeightPx = diff;
+                }
+            } catch (Exception ignored) {}
+        }
+        if (navHeightPx <= 0) {
+            try {
+                boolean hasNavBar = true;
+                int id = getResources().getIdentifier("config_showNavigationBar", "bool", "android");
+                if (id > 0) {
+                    hasNavBar = getResources().getBoolean(id);
+                } else {
+                    hasNavBar = !ViewConfiguration.get(this).hasPermanentMenuKey();
+                }
+                if (hasNavBar) {
+                    int vivoGesture = android.provider.Settings.Secure.getInt(getContentResolver(), "navigation_gesture_on", 0);
+                    if (vivoGesture == 0) {
+                        int resId = getResources().getIdentifier("navigation_bar_height", "dimen", "android");
+                        if (resId > 0) {
+                            navHeightPx = getResources().getDimensionPixelSize(resId);
+                        }
+                    }
+                }
+            } catch (Exception ignored) {}
+        }
+        float density = getResources().getDisplayMetrics().density;
+        if (density <= 0) density = 1.0f;
+        return Math.round(navHeightPx / density);
     }
 
     public void toggleDesktopLyrics() {
@@ -1635,13 +1707,18 @@ public class MainActivity extends Activity {
                 PackageInfo pInfo = getPackageManager().getPackageInfo(getPackageName(), 0);
                 return pInfo.versionName;
             } catch (Exception e) {
-                return "2.0.3";
+                return "2.0.4";
             }
         }
 
         @JavascriptInterface
         public int getStatusBarHeightDp() {
             return MainActivity.this.getStatusBarHeightDp();
+        }
+
+        @JavascriptInterface
+        public int getNavigationBarHeightDp() {
+            return MainActivity.this.getNavigationBarHeightDp();
         }
 
         @JavascriptInterface

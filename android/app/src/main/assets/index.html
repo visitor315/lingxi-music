@@ -40,6 +40,8 @@
 :root {
   --status-bar-height: 38px;
   --safe-top: max(var(--status-bar-height, 38px), env(safe-area-inset-top, 38px));
+  --nav-bar-height: 0px;
+  --safe-bottom: max(var(--nav-bar-height, 0px), env(safe-area-inset-bottom, 0px));
   --bg-page: #F7F7F5;
   --paper-bg: #F7F7F5;
   --card-bg: #FFFFFF;
@@ -608,7 +610,7 @@ body.night .hero-circle-icon { box-shadow: none; }
 
 .album-songs-drawer-card {
   flex: 1; background: var(--card-bg); border-top-left-radius: 20px; border-top-right-radius: 20px;
-  border-top: 1px solid var(--divider); padding: 14px 18px calc(76px + env(safe-area-inset-bottom, 20px));
+  border-top: 1px solid var(--divider); padding: 14px 18px calc(76px + var(--safe-bottom, 20px));
   display: flex; flex-direction: column;
 }
 
@@ -672,9 +674,10 @@ body.night .hero-circle-icon { box-shadow: none; }
   pointer-events: none;
 }
 .multi-select-action-dock.home-dock {
-  height: 64px;
+  height: calc(64px + var(--safe-bottom, 0px));
   z-index: 75;
-  padding-bottom: env(safe-area-inset-bottom, 0);
+  padding-bottom: var(--safe-bottom, 0px);
+  box-sizing: border-box;
 }
 body.night .multi-select-action-dock {
   background: var(--card-bg); border-color: var(--card-border);
@@ -738,7 +741,7 @@ body.night .popup-menu-item:active { background: rgba(255, 255, 255, 0.05); }
 .view-theme-subpage.active { transform: translateX(0); pointer-events: auto; }
 
 .settings-subview-scroll {
-  flex: 1; overflow-y: auto; padding: 12px 16px calc(76px + env(safe-area-inset-bottom, 20px));
+  flex: 1; overflow-y: auto; padding: 12px 16px calc(76px + var(--safe-bottom, 20px));
   display: flex; flex-direction: column; gap: 14px;
 }
 
@@ -1095,7 +1098,7 @@ body.night .edit-cover-thumbnail {
 
 /* 详情页底部工具栏 */
 .player-controls-panel {
-  padding: 16px 24px calc(24px + env(safe-area-inset-bottom, 0px));
+  padding: 16px 24px calc(24px + var(--safe-bottom, 0px));
   display: flex; flex-direction: column; gap: 24px; flex-shrink: 0; z-index: 30;
 }
 
@@ -1145,7 +1148,7 @@ body.night .edit-cover-thumbnail {
   position: absolute; left: 0; right: 0; bottom: 0; max-height: 75vh;
   background: var(--card-bg); border-top-left-radius: 28px; border-top-right-radius: 28px;
   z-index: 1999; display: flex; flex-direction: column;
-  padding-bottom: calc(34px + env(safe-area-inset-bottom, 14px));
+  padding-bottom: calc(34px + var(--safe-bottom, 14px));
   transform: translateY(100%); transition: transform 0.28s cubic-bezier(0.2, 0.85, 0.25, 1);
   pointer-events: none;
 }
@@ -1158,7 +1161,7 @@ body.night .edit-cover-thumbnail {
 /* 歌曲更多操作弹窗：无分割线、SVG与文字完全居中对齐 */
 .add-sheet-card {
   position: absolute; left: 0; right: 0; bottom: 0; background: var(--bg-page);
-  border-radius: 28px 28px 0 0; padding: 12px 20px calc(38px + env(safe-area-inset-bottom, 16px));
+  border-radius: 28px 28px 0 0; padding: 12px 20px calc(38px + var(--safe-bottom, 16px));
   display: flex; flex-direction: column; gap: 4px; z-index: 2000; max-height: 80vh; overflow-y: auto;
   transform: translateY(100%); transition: transform 0.26s cubic-bezier(0.32, 0.72, 0, 1);
   pointer-events: none;
@@ -1193,23 +1196,49 @@ body.night .edit-cover-thumbnail {
   font-weight: 600;
 }
 
-/* 悬浮选择歌单子弹窗 */
+/* 底部滑出选择歌单/铃声子弹窗（统一底部滑出、无分割线高级设计规范） */
 .choose-playlist-modal {
-  position: absolute; inset: 0; background: rgba(0,0,0,0.5); z-index: 2050;
-  display: none; align-items: center; justify-content: center; padding: 24px;
+  position: absolute; inset: 0; background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px);
+  z-index: 2050; opacity: 0; pointer-events: none; transition: opacity 0.25s ease;
+  display: flex; align-items: flex-end; justify-content: center;
 }
-.choose-playlist-modal.active { display: flex; }
+.choose-playlist-modal.active { opacity: 1; pointer-events: auto; }
 .choose-playlist-card {
-  width: 100%; max-width: 310px; background: var(--card-bg); border-radius: 20px;
-  padding: 18px 20px; display: flex; flex-direction: column; gap: 10px;
+  width: 100%; max-width: 100%; background: var(--bg-page);
+  border-radius: 28px 28px 0 0;
+  padding: 12px 20px calc(38px + var(--safe-bottom, 16px));
+  display: flex; flex-direction: column; gap: 4px;
+  max-height: 80vh; overflow-y: auto;
+  transform: translateY(100%);
+  transition: transform 0.26s cubic-bezier(0.32, 0.72, 0, 1);
+  pointer-events: none;
+  box-sizing: border-box;
 }
-.choose-playlist-title { font-size: 16px; font-weight: 600; color: var(--ink-black); margin-bottom: 4px; text-align: center; }
+.choose-playlist-modal.active .choose-playlist-card {
+  transform: translateY(0);
+  pointer-events: auto;
+}
 .choose-item-row {
-  padding: 10px 4px; border-radius: 0; background: transparent; cursor: pointer;
-  display: flex; align-items: center; justify-content: space-between; font-size: 14px; font-weight: 500;
-  border-bottom: 1px solid var(--inner-divider);
+  padding: 12px 8px; border-radius: 14px; background: transparent; cursor: pointer;
+  display: flex; align-items: center; justify-content: space-between;
+  border-bottom: none !important; border: none !important;
+  transition: background 0.15s ease;
 }
-.choose-item-row:active { opacity: 0.7; }
+.choose-item-row:active {
+  background: rgba(0, 0, 0, 0.05);
+  opacity: 0.8;
+}
+body.night .choose-item-row:active {
+  background: rgba(255, 255, 255, 0.08);
+}
+.choose-item-title {
+  font-size: 15px; font-weight: 500; color: var(--ink-black); line-height: 22px;
+}
+.choose-item-count,
+.choose-item-sub {
+  font-size: 13px; color: var(--ink-light);
+}
 
 /* 系统虚拟三键与 Toast */
 .nav-bar {
@@ -1272,7 +1301,7 @@ body.night .edit-cover-thumbnail {
 .search-submit-btn:active { opacity: 0.7; }
 
 .search-scroll-content {
-  flex: 1; overflow-y: auto; padding: 12px 18px calc(76px + env(safe-area-inset-bottom, 20px));
+  flex: 1; overflow-y: auto; padding: 12px 18px calc(76px + var(--safe-bottom, 20px));
   display: flex; flex-direction: column; gap: 20px;
 }
 .search-scroll-content::-webkit-scrollbar { display: none; }
@@ -1494,12 +1523,13 @@ body.apk-mode .xianyin-bottom-nav {
   left: 0 !important;
   right: 0 !important;
   bottom: 0 !important;
-  height: calc(64px + env(safe-area-inset-bottom, 0px)) !important;
-  padding-bottom: env(safe-area-inset-bottom, 0px) !important;
+  height: calc(64px + var(--safe-bottom, 0px)) !important;
+  padding-bottom: var(--safe-bottom, 0px) !important;
+  box-sizing: border-box !important;
 }
 
 body.apk-mode .xianyin-content-scroll {
-  padding-bottom: calc(86px + env(safe-area-inset-bottom, 0px)) !important;
+  padding-bottom: calc(86px + var(--safe-bottom, 0px)) !important;
 }
 
 @media screen and (max-width: 600px), (display-mode: standalone) {
@@ -1546,12 +1576,13 @@ body.apk-mode .xianyin-content-scroll {
     left: 0 !important;
     right: 0 !important;
     bottom: 0 !important;
-    height: calc(64px + env(safe-area-inset-bottom, 0px)) !important;
-    padding-bottom: env(safe-area-inset-bottom, 0px) !important;
+    height: calc(64px + var(--safe-bottom, 0px)) !important;
+    padding-bottom: var(--safe-bottom, 0px) !important;
+    box-sizing: border-box !important;
   }
 
   .xianyin-content-scroll {
-    padding-bottom: calc(86px + env(safe-area-inset-bottom, 0px)) !important;
+    padding-bottom: calc(86px + var(--safe-bottom, 0px)) !important;
   }
 }
 
@@ -1636,15 +1667,15 @@ body.in-pip-mode .view-player-full {
 
 .view-settings-page {
   padding-top: 10px !important;
-  padding-bottom: calc(84px + env(safe-area-inset-bottom, 0px)) !important;
+  padding-bottom: calc(84px + var(--safe-bottom, 0px)) !important;
 }
 
 .view-player-full {
-  padding-bottom: max(16px, env(safe-area-inset-bottom, 16px)) !important;
+  padding-bottom: max(16px, calc(16px + var(--safe-bottom, 0px))) !important;
 }
 
 .playlist-content-scroll {
-  padding-bottom: max(32px, env(safe-area-inset-bottom, 32px)) !important;
+  padding-bottom: max(32px, calc(32px + var(--safe-bottom, 0px))) !important;
 }
 
 
@@ -1682,7 +1713,7 @@ body.in-pip-mode .view-player-full {
 
 .view-settings-page {
   padding-top: 10px !important;
-  padding-bottom: calc(84px + env(safe-area-inset-bottom, 0px)) !important;
+  padding-bottom: calc(84px + var(--safe-bottom, 0px)) !important;
 }
 
 .view-search-full,
@@ -1707,7 +1738,7 @@ body.in-pip-mode .view-player-full {
 }
 
 .view-player-full {
-  padding-bottom: max(16px, env(safe-area-inset-bottom, 16px)) !important;
+  padding-bottom: max(16px, calc(16px + var(--safe-bottom, 0px))) !important;
 }
 
 </style>
@@ -2359,39 +2390,53 @@ body.in-pip-mode .view-player-full {
     </div>
   </div>
 
-  <!-- 8.5 加入歌单专属选择子弹窗 -->
+  <!-- 8.5 加入歌单专属选择子弹窗（底部滑出、无分割线极简高级质感） -->
   <div class="choose-playlist-modal" id="choosePlaylistModal" onclick="closeChoosePlaylistModal(event)">
     <div class="choose-playlist-card" onclick="event.stopPropagation()">
-      <div class="choose-playlist-title">选择要加入的歌单</div>
-      <div id="choosePlaylistItems" style="display:flex; flex-direction:column; gap:8px;"></div>
+      <div class="add-sheet-drag-handle"></div>
+      <div class="add-sheet-header">
+        <div style="width:32px;"></div>
+        <div class="add-sheet-title">加入歌单</div>
+        <button class="add-sheet-close-btn" onclick="document.getElementById('choosePlaylistModal').classList.remove('active')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+      <div id="choosePlaylistItems" style="display:flex; flex-direction:column; gap:4px; margin-top:4px;"></div>
     </div>
   </div>
 
-  <!-- 8.55 设为系统铃声类型选择子弹窗 -->
+  <!-- 8.55 设为系统铃声类型选择子弹窗（底部滑出、无分割线极简高级质感） -->
   <div class="choose-playlist-modal" id="chooseRingtoneModal" onclick="closeChooseRingtoneModal(event)">
     <div class="choose-playlist-card" onclick="event.stopPropagation()">
-      <div class="choose-playlist-title" id="chooseRingtoneSongTitle">设为系统铃声</div>
-      <div style="display:flex; flex-direction:column; gap:8px;">
+      <div class="add-sheet-drag-handle"></div>
+      <div class="add-sheet-header">
+        <div style="width:32px;"></div>
+        <div class="add-sheet-title" id="chooseRingtoneSongTitle">设为系统铃声</div>
+        <button class="add-sheet-close-btn" onclick="document.getElementById('chooseRingtoneModal').classList.remove('active')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:4px; margin-top:4px;">
         <div class="choose-item-row" onclick="confirmSetRingtone(1)">
-          <div style="display:flex; align-items:center; gap:10px;">
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
-            <span>来电铃声 (默认)</span>
+          <div style="display:flex; align-items:center; gap:12px;">
+            <div class="add-clean-icon"><svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg></div>
+            <span class="choose-item-title">来电铃声 (默认)</span>
           </div>
-          <span style="font-size:12px; color:var(--ink-gray);">设为电话铃声</span>
+          <span class="choose-item-sub">设为电话铃声</span>
         </div>
         <div class="choose-item-row" onclick="confirmSetRingtone(2)">
-          <div style="display:flex; align-items:center; gap:10px;">
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-            <span>通知提示音</span>
+          <div style="display:flex; align-items:center; gap:12px;">
+            <div class="add-clean-icon"><svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></div>
+            <span class="choose-item-title">通知提示音</span>
           </div>
-          <span style="font-size:12px; color:var(--ink-gray);">设为系统通知音</span>
+          <span class="choose-item-sub">设为系统通知音</span>
         </div>
         <div class="choose-item-row" onclick="confirmSetRingtone(4)">
-          <div style="display:flex; align-items:center; gap:10px;">
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2"/><path d="m5 3 4 4"/><path d="m19 3-4 4"/></svg>
-            <span>闹钟铃声</span>
+          <div style="display:flex; align-items:center; gap:12px;">
+            <div class="add-clean-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2"/><path d="m5 3 4 4"/><path d="m19 3-4 4"/></svg></div>
+            <span class="choose-item-title">闹钟铃声</span>
           </div>
-          <span style="font-size:12px; color:var(--ink-gray);">设为系统闹铃</span>
+          <span class="choose-item-sub">设为系统闹铃</span>
         </div>
       </div>
     </div>
@@ -2943,26 +2988,47 @@ const audioPlayer = new Audio();
 audioPlayer.preload = 'auto';
 const RING_PERIMETER = 2 * Math.PI * 22.5;
 
-function calibrateStatusBarPadding() {
+function calibrateSystemInsets() {
   let sbHeight = 38;
-  if (window.AndroidBridge && window.AndroidBridge.getStatusBarHeightDp) {
-    try {
-      const nativeH = window.AndroidBridge.getStatusBarHeightDp();
-      if (nativeH && nativeH > 0) {
-        sbHeight = nativeH;
-      }
-    } catch(e) {}
+  let nbHeight = 0;
+  if (window.AndroidBridge) {
+    if (window.AndroidBridge.getStatusBarHeightDp) {
+      try {
+        const nativeH = window.AndroidBridge.getStatusBarHeightDp();
+        if (nativeH && nativeH > 0) {
+          sbHeight = nativeH;
+        }
+      } catch(e) {}
+    }
+    if (window.AndroidBridge.getNavigationBarHeightDp) {
+      try {
+        const nativeNb = window.AndroidBridge.getNavigationBarHeightDp();
+        if (nativeNb !== undefined && nativeNb !== null && nativeNb >= 0) {
+          nbHeight = nativeNb;
+        }
+      } catch(e) {}
+    }
   }
   document.documentElement.style.setProperty('--status-bar-height', sbHeight + 'px');
+  document.documentElement.style.setProperty('--nav-bar-height', nbHeight + 'px');
 }
+window.calibrateStatusBarPadding = calibrateSystemInsets;
 window.onStatusBarHeightUpdated = function(h) {
   if (h && h > 0) {
     document.documentElement.style.setProperty('--status-bar-height', h + 'px');
   }
 };
+window.onSystemInsetsUpdated = function(topDp, bottomDp) {
+  if (topDp && topDp > 0) {
+    document.documentElement.style.setProperty('--status-bar-height', topDp + 'px');
+  }
+  if (bottomDp !== undefined && bottomDp !== null && bottomDp >= 0) {
+    document.documentElement.style.setProperty('--nav-bar-height', bottomDp + 'px');
+  }
+};
 
 function init() {
-  calibrateStatusBarPadding();
+  calibrateSystemInsets();
   initNativeAudioEngine();
   initAudioEngine();
   renderVinylDiscs();
@@ -7812,17 +7878,25 @@ function openChoosePlaylistModal() {
 
   let html = targetAlbums.map(({ alb, aIdx }) => `
     <div class="choose-item-row" onclick="addActiveSongToAlbum(${aIdx})">
-      <div style="display:flex; align-items:center; gap:8px;">
-        ${alb.hasRose ? `<svg viewBox="0 0 512 512" style="width:16px;height:16px;fill:var(--brand-red);"><path d="${ROSE_SVG_PATH}"/></svg>` : `<svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.5;"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>`}
-        <span>${escapeHtml(alb.title)}</span>
+      <div style="display:flex; align-items:center; gap:12px;">
+        <div class="add-clean-icon">
+          ${alb.hasRose ? `<svg viewBox="0 0 512 512" style="width:18px;height:18px;fill:var(--heart-red);"><path d="${ROSE_SVG_PATH}"/></svg>` : `<svg viewBox="0 0 24 24" style="width:19px;height:19px;stroke:currentColor;fill:none;stroke-width:1.55;"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>`}
+        </div>
+        <span class="choose-item-title">${escapeHtml(alb.title)}</span>
       </div>
-      <span style="font-size:12px; color:var(--ink-light);">${alb.songs.length} 首</span>
+      <span class="choose-item-count">${alb.songs.length} 首</span>
     </div>
   `).join('');
 
   html += `
-    <div class="choose-item-row" style="color:var(--brand-blue); justify-content:center; font-weight:500; margin-top:4px;" onclick="openCreatePlaylistFromChoose()">
-      + 新建歌单并加入
+    <div class="choose-item-row" style="margin-top:6px;" onclick="openCreatePlaylistFromChoose()">
+      <div style="display:flex; align-items:center; gap:12px;">
+        <div class="add-clean-icon" style="color:var(--brand-blue);">
+          <svg viewBox="0 0 24 24" style="width:19px;height:19px;stroke:currentColor;fill:none;stroke-width:1.8;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </div>
+        <span class="choose-item-title" style="color:var(--brand-blue); font-weight:600;">新建歌单并加入</span>
+      </div>
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" style="color:var(--ink-light);"><polyline points="9 18 15 12 9 6"/></svg>
     </div>
   `;
 
