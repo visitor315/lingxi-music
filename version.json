@@ -1,6 +1,6 @@
 {
-  "versionCode": 42,
-  "versionName": "2.1.1",
-  "changelog": "1. 彻底解决搜索卡顿：重构 Android 原生非阻塞异步网络桥接，UI 保持流畅高刷\n2. 修复搜索点击层级错位：点击歌曲立即平滑滑出全屏播放页\n3. 优化系统返回键层级：播放详情页按返回平滑回到搜索页，再次返回退出搜索\n4. 新增全网搜索内存缓存与本地曲库零延迟秒出",
+  "versionCode": 43,
+  "versionName": "2.1.2",
+  "changelog": "1. 新增通话与微信发语音时自动暂停功能，结束后自动继续播放\n2. 接入系统级音频焦点管理，智能响应多应用音频流冲突与自愈\n3. 新增拔出有线耳机与蓝牙断开时自动暂停保护\n4. 设置中支持一键开启或关闭通话录音暂停特性",
   "downloadUrl": "https://ghfast.top/https://github.com/visitor315/lingxi-music/releases/download/v1.4.0/LingXiMusic.apk"
 }

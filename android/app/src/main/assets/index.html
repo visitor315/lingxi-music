@@ -1948,6 +1948,14 @@ body.in-pip-mode .view-player-full {
             <div class="settings-item-col"><span class="settings-title-line">定时关闭</span><span class="settings-sub-desc" id="sleepTimerSettingsDesc">未开启</span></div>
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" style="color:var(--ink-light); margin-left:auto;"><polyline points="9 18 15 12 9 6"/></svg>
           </div>
+          <div class="group-menu-divider"></div>
+          <div class="settings-item-row" onclick="toggleAudioFocusSetting()">
+            <div class="settings-item-col">
+              <span class="settings-title-line">通话与录音时自动暂停</span>
+              <span class="settings-sub-desc" id="audioFocusSettingsDesc">通话或微信发语音时自动暂停，结束后自动继续播放</span>
+            </div>
+            <div class="blue-toggle-switch active" id="audioFocusToggle"></div>
+          </div>
         </div>
         <span class="settings-group-header">乐库与存储</span>
         <div class="group-menu-card">
@@ -1981,7 +1989,7 @@ body.in-pip-mode .view-player-full {
         <span class="settings-group-header">关于与更新</span>
         <div class="group-menu-card">
           <div class="settings-item-row" onclick="checkAppUpdate(true)">
-            <div class="settings-item-col"><span class="settings-title-line">检查版本更新</span><span class="settings-sub-desc" id="aboutAppVersionDesc">自用无损音乐播放器 · v2.0.7</span></div>
+            <div class="settings-item-col"><span class="settings-title-line">检查版本更新</span><span class="settings-sub-desc" id="aboutAppVersionDesc">自用无损音乐播放器 · v2.1.2</span></div>
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" style="color:var(--ink-light); margin-left:auto;"><polyline points="9 18 15 12 9 6"/></svg>
           </div>
         </div>
@@ -2948,8 +2956,8 @@ const OTHER_AVATAR_SVG = `<svg width="14" height="14" viewBox="0 0 24 24" fill="
 
 const APP_CONFIG = {
   name: '灵犀音乐',
-  version: '3.2.0',
-  build: '2026.09.19',
+  version: '2.1.2',
+  build: '2026.09.23',
   codename: 'Pure Sound'
 };
 
@@ -3303,6 +3311,7 @@ function init() {
   initCardTapRipple();
   updateCacheStorageDisplay();
   updateDynamicAppVersion();
+  initAudioFocusSetting();
   setInterval(updateClock, 1000);
 
   // APK 容器/真机手机打包自动适配：任何手机屏幕/打包容器均自动开启全屏沉浸纯净音乐应用，无需手动删改任何代码
@@ -4764,7 +4773,7 @@ function updateDynamicAppVersion(ver) {
       ver = window.AndroidBridge.getAppVersion();
     } catch(e) {}
   }
-  if (!ver) ver = '1.9.0';
+  if (!ver) ver = '2.1.2';
   APP_CONFIG.version = ver;
   const descEl = document.getElementById('aboutAppVersionDesc');
   if (descEl) {
@@ -4772,6 +4781,52 @@ function updateDynamicAppVersion(ver) {
   }
 }
 window.updateDynamicAppVersion = updateDynamicAppVersion;
+
+let isAudioFocusEnabled = true;
+
+function initAudioFocusSetting() {
+  const saved = localStorage.getItem('lingxi_audio_focus_enabled');
+  if (saved !== null) {
+    isAudioFocusEnabled = (saved === 'true');
+  } else {
+    isAudioFocusEnabled = true;
+  }
+  updateAudioFocusUI();
+  if (window.AndroidBridge && window.AndroidBridge.setAudioFocusEnabled) {
+    try {
+      window.AndroidBridge.setAudioFocusEnabled(isAudioFocusEnabled);
+    } catch(e) {}
+  }
+}
+
+function updateAudioFocusUI() {
+  const toggle = document.getElementById('audioFocusToggle');
+  const desc = document.getElementById('audioFocusSettingsDesc');
+  if (toggle) {
+    if (isAudioFocusEnabled) {
+      toggle.classList.add('active');
+    } else {
+      toggle.classList.remove('active');
+    }
+  }
+  if (desc) {
+    desc.textContent = isAudioFocusEnabled
+      ? '通话或微信发语音时自动暂停，结束后自动继续播放'
+      : '已关闭 · 其他应用发声或通话时不自动打断音乐';
+  }
+}
+
+function toggleAudioFocusSetting() {
+  isAudioFocusEnabled = !isAudioFocusEnabled;
+  localStorage.setItem('lingxi_audio_focus_enabled', isAudioFocusEnabled ? 'true' : 'false');
+  updateAudioFocusUI();
+  if (window.AndroidBridge && window.AndroidBridge.setAudioFocusEnabled) {
+    try {
+      window.AndroidBridge.setAudioFocusEnabled(isAudioFocusEnabled);
+    } catch(e) {}
+  }
+  toast(isAudioFocusEnabled ? '已开启通话与录音时自动暂停' : '已关闭通话与录音自动暂停');
+}
 
 async function updateCacheStorageDisplay() {
   const descEl = document.getElementById('cacheStorageDesc');
@@ -9248,6 +9303,7 @@ function switchBottomTab(tab) {
     updateCacheStorageDisplay();
     updateDynamicAppVersion();
     if (typeof updateSleepTimerUI === 'function') updateSleepTimerUI();
+    if (typeof updateAudioFocusUI === 'function') updateAudioFocusUI();
   }
 }
 

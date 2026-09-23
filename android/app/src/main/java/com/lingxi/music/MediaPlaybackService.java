@@ -5,8 +5,10 @@ import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.ServiceInfo;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -17,6 +19,8 @@ import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.RectF;
 import android.media.AudioAttributes;
+import android.media.AudioFocusRequest;
+import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.media.MediaMetadata;
 import android.media.session.MediaSession;
@@ -87,6 +91,35 @@ public class MediaPlaybackService extends Service {
         }
     };
 
+    private AudioManager audioManager = null;
+    private AudioFocusRequest audioFocusRequest = null;
+    private boolean isAudioFocusEnabled = true;
+    private boolean resumeOnFocusGain = false;
+    private boolean isNoisyReceiverRegistered = false;
+
+    private final BroadcastReceiver noisyAudioReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (AudioManager.ACTION_AUDIO_BECOMING_NOISY.equals(intent.getAction())) {
+                if (isPlaying) {
+                    pausePlayback();
+                }
+            }
+        }
+    };
+
+    private final AudioManager.OnAudioFocusChangeListener audioFocusChangeListener = new AudioManager.OnAudioFocusChangeListener() {
+        @Override
+        public void onAudioFocusChange(final int focusChange) {
+            mainHandler.post(new Runnable() {
+                @Override
+                public void run() {
+                    handleAudioFocusChange(focusChange);
+                }
+            });
+        }
+    };
+
     @Override
     public void onCreate() {
         super.onCreate();
@@ -95,6 +128,7 @@ public class MediaPlaybackService extends Service {
             Process.setThreadPriority(Process.THREAD_PRIORITY_AUDIO);
         } catch (Exception ignored) {}
         notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
         try {
             PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
             if (pm != null) {
@@ -196,13 +230,23 @@ public class MediaPlaybackService extends Service {
                         pendingSeekMs = -1;
                     }
                     try {
-                        mp.start();
-                        isPlaying = true;
-                        durationMs = mp.getDuration();
-                        acquireLocks();
-                        buildAndPostNotification(currentCoverBitmap != null ? currentCoverBitmap : getRoundedDefaultCover());
-                        MainActivity.setNativePlaybackState(true);
-                        MainActivity.dispatchWebAction("if (window.onNativePrepared) window.onNativePrepared(" + (durationMs / 1000.0) + ");");
+                        boolean granted = requestAudioFocusInternal();
+                        if (granted) {
+                            mp.start();
+                            isPlaying = true;
+                            durationMs = mp.getDuration();
+                            acquireLocks();
+                            buildAndPostNotification(currentCoverBitmap != null ? currentCoverBitmap : getRoundedDefaultCover());
+                            MainActivity.setNativePlaybackState(true);
+                            MainActivity.dispatchWebAction("if (window.onNativePrepared) window.onNativePrepared(" + (durationMs / 1000.0) + ");");
+                        } else {
+                            resumeOnFocusGain = true;
+                            isPlaying = false;
+                            durationMs = mp.getDuration();
+                            buildAndPostNotification(currentCoverBitmap != null ? currentCoverBitmap : getRoundedDefaultCover());
+                            MainActivity.setNativePlaybackState(false);
+                            MainActivity.dispatchWebAction("if (window.onNativePrepared) window.onNativePrepared(" + (durationMs / 1000.0) + ");");
+                        }
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
@@ -212,6 +256,8 @@ public class MediaPlaybackService extends Service {
             mediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
                 @Override
                 public void onCompletion(MediaPlayer mp) {
+                    resumeOnFocusGain = false;
+                    abandonAudioFocusInternal();
                     isPlaying = false;
                     acquireLocks(); // 立即抢占 WakeLock & WifiLock，确保后台切歌拉流全速进行
                     releaseLocksDelayed(120000);
@@ -224,6 +270,8 @@ public class MediaPlaybackService extends Service {
             mediaPlayer.setOnErrorListener(new MediaPlayer.OnErrorListener() {
                 @Override
                 public boolean onError(MediaPlayer mp, int what, int extra) {
+                    resumeOnFocusGain = false;
+                    abandonAudioFocusInternal();
                     try {
                         mp.reset();
                     } catch (Exception ignored) {}
@@ -259,9 +307,144 @@ public class MediaPlaybackService extends Service {
         }
     }
 
+    public synchronized void setAudioFocusEnabled(boolean enabled) {
+        this.isAudioFocusEnabled = enabled;
+        if (!enabled) {
+            resumeOnFocusGain = false;
+            abandonAudioFocusInternal();
+        } else if (isPlaying) {
+            requestAudioFocusInternal();
+        }
+    }
+
+    public synchronized boolean isAudioFocusEnabled() {
+        return isAudioFocusEnabled;
+    }
+
+    private synchronized boolean requestAudioFocusInternal() {
+        if (!isAudioFocusEnabled) {
+            return true;
+        }
+        if (audioManager == null) {
+            audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+        }
+        if (audioManager == null) {
+            return true;
+        }
+
+        int result;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            if (audioFocusRequest == null) {
+                AudioAttributes playbackAttributes = new AudioAttributes.Builder()
+                        .setUsage(AudioAttributes.USAGE_MEDIA)
+                        .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                        .build();
+                audioFocusRequest = new AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
+                        .setAudioAttributes(playbackAttributes)
+                        .setAcceptsDelayedFocusGain(true)
+                        .setWillPauseWhenDucked(true)
+                        .setOnAudioFocusChangeListener(audioFocusChangeListener, mainHandler)
+                        .build();
+            }
+            result = audioManager.requestAudioFocus(audioFocusRequest);
+        } else {
+            result = audioManager.requestAudioFocus(
+                    audioFocusChangeListener,
+                    AudioManager.STREAM_MUSIC,
+                    AudioManager.AUDIOFOCUS_GAIN
+            );
+        }
+        registerNoisyReceiver();
+        return result == AudioManager.AUDIOFOCUS_REQUEST_GRANTED;
+    }
+
+    private synchronized void abandonAudioFocusInternal() {
+        unregisterNoisyReceiver();
+        if (audioManager == null) return;
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                if (audioFocusRequest != null) {
+                    audioManager.abandonAudioFocusRequest(audioFocusRequest);
+                }
+            } else {
+                audioManager.abandonAudioFocus(audioFocusChangeListener);
+            }
+        } catch (Exception ignored) {}
+    }
+
+    private synchronized void registerNoisyReceiver() {
+        if (!isNoisyReceiverRegistered) {
+            try {
+                IntentFilter filter = new IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY);
+                registerReceiver(noisyAudioReceiver, filter);
+                isNoisyReceiverRegistered = true;
+            } catch (Exception ignored) {}
+        }
+    }
+
+    private synchronized void unregisterNoisyReceiver() {
+        if (isNoisyReceiverRegistered) {
+            try {
+                unregisterReceiver(noisyAudioReceiver);
+            } catch (Exception ignored) {}
+            isNoisyReceiverRegistered = false;
+        }
+    }
+
+    private synchronized void handleAudioFocusChange(final int focusChange) {
+        if (!isAudioFocusEnabled) return;
+
+        switch (focusChange) {
+            case AudioManager.AUDIOFOCUS_LOSS:
+                // 永久失去音频焦点（其他播放器开始常驻发声）
+                resumeOnFocusGain = false;
+                pausePlayback();
+                abandonAudioFocusInternal();
+                break;
+
+            case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT:
+            case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK:
+                // 短暂失去音频焦点（通话中、微信发语音、微信电话、语音识别等）
+                if (isPlaying && mediaPlayer != null && isPrepared) {
+                    resumeOnFocusGain = true;
+                    try {
+                        if (mediaPlayer.isPlaying()) {
+                            mediaPlayer.pause();
+                        }
+                    } catch (Exception ignored) {}
+                    isPlaying = false;
+                    releaseLocksDelayed(120000);
+                    buildAndPostNotification(currentCoverBitmap != null ? currentCoverBitmap : getRoundedDefaultCover());
+                    MainActivity.setNativePlaybackState(false);
+                    MainActivity.dispatchWebAction("if (window.onNativePause) window.onNativePause();");
+                }
+                break;
+
+            case AudioManager.AUDIOFOCUS_GAIN:
+                // 重新获得音频焦点（通话结束、微信发语音松手完毕等）
+                if (resumeOnFocusGain) {
+                    resumeOnFocusGain = false;
+                    if (mediaPlayer != null && isPrepared) {
+                        try {
+                            mediaPlayer.start();
+                            isPlaying = true;
+                            acquireLocks();
+                            buildAndPostNotification(currentCoverBitmap != null ? currentCoverBitmap : getRoundedDefaultCover());
+                            MainActivity.setNativePlaybackState(true);
+                            MainActivity.dispatchWebAction("if (window.onNativePlay) window.onNativePlay();");
+                        } catch (Exception ignored) {}
+                    }
+                }
+                break;
+        }
+    }
+
     public synchronized void playUrl(final String url, final long seekMs) {
         if (url == null || url.isEmpty()) return;
         initMediaPlayerIfNeeded();
+
+        resumeOnFocusGain = false;
+        requestAudioFocusInternal();
 
         if (url.equals(currentAudioUrl) && isPrepared) {
             try {
@@ -269,6 +452,7 @@ public class MediaPlaybackService extends Service {
                     mediaPlayer.seekTo((int) seekMs);
                 }
                 if (!mediaPlayer.isPlaying()) {
+                    requestAudioFocusInternal();
                     mediaPlayer.start();
                 }
                 isPlaying = true;
@@ -375,6 +559,8 @@ public class MediaPlaybackService extends Service {
     }
 
     public synchronized void pausePlayback() {
+        resumeOnFocusGain = false;
+        abandonAudioFocusInternal();
         if (mediaPlayer != null && isPrepared) {
             try {
                 if (mediaPlayer.isPlaying()) {
@@ -390,6 +576,8 @@ public class MediaPlaybackService extends Service {
     }
 
     public synchronized void resumePlayback() {
+        resumeOnFocusGain = false;
+        requestAudioFocusInternal();
         if (mediaPlayer != null && isPrepared) {
             try {
                 mediaPlayer.start();
@@ -818,6 +1006,7 @@ public class MediaPlaybackService extends Service {
         if (lockHandler != null) {
             lockHandler.removeCallbacks(delayedReleaseLocksRunnable);
         }
+        abandonAudioFocusInternal();
         releaseLocks();
         if (mediaPlayer != null) {
             try {

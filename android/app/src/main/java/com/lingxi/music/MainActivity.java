@@ -2081,7 +2081,7 @@ public class MainActivity extends Activity {
                 PackageInfo pInfo = getPackageManager().getPackageInfo(getPackageName(), 0);
                 return pInfo.versionName;
             } catch (Exception e) {
-                return "2.1.1";
+                return "2.1.2";
             }
         }
 
@@ -2095,7 +2095,7 @@ public class MainActivity extends Activity {
                     return pInfo.versionCode;
                 }
             } catch (Exception e) {
-                return 42;
+                return 43;
             }
         }
 
@@ -2277,6 +2277,28 @@ public class MainActivity extends Activity {
                     }
                 }
             });
+        }
+
+        @JavascriptInterface
+        public void setAudioFocusEnabled(final boolean enabled) {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    MediaPlaybackService service = MediaPlaybackService.getInstance();
+                    if (service != null) {
+                        service.setAudioFocusEnabled(enabled);
+                    }
+                }
+            });
+        }
+
+        @JavascriptInterface
+        public boolean isAudioFocusEnabled() {
+            MediaPlaybackService service = MediaPlaybackService.getInstance();
+            if (service != null) {
+                return service.isAudioFocusEnabled();
+            }
+            return true;
         }
     }
 
