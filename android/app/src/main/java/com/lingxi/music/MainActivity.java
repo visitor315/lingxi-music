@@ -2081,7 +2081,7 @@ public class MainActivity extends Activity {
                 PackageInfo pInfo = getPackageManager().getPackageInfo(getPackageName(), 0);
                 return pInfo.versionName;
             } catch (Exception e) {
-                return "2.1.2";
+                return "2.1.3";
             }
         }
 
@@ -2095,7 +2095,7 @@ public class MainActivity extends Activity {
                     return pInfo.versionCode;
                 }
             } catch (Exception e) {
-                return 43;
+                return 44;
             }
         }
 

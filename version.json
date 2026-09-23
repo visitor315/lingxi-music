@@ -1,6 +1,6 @@
 {
-  "versionCode": 43,
-  "versionName": "2.1.2",
-  "changelog": "1. 新增通话与微信发语音时自动暂停功能，结束后自动继续播放\n2. 接入系统级音频焦点管理，智能响应多应用音频流冲突与自愈\n3. 新增拔出有线耳机与蓝牙断开时自动暂停保护\n4. 设置中支持一键开启或关闭通话录音暂停特性",
+  "versionCode": 44,
+  "versionName": "2.1.3",
+  "changelog": "1. 彻底解决微信发语音结束后自动继续播放问题：消除 WebView 内部静音锚点引发的焦点自打断\n2. 优化音频焦点判定：对于通知与浮窗音效仅柔和压低音量，避免音乐被硬切断\n3. 增强焦点自愈响应速度与状态对齐",
   "downloadUrl": "https://ghfast.top/https://github.com/visitor315/lingxi-music/releases/download/v1.4.0/LingXiMusic.apk"
 }

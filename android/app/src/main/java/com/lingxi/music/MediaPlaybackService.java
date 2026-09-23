@@ -342,7 +342,6 @@ public class MediaPlaybackService extends Service {
                 audioFocusRequest = new AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
                         .setAudioAttributes(playbackAttributes)
                         .setAcceptsDelayedFocusGain(true)
-                        .setWillPauseWhenDucked(true)
                         .setOnAudioFocusChangeListener(audioFocusChangeListener, mainHandler)
                         .build();
             }
@@ -355,7 +354,8 @@ public class MediaPlaybackService extends Service {
             );
         }
         registerNoisyReceiver();
-        return result == AudioManager.AUDIOFOCUS_REQUEST_GRANTED;
+        android.util.Log.i("LingXiAudio", "requestAudioFocusInternal result=" + result);
+        return result == AudioManager.AUDIOFOCUS_REQUEST_GRANTED || result == 2; // 2=AUDIOFOCUS_REQUEST_DELAYED
     }
 
     private synchronized void abandonAudioFocusInternal() {
@@ -393,17 +393,17 @@ public class MediaPlaybackService extends Service {
 
     private synchronized void handleAudioFocusChange(final int focusChange) {
         if (!isAudioFocusEnabled) return;
+        android.util.Log.i("LingXiAudio", "handleAudioFocusChange: " + focusChange + ", isPlaying=" + isPlaying + ", resumeOnFocusGain=" + resumeOnFocusGain);
 
         switch (focusChange) {
             case AudioManager.AUDIOFOCUS_LOSS:
-                // 永久失去音频焦点（其他播放器开始常驻发声）
+                // 永久失去音频焦点（其他媒体播放器常驻播放）
                 resumeOnFocusGain = false;
                 pausePlayback();
                 abandonAudioFocusInternal();
                 break;
 
             case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT:
-            case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK:
                 // 短暂失去音频焦点（通话中、微信发语音、微信电话、语音识别等）
                 if (isPlaying && mediaPlayer != null && isPrepared) {
                     resumeOnFocusGain = true;
@@ -417,11 +417,27 @@ public class MediaPlaybackService extends Service {
                     buildAndPostNotification(currentCoverBitmap != null ? currentCoverBitmap : getRoundedDefaultCover());
                     MainActivity.setNativePlaybackState(false);
                     MainActivity.dispatchWebAction("if (window.onNativePause) window.onNativePause();");
+                    android.util.Log.i("LingXiAudio", "Paused for transient focus loss, set resumeOnFocusGain=true");
+                }
+                break;
+
+            case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK:
+                // 短暂失去但允许降低音量（系统通知、导航提示音等，不打断音乐）
+                if (mediaPlayer != null && isPrepared && isPlaying) {
+                    try {
+                        mediaPlayer.setVolume(0.2f, 0.2f);
+                    } catch (Exception ignored) {}
+                    android.util.Log.i("LingXiAudio", "Ducked volume for CAN_DUCK");
                 }
                 break;
 
             case AudioManager.AUDIOFOCUS_GAIN:
                 // 重新获得音频焦点（通话结束、微信发语音松手完毕等）
+                if (mediaPlayer != null && isPrepared) {
+                    try {
+                        mediaPlayer.setVolume(1.0f, 1.0f);
+                    } catch (Exception ignored) {}
+                }
                 if (resumeOnFocusGain) {
                     resumeOnFocusGain = false;
                     if (mediaPlayer != null && isPrepared) {
@@ -432,7 +448,10 @@ public class MediaPlaybackService extends Service {
                             buildAndPostNotification(currentCoverBitmap != null ? currentCoverBitmap : getRoundedDefaultCover());
                             MainActivity.setNativePlaybackState(true);
                             MainActivity.dispatchWebAction("if (window.onNativePlay) window.onNativePlay();");
-                        } catch (Exception ignored) {}
+                            android.util.Log.i("LingXiAudio", "Resumed playback on AUDIOFOCUS_GAIN");
+                        } catch (Exception e) {
+                            android.util.Log.e("LingXiAudio", "Error resuming on AUDIOFOCUS_GAIN", e);
+                        }
                     }
                 }
                 break;
