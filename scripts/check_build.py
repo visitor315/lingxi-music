@@ -64,25 +64,25 @@ if run:
                 lines = [l.strip() for l in res_dev.stdout.splitlines() if l.strip() and not l.startswith("List of devices")]
                 devices = [l.split()[0] for l in lines if "\tdevice" in l]
 
-                if devices:
-                    print(f"Found connected ADB device(s): {devices}, installing update (retaining user data)...", flush=True)
-                    res = subprocess.run(["adb", "install", "-r", dest1], capture_output=True, text=True)
-                    print("ADB install stdout:", res.stdout, flush=True)
-                    print("ADB install stderr:", res.stderr, flush=True)
-                    if "INSTALL_FAILED_UPDATE_INCOMPATIBLE" in res.stdout or "INSTALL_FAILED_UPDATE_INCOMPATIBLE" in res.stderr:
-                        print("Notice: Legacy ephemeral signature detected. Performing one-time migration to permanent signature...", flush=True)
-                        subprocess.run(["adb", "uninstall", "com.lingxi.music"], capture_output=True, text=True)
-                        res = subprocess.run(["adb", "install", "-r", dest1], capture_output=True, text=True)
-                        print("Migration ADB install stdout:", res.stdout, flush=True)
-                        print("Migration ADB install stderr:", res.stderr, flush=True)
+                target_dev = "192.168.2.44:5555" if "192.168.2.44:5555" in devices else devices[0]
+                print(f"Targeting ADB device: {target_dev}, installing update (retaining user data)...", flush=True)
+                res = subprocess.run(["adb", "-s", target_dev, "install", "-r", dest1], capture_output=True, text=True)
+                print("ADB install stdout:", res.stdout, flush=True)
+                print("ADB install stderr:", res.stderr, flush=True)
+                if "INSTALL_FAILED_UPDATE_INCOMPATIBLE" in res.stdout or "INSTALL_FAILED_UPDATE_INCOMPATIBLE" in res.stderr:
+                    print("Notice: Legacy ephemeral signature detected. Performing one-time migration to permanent signature...", flush=True)
+                    subprocess.run(["adb", "-s", target_dev, "uninstall", "com.lingxi.music"], capture_output=True, text=True)
+                    res = subprocess.run(["adb", "-s", target_dev, "install", "-r", dest1], capture_output=True, text=True)
+                    print("Migration ADB install stdout:", res.stdout, flush=True)
+                    print("Migration ADB install stderr:", res.stderr, flush=True)
 
-                    print("Setting appops permissions...", flush=True)
-                    subprocess.run(["adb", "shell", "appops", "set", "com.lingxi.music", "SYSTEM_ALERT_WINDOW", "allow"])
-                    subprocess.run(["adb", "shell", "appops", "set", "com.lingxi.music", "ACCESS_RESTRICTED_SETTINGS", "allow"])
+                print("Setting appops permissions...", flush=True)
+                subprocess.run(["adb", "-s", target_dev, "shell", "appops", "set", "com.lingxi.music", "SYSTEM_ALERT_WINDOW", "allow"])
+                subprocess.run(["adb", "-s", target_dev, "shell", "appops", "set", "com.lingxi.music", "ACCESS_RESTRICTED_SETTINGS", "allow"])
 
-                    print("Starting app via ADB...", flush=True)
-                    res_start = subprocess.run(["adb", "shell", "am", "start", "-n", "com.lingxi.music/.MainActivity"], capture_output=True, text=True)
-                    print("ADB start stdout:", res_start.stdout, flush=True)
+                print("Starting app via ADB...", flush=True)
+                res_start = subprocess.run(["adb", "-s", target_dev, "shell", "am", "start", "-n", "com.lingxi.music/.MainActivity"], capture_output=True, text=True)
+                print("ADB start stdout:", res_start.stdout, flush=True)
                 else:
                     print("No ADB device currently attached. APK is saved on Desktop.", flush=True)
 
