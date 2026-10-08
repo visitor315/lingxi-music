@@ -607,9 +607,14 @@ body.night .radio-play-btn-circle { background: #E8E7E3; color: #171715; }
 
 .vinyl-scroll-channel {
   position: absolute; top: 0; left: 0; right: -16px; bottom: 0;
-  display: flex; align-items: center; overflow: hidden !important; padding-right: 240px; z-index: 2;
+  display: flex; align-items: center;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  padding-right: 240px; z-index: 2;
   clip-path: inset(-10px -40px -10px 1px);
-  touch-action: pan-y !important;
+  touch-action: pan-x pan-y !important;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
 }
 .vinyl-scroll-channel::-webkit-scrollbar { display: none; }
 .vinyl-initial-offset { width: 70px; flex-shrink: 0; }
@@ -3286,7 +3291,7 @@ body.night .voice-modal-btn.voice-modal-btn-primary {
               </div>
               <div class="item-content">
                 <span class="item-main-title">检查版本更新</span>
-                <span class="item-subtitle-tight" id="aboutAppVersionDesc">v2.4.0</span>
+                <span class="item-subtitle-tight" id="aboutAppVersionDesc">v2.4.1</span>
               </div>
             </div>
             <svg class="item-arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
@@ -4355,7 +4360,7 @@ const OTHER_AVATAR_SVG = `<svg width="14" height="14" viewBox="0 0 24 24" fill="
 
 const APP_CONFIG = {
   name: '灵犀音乐',
-  version: '2.4.0',
+  version: '2.4.1',
   build: '2026.10.09',
   codename: 'Pure Sound'
 };
@@ -4916,6 +4921,7 @@ function switchNavTab(tabIdx) {}
 
 /* 从激活歌单点播某首歌曲 */
 function playSongFromActivePlaylist(idx) {
+  isDiscoverRecommendationQueue = false;
   currentPlayingAlbumIndex = activeRadioIndex;
   const activeAlb = VINYL_ALBUMS[activeRadioIndex] || VINYL_ALBUMS[0];
   currentPlaybackQueue = [...activeAlb.songs];
@@ -4924,6 +4930,7 @@ function playSongFromActivePlaylist(idx) {
 
 /* 从主曲库点播某首歌曲 */
 function playFromLibrary(idx) {
+  isDiscoverRecommendationQueue = false;
   currentPlaybackQueue = [...ALL_LIBRARY_SONGS];
   playSongAtQueue(idx);
 }
@@ -5228,6 +5235,15 @@ function playSongAtQueue(idx) {
     }
     if (matchIdx !== -1) {
       scrollVinylToTrack(matchIdx, true);
+    }
+  }
+
+  // 发现推荐无限流静默预加载：接近末尾时自动扩充
+  if (typeof isDiscoverRecommendationQueue !== 'undefined' && isDiscoverRecommendationQueue) {
+    if (idx >= currentPlaybackQueue.length - 3 || activeTopTrackIndex >= (topRecommendedTracks ? topRecommendedTracks.length - 3 : 0)) {
+      if (typeof ensureMoreRecommendationsSilently === 'function') {
+        ensureMoreRecommendationsSilently();
+      }
     }
   }
 
@@ -6256,6 +6272,203 @@ function formatCleanArtist(artist) {
 
 let topRecommendedTracks = [];
 let activeTopTrackIndex = 0;
+let isDiscoverRecommendationQueue = false;
+let isAppendingRecommendations = false;
+let nextStreamSeedIndex = 0;
+
+const STREAM_RECOMMEND_SEEDS = [
+  '国风', '民谣', '治愈', '古风', '经典流行', '纯音乐', '轻音乐', '温润',
+  '伦桑', '许嵩', '周杰伦', '毛不易', '胡夏', '薛之谦', '邓紫棋', '张学友', '阿鲲'
+];
+
+function isSameSongIdentifier(a, b) {
+  if (!a || !b) return false;
+  const aId = a.onlineId || (a.id ? String(a.id).replace('online_', '') : '');
+  const bId = b.onlineId || (b.url_id || b.id ? String(b.url_id || b.id).replace('online_', '') : '');
+  if (aId && bId && aId === bId) return true;
+  const aTitle = (formatCleanTitle(a.title || a.name || '')).toLowerCase().trim();
+  const bTitle = (formatCleanTitle(b.title || b.name || '')).toLowerCase().trim();
+  const aArtist = (formatCleanArtist(a.artist || '')).toLowerCase().trim();
+  const bArtist = (formatCleanArtist(b.artist || '')).toLowerCase().trim();
+  if (aTitle && bTitle && aTitle === bTitle) {
+    if (!aArtist || !bArtist || aArtist === bArtist || aArtist.includes(bArtist) || bArtist.includes(aArtist)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function convertSongToQueueTrack(song, topTrackIndex = -1) {
+  const sTitle = song.name || song.title || '';
+  const sArtist = song.artist || '';
+  return {
+    id: 'online_' + (song.id || song.url_id || Math.random().toString(36).slice(2)),
+    onlineId: song.url_id || song.id,
+    topTrackIndex: topTrackIndex,
+    source: song.source || 'netease',
+    title: sTitle,
+    artist: sArtist,
+    album: song.album || '',
+    duration: song.duration || 240,
+    fileUrl: song.fileUrl || '',
+    urlFetchedAt: song.urlFetchedAt || 0,
+    cover: song.cover || song.pic || '',
+    pic_id: song.pic_id || song.url_id || song.id,
+    lyric_id: song.lyric_id || song.url_id || song.id,
+    isFav: ALL_LIBRARY_SONGS.some(s => 
+      (s.id === 'online_' + song.id || s.onlineId === (song.url_id || song.id) || (s.title === sTitle && s.artist === sArtist)) && s.isFav
+    )
+  };
+}
+
+async function ensureMoreRecommendationsSilently(isTriggeredByScroll = false) {
+  if (isAppendingRecommendations) return;
+  if (!isDiscoverRecommendationQueue && !isTriggeredByScroll) return;
+
+  const currentCount = topRecommendedTracks ? topRecommendedTracks.length : 0;
+  const isNearEndInVinyl = activeTopTrackIndex >= currentCount - 3;
+  const isNearEndInQueue = currentIndex >= currentPlaybackQueue.length - 3;
+
+  if (!isNearEndInVinyl && !isNearEndInQueue && !isTriggeredByScroll) return;
+
+  isAppendingRecommendations = true;
+
+  try {
+    // 阶段一：优先从发现页现有板块 currentDiscoverSongs 中查找尚未加入顶部卡片的歌曲
+    const pendingFromDiscover = (currentDiscoverSongs || []).filter(dSong => {
+      return !topRecommendedTracks.some(t => isSameSongIdentifier(t, dSong));
+    });
+
+    if (pendingFromDiscover.length > 0) {
+      // 预加载几个（每次取 4 首）
+      const batch = pendingFromDiscover.slice(0, 4);
+      appendTracksToTopAndQueue(batch);
+      return;
+    }
+
+    // 阶段二：发现页已有歌曲已全部加入顶部卡片，在线拉取新的推荐歌曲
+    const newOnlineBatch = await fetchNextOnlineRecommendationBatch();
+    if (newOnlineBatch && newOnlineBatch.length > 0) {
+      appendTracksToTopAndQueue(newOnlineBatch);
+    }
+  } catch (err) {
+    console.warn('静默预加载推荐曲目失败:', err);
+  } finally {
+    isAppendingRecommendations = false;
+  }
+}
+
+function appendTracksToTopAndQueue(batch) {
+  if (!batch || batch.length === 0) return;
+  const container = document.getElementById('vinylDiscStream');
+
+  batch.forEach(song => {
+    const newTopIdx = topRecommendedTracks.length;
+    topRecommendedTracks.push(song);
+
+    // 保证在 currentDiscoverSongs 中也有记录
+    if (!currentDiscoverSongs.some(s => isSameSongIdentifier(s, song))) {
+      song._globalIdx = currentDiscoverSongs.length;
+      currentDiscoverSongs.push(song);
+    }
+
+    // 增量追加卡片至 #vinylDiscStream
+    if (container) {
+      const coverUrl = song.cover || song.pic || '';
+      const hasCover = !!coverUrl;
+      const discOuterStyle = hasCover
+        ? `background: url('${coverUrl}') center/cover no-repeat; border: none !important;`
+        : '';
+      const cardHtml = `
+        <div class="vinyl-stream-card" onclick="handleStreamCardClick(${newTopIdx})">
+          <div class="stream-disc" id="streamDisc${newTopIdx}" style="${discOuterStyle}">
+            ${hasCover ? '' : `
+              <div class="stream-disc-core">
+                <svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+              </div>
+            `}
+          </div>
+        </div>
+      `;
+      container.insertAdjacentHTML('beforeend', cardHtml);
+    }
+
+    // 若当前播放队列处于推荐流，同步追加到当前播放队列
+    if (isDiscoverRecommendationQueue) {
+      const queueIdx = currentPlaybackQueue.findIndex(q => isSameSongIdentifier(q, song));
+      if (queueIdx === -1) {
+        currentPlaybackQueue.push(convertSongToQueueTrack(song, newTopIdx));
+      } else {
+        currentPlaybackQueue[queueIdx].topTrackIndex = newTopIdx;
+      }
+    }
+  });
+
+  // 如果抽屉已展开，局部更新抽屉计数和列表
+  const drawerEl = document.getElementById('playlistDrawer');
+  if (drawerEl && drawerEl.classList.contains('active')) {
+    renderDrawerPlaylist();
+  }
+
+  // 异步补齐封面
+  fetchCoversForBatch(batch);
+}
+
+function fetchCoversForBatch(batch) {
+  const needPicSongs = batch.filter(s => !s.cover && (s.pic_id || s.url_id || s.id));
+  if (needPicSongs.length === 0) return;
+
+  Promise.all(needPicSongs.map(async song => {
+    try {
+      const targetId = song.pic_id || song.url_id || song.id;
+      const picRes = await universalFetch(`${currentApiBase}?types=pic&id=${targetId}&source=${song.source || 'netease'}`, { timeout: 2500 });
+      if (picRes.ok) {
+        const pData = await picRes.json();
+        if (pData && pData.url) {
+          song.cover = pData.url;
+          const idx = topRecommendedTracks.indexOf(song);
+          if (idx !== -1) {
+            const disc = document.getElementById(`streamDisc${idx}`);
+            if (disc) {
+              disc.style.background = `url('${pData.url}') center/cover no-repeat`;
+              disc.style.border = 'none';
+              const core = disc.querySelector('.stream-disc-core');
+              if (core) core.remove();
+            }
+          }
+          const qItem = currentPlaybackQueue.find(q => isSameSongIdentifier(q, song));
+          if (qItem) qItem.cover = pData.url;
+        }
+      }
+    } catch(e) {}
+  }));
+}
+
+async function fetchNextOnlineRecommendationBatch() {
+  const seed = STREAM_RECOMMEND_SEEDS[nextStreamSeedIndex % STREAM_RECOMMEND_SEEDS.length];
+  nextStreamSeedIndex++;
+
+  try {
+    const list = await requestOnlineSearch(seed, 15);
+    if (!Array.isArray(list) || list.length === 0) return [];
+
+    const result = [];
+    for (const song of list) {
+      const alreadyInTop = topRecommendedTracks.some(t => isSameSongIdentifier(t, song));
+      const alreadyInQueue = currentPlaybackQueue.some(q => isSameSongIdentifier(q, song));
+      const alreadyInLib = (ALL_LIBRARY_SONGS || []).some(s => isSameSongIdentifier(s, song));
+      if (!alreadyInTop && !alreadyInQueue && !alreadyInLib) {
+        song.reason = DISCOVER_NOTE_TEMPLATES[result.length % DISCOVER_NOTE_TEMPLATES.length];
+        result.push(song);
+        if (result.length >= 4) break;
+      }
+    }
+    return result;
+  } catch(e) {
+    console.warn('获取在线推荐流异常:', e);
+    return [];
+  }
+}
 
 function initTopRecommendedTracks() {
   if (topRecommendedTracks && topRecommendedTracks.length > 0) return;
@@ -6645,62 +6858,65 @@ function playDiscoverSection(secIdx) {
   const sec = currentDiscoverSections[secIdx];
   if (!sec || !sec.songs || sec.songs.length === 0) return;
 
-  const queue = sec.songs.map(item => ({
-    id: 'online_' + item.id,
-    onlineId: item.url_id || item.id,
-    source: item.source || 'netease',
-    title: item.name,
-    artist: item.artist,
-    album: item.album || '',
-    duration: item.duration || 240,
-    fileUrl: '',
-    urlFetchedAt: 0,
-    cover: item.cover || item.pic || '',
-    pic_id: item.pic_id || item.url_id || item.id,
-    lyric_id: item.lyric_id || item.url_id || item.id,
-    isFav: false
-  }));
+  isDiscoverRecommendationQueue = true;
+
+  // 当前板块歌曲排在最前，随后连接顶部卡片与发现页余下歌曲
+  const queue = (sec.songs || []).map(song => convertSongToQueueTrack(song, -1));
+
+  (topRecommendedTracks || []).forEach((song, sIdx) => {
+    if (!queue.some(q => isSameSongIdentifier(q, song))) {
+      queue.push(convertSongToQueueTrack(song, sIdx));
+    }
+  });
+
+  (currentDiscoverSongs || []).forEach(dSong => {
+    if (!queue.some(q => isSameSongIdentifier(q, dSong))) {
+      queue.push(convertSongToQueueTrack(dSong, -1));
+    }
+  });
 
   currentPlaybackQueue = queue;
   currentIndex = 0;
   openPlayerFull();
   playSongAtQueue(0);
   toast(`开始播放「${sec.title}」`);
+
+  if (currentPlaybackQueue.length <= 3) {
+    ensureMoreRecommendationsSilently();
+  }
 }
 
 function playDiscoverTrack(idx) {
   const item = currentDiscoverSongs[idx];
   if (!item) return;
 
-  const trackObj = {
-    id: 'online_' + item.id,
-    onlineId: item.url_id || item.id,
-    source: item.source || 'netease',
-    title: item.name,
-    artist: item.artist,
-    album: item.album || '',
-    duration: item.duration || 240,
-    fileUrl: '',
-    urlFetchedAt: 0,
-    cover: item.cover || item.pic || '',
-    pic_id: item.pic_id || item.url_id || item.id,
-    lyric_id: item.lyric_id || item.url_id || item.id,
-    isFav: false
-  };
+  isDiscoverRecommendationQueue = true;
 
-  const existingIdx = currentPlaybackQueue.findIndex(s => 
-    s.id === trackObj.id || (s.title === trackObj.title && s.artist === trackObj.artist)
-  );
+  // 构建包含全部推荐歌曲的队列
+  const queue = (topRecommendedTracks || []).map((song, sIdx) => convertSongToQueueTrack(song, sIdx));
 
-  if (existingIdx !== -1) {
-    currentIndex = existingIdx;
-  } else {
-    currentPlaybackQueue.splice(currentIndex + 1, 0, trackObj);
-    currentIndex = currentIndex + 1;
+  (currentDiscoverSongs || []).forEach(dSong => {
+    const exists = queue.some(q => isSameSongIdentifier(q, dSong));
+    if (!exists) {
+      queue.push(convertSongToQueueTrack(dSong, -1));
+    }
+  });
+
+  let targetIdx = queue.findIndex(q => isSameSongIdentifier(q, item));
+  if (targetIdx === -1) {
+    queue.push(convertSongToQueueTrack(item, -1));
+    targetIdx = queue.length - 1;
   }
+
+  currentPlaybackQueue = queue;
+  currentIndex = targetIdx;
 
   openPlayerFull();
   playSongAtQueue(currentIndex);
+
+  if (currentIndex >= currentPlaybackQueue.length - 3) {
+    ensureMoreRecommendationsSilently();
+  }
 }
 
 function playAllDiscoverTracks() {
@@ -6709,21 +6925,14 @@ function playAllDiscoverTracks() {
     return;
   }
 
-  const queue = currentDiscoverSongs.map(item => ({
-    id: 'online_' + item.id,
-    onlineId: item.url_id || item.id,
-    source: item.source || 'netease',
-    title: item.name,
-    artist: item.artist,
-    album: item.album || '',
-    duration: item.duration || 240,
-    fileUrl: '',
-    urlFetchedAt: 0,
-    cover: item.cover || item.pic || '',
-    pic_id: item.pic_id || item.url_id || item.id,
-    lyric_id: item.lyric_id || item.url_id || item.id,
-    isFav: false
-  }));
+  isDiscoverRecommendationQueue = true;
+  const queue = (topRecommendedTracks || []).map((song, sIdx) => convertSongToQueueTrack(song, sIdx));
+
+  (currentDiscoverSongs || []).forEach(dSong => {
+    if (!queue.some(q => isSameSongIdentifier(q, dSong))) {
+      queue.push(convertSongToQueueTrack(dSong, -1));
+    }
+  });
 
   currentPlaybackQueue = queue;
   currentIndex = 0;
@@ -7184,6 +7393,11 @@ function playPrev() {
 
 function playNext() {
   if (!currentPlaybackQueue.length) return;
+  if (isDiscoverRecommendationQueue && currentIndex >= currentPlaybackQueue.length - 3) {
+    if (typeof ensureMoreRecommendationsSilently === 'function') {
+      ensureMoreRecommendationsSilently();
+    }
+  }
   if (playMode === 'random') {
     let next = Math.floor(Math.random() * currentPlaybackQueue.length);
     if (currentPlaybackQueue.length > 1 && next === currentIndex) {
@@ -7338,10 +7552,7 @@ function updateUI() {
   for (let i = 0; i < (topRecommendedTracks || []).length; i++) {
     const d = document.getElementById('streamDisc' + i);
     const track = topRecommendedTracks[i];
-    const isThisPlaying = track && isPlaying && song && (
-      song.id === 'online_' + track.id || 
-      (song.title === (track.name || track.title) && song.artist === track.artist)
-    );
+    const isThisPlaying = track && isPlaying && song && isSameSongIdentifier(song, track);
     if (d) d.classList.toggle('playing', !!isThisPlaying);
   }
 
@@ -7438,23 +7649,7 @@ function updateFixedRadioCardUI() {
     if (typeof curPlayingSong.topTrackIndex === 'number' && curPlayingSong.topTrackIndex >= 0 && curPlayingSong.topTrackIndex < topRecommendedTracks.length) {
       matchIdx = curPlayingSong.topTrackIndex;
     } else {
-      const curOnlineId = curPlayingSong.onlineId || (curPlayingSong.id ? String(curPlayingSong.id).replace('online_', '') : '');
-      const cleanCurTitle = (formatCleanTitle(curPlayingSong.title || '')).toLowerCase().trim();
-      const cleanCurArtist = (formatCleanArtist(curPlayingSong.artist || '')).toLowerCase().trim();
-
-      matchIdx = topRecommendedTracks.findIndex(t => {
-        if ('online_' + t.id === curPlayingSong.id) return true;
-        if (String(t.id) === curOnlineId) return true;
-        if (t.url_id && String(t.url_id) === curOnlineId) return true;
-        const cleanTTitle = (formatCleanTitle(t.name || t.title || '')).toLowerCase().trim();
-        const cleanTArtist = (formatCleanArtist(t.artist || '')).toLowerCase().trim();
-        if (cleanTTitle && cleanCurTitle && cleanTTitle === cleanCurTitle) {
-          if (!cleanCurArtist || !cleanTArtist || cleanCurArtist === cleanTArtist || cleanCurArtist.includes(cleanTArtist) || cleanTArtist.includes(cleanCurArtist)) {
-            return true;
-          }
-        }
-        return false;
-      });
+      matchIdx = topRecommendedTracks.findIndex(t => isSameSongIdentifier(curPlayingSong, t));
     }
 
     if (matchIdx !== -1 && matchIdx !== activeTopTrackIndex) {
@@ -7473,10 +7668,7 @@ function updateFixedRadioCardUI() {
   const target = topRecommendedTracks[activeTopTrackIndex];
   if (!target) return;
 
-  const isTargetPlaying = isPlaying && curPlayingSong && (
-    curPlayingSong.id === 'online_' + target.id ||
-    (curPlayingSong.title === (target.name || target.title) && curPlayingSong.artist === target.artist)
-  );
+  const isTargetPlaying = isPlaying && curPlayingSong && isSameSongIdentifier(curPlayingSong, target);
 
   const titleEl = document.getElementById('dynamicCardTitle');
   if (titleEl) {
@@ -7612,18 +7804,18 @@ function handleVinylScroll(el) {
     activeTopTrackIndex = newIdx;
     updateFixedRadioCardUI();
   }
+  if (newIdx >= count - 3) {
+    if (typeof ensureMoreRecommendationsSilently === 'function') {
+      ensureMoreRecommendationsSilently(true);
+    }
+  }
 }
 
 function openCurrentRadioAlbum() {
   const target = topRecommendedTracks[activeTopTrackIndex];
   if (!target) return;
   const curPlayingSong = currentPlaybackQueue[currentIndex];
-  const isCurrentTarget = curPlayingSong && (
-    curPlayingSong.id === 'online_' + target.id ||
-    String(curPlayingSong.onlineId) === String(target.id) ||
-    String(curPlayingSong.id).replace('online_', '') === String(target.id) ||
-    (curPlayingSong.title === (target.name || target.title) && curPlayingSong.artist === target.artist)
-  );
+  const isCurrentTarget = curPlayingSong && isSameSongIdentifier(curPlayingSong, target);
 
   if (isCurrentTarget) {
     openPlayerFull();
@@ -7636,12 +7828,7 @@ function togglePlayCurrentRadioAlbum() {
   const target = topRecommendedTracks[activeTopTrackIndex];
   if (!target) return;
   const curPlayingSong = currentPlaybackQueue[currentIndex];
-  const isCurrentTarget = curPlayingSong && (
-    curPlayingSong.id === 'online_' + target.id ||
-    String(curPlayingSong.onlineId) === String(target.id) ||
-    String(curPlayingSong.id).replace('online_', '') === String(target.id) ||
-    (curPlayingSong.title === (target.name || target.title) && curPlayingSong.artist === target.artist)
-  );
+  const isCurrentTarget = curPlayingSong && isSameSongIdentifier(curPlayingSong, target);
 
   if (isCurrentTarget) {
     togglePlayState();
@@ -7654,23 +7841,17 @@ function playTopRecommendedTrack(idx, openFull = true) {
   if (!topRecommendedTracks || !topRecommendedTracks[idx]) return;
   scrollVinylToTrack(idx, true);
 
-  // 将顶部全部推荐曲目作为播放队列，听完一首自然播放下一首推荐曲目
-  const queue = topRecommendedTracks.map((song, sIdx) => ({
-    id: 'online_' + song.id,
-    onlineId: song.url_id || song.id,
-    topTrackIndex: sIdx,
-    source: song.source || 'netease',
-    title: song.name || song.title,
-    artist: song.artist,
-    album: song.album || '',
-    duration: song.duration || 240,
-    fileUrl: '',
-    urlFetchedAt: 0,
-    cover: song.cover || song.pic || '',
-    pic_id: song.pic_id || song.url_id || song.id,
-    lyric_id: song.lyric_id || song.url_id || song.id,
-    isFav: ALL_LIBRARY_SONGS.some(s => (s.id === 'online_' + song.id || (s.title === (song.name || song.title) && s.artist === song.artist)) && s.isFav)
-  }));
+  isDiscoverRecommendationQueue = true;
+
+  // 将顶部推荐曲目与发现页所有板块歌曲合并，构建完整播放队列
+  const queue = topRecommendedTracks.map((song, sIdx) => convertSongToQueueTrack(song, sIdx));
+
+  (currentDiscoverSongs || []).forEach(dSong => {
+    const exists = queue.some(q => isSameSongIdentifier(q, dSong));
+    if (!exists) {
+      queue.push(convertSongToQueueTrack(dSong, -1));
+    }
+  });
 
   currentPlaybackQueue = queue;
   currentIndex = idx;
@@ -7678,6 +7859,13 @@ function playTopRecommendedTrack(idx, openFull = true) {
     openPlayerFull();
   }
   playSongAtQueue(idx);
+
+  // 接近末尾时静默预加载
+  if (idx >= currentPlaybackQueue.length - 3 || idx >= (topRecommendedTracks.length - 3)) {
+    if (typeof ensureMoreRecommendationsSilently === 'function') {
+      ensureMoreRecommendationsSilently();
+    }
+  }
 }
 
 /* ================== 乐库歌单切换与播放（第二页：我的曲库） ================== */
@@ -7696,6 +7884,7 @@ function togglePlayCurrentLibraryAlbum() {
   if (currentPlayingAlbumIndex === activeRadioIndex && isPlaying) {
     togglePlayState();
   } else {
+    isDiscoverRecommendationQueue = false;
     currentPlayingAlbumIndex = activeRadioIndex;
     currentPlaybackQueue = [...alb.songs];
     openPlayerFull();
