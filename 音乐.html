@@ -757,8 +757,15 @@ body.night .library-album-pill.active {
 .more-dots-btn:active { transform: scale(0.85); color: var(--ink-dark); }
 .more-dots-btn svg { width: 18px; height: 18px; stroke-width: 1.8; stroke: currentColor; fill: none; }
 
-/* ================== 6. 设置页面 ================== */
-.view-settings-page { display: none; flex-direction: column; padding: 14px 14px 84px; gap: 13px; }
+/* ================== 6. 设置页面 (1:1 严格复刻自 hhznx) ================== */
+.view-settings-page {
+  display: none;
+  flex-direction: column;
+  padding: 14px 14px 84px;
+  gap: 13px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
 .view-settings-page.active { display: flex; }
 .settings-group-header, .sub-group-header {
   font-size: 13px;
@@ -768,27 +775,207 @@ body.night .library-album-pill.active {
   letter-spacing: 0.2px;
   display: block;
 }
-.group-menu-card { background: var(--card-bg); border-radius: 14px; overflow: hidden; display: flex; flex-direction: column; flex-shrink: 0; }
-.settings-item-row {
-  display: flex; align-items: center; justify-content: space-between; padding: 13px 16px; min-height: 52px;
-  cursor: pointer; -webkit-tap-highlight-color: transparent; position: relative; overflow: hidden;
-  border-radius: 0 !important; user-select: none;
+
+.group-menu-card {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 2px !important;
+  margin: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  flex-shrink: 0;
 }
-.settings-item-row:active { opacity: 1 !important; }
-.group-menu-divider { height: 1px; width: 100%; background: var(--inner-divider); flex-shrink: 0; }
-.settings-item-col, .settings-item-row > svg, .settings-item-row > .blue-toggle-switch {
-  position: relative; z-index: 2; pointer-events: none;
+.group-menu-card > .group-menu-divider { display: none !important; }
+
+.group-menu-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 14px;
+  cursor: pointer;
+  min-height: 56px;
+  flex-shrink: 0;
+  user-select: none;
+  background: var(--card-bg);
+  position: relative;
+  overflow: hidden !important;
+  -webkit-tap-highlight-color: transparent !important;
+  transition: border-radius 0.22s cubic-bezier(0.2, 0.8, 0.2, 1), background-color 0.15s ease;
 }
-.settings-item-col { display: flex; flex-direction: column; gap: 2px; flex: 1; }
-.settings-title-line { font-size: 15px; font-weight: 500; color: var(--ink-black); }
-.settings-sub-desc { font-size: 12px; color: var(--ink-gray); }
+
+.item-left-main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+}
+.item-icon-wrap {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink-black);
+  flex-shrink: 0;
+}
+.item-icon-wrap svg { width: 20px; height: 20px; stroke-width: 1.5; stroke: currentColor; fill: none; }
+.item-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+}
+.item-main-title {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--ink-black);
+  line-height: 1.3;
+}
+.item-subtitle-tight {
+  font-size: 12px;
+  color: var(--ink-gray);
+  line-height: 1.35;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.item-arrow-icon {
+  width: 16px;
+  height: 16px;
+  color: var(--ink-light);
+  flex-shrink: 0;
+}
+
+.cap-switch-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  gap: 12px;
+  min-height: 58px;
+  flex-shrink: 0;
+  cursor: pointer;
+  user-select: none;
+  background: var(--card-bg);
+  position: relative;
+  overflow: hidden !important;
+  -webkit-tap-highlight-color: transparent !important;
+  transition: border-radius 0.22s cubic-bezier(0.2, 0.8, 0.2, 1), background-color 0.15s ease;
+}
+.cap-switch-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+}
+.cap-icon-box {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink-black);
+  flex-shrink: 0;
+}
+.cap-icon-box svg { width: 20px; height: 20px; stroke-width: 1.5; stroke: currentColor; fill: none; }
+.cap-switch-texts {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+.cap-switch-title {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--ink-black);
+  line-height: 1.3;
+}
+.cap-switch-desc {
+  font-size: 12px;
+  color: var(--ink-gray);
+  line-height: 1.35;
+}
+
+/* 卡片子项首项、末项、单项圆角 */
+.group-menu-card > div:not(.group-menu-divider),
+.group-menu-card > .group-menu-item,
+.group-menu-card > .cap-switch-row,
+.group-menu-card > .settings-item-row {
+  background: var(--card-bg);
+  border-radius: 2px;
+  border: none !important;
+  box-shadow: none !important;
+}
+body.night .group-menu-card > div:not(.group-menu-divider),
+body.night .group-menu-card > .group-menu-item,
+body.night .group-menu-card > .cap-switch-row,
+body.night .group-menu-card > .settings-item-row {
+  background: #1E1E1C !important;
+}
+
+.group-menu-card > div:not(.group-menu-divider):first-child,
+.group-menu-card > .group-menu-item:first-child,
+.group-menu-card > .cap-switch-row:first-child,
+.group-menu-card > .settings-item-row:first-child {
+  border-radius: 14px 14px 2px 2px !important;
+}
+
+.group-menu-card > div:not(.group-menu-divider):last-child,
+.group-menu-card > .group-menu-item:last-child,
+.group-menu-card > .cap-switch-row:last-child,
+.group-menu-card > .settings-item-row:last-child {
+  border-radius: 2px 2px 14px 14px !important;
+}
+
+.group-menu-card > div:not(.group-menu-divider):first-child:last-child,
+.group-menu-card > .group-menu-item:first-child:last-child,
+.group-menu-card > .cap-switch-row:first-child:last-child,
+.group-menu-card > .settings-item-row:first-child:last-child,
+.group-menu-card > div:not(.group-menu-divider):only-child,
+.group-menu-card > .group-menu-item:only-child,
+.group-menu-card > .cap-switch-row:only-child,
+.group-menu-card > .settings-item-row:only-child {
+  border-radius: 14px !important;
+}
+
+.group-menu-card > div:not(.group-menu-divider):active,
+.group-menu-card > .group-menu-item:active,
+.group-menu-card > .cap-switch-row:active,
+.group-menu-card > .settings-item-row:active {
+  border-radius: 14px !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
 
 .blue-toggle-switch {
-  width: 44px; height: 26px; border-radius: 13px; background: #D1D1CF; position: relative; transition: background 0.2s ease; flex-shrink: 0; cursor: pointer;
+  width: 44px;
+  height: 26px;
+  border-radius: 13px;
+  background: #D1D1CF;
+  position: relative;
+  transition: background 0.2s ease;
+  flex-shrink: 0;
+  cursor: pointer;
 }
 .blue-toggle-switch::after {
-  content: ''; position: absolute; top: 2px; left: 2px; width: 22px; height: 22px; border-radius: 50%; background: #FFFFFF; transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #FFFFFF;
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
+body.night .blue-toggle-switch { background: #383834; }
 .blue-toggle-switch.active { background: var(--brand-blue) !important; }
 .blue-toggle-switch.active::after { transform: translateX(18px); }
 
@@ -2246,81 +2433,28 @@ body.night {
 @keyframes overlayFadeIn { from { opacity: 0; } to { opacity: 1; } }
 @keyframes modalCardPopIn { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
 
-/* ================== RikkaHub 原版 Morphing CardGroup (1:1 复刻自 hhznx) ================== */
-.group-menu-card {
-  background: transparent !important;
-  border: none !important;
-  border-radius: 0 !important;
-  overflow: visible !important;
-  display: flex !important;
-  flex-direction: column !important;
-  gap: 2px !important;
-  box-shadow: none !important;
-  flex-shrink: 0;
-  margin: 0 !important;
-}
-.group-menu-divider {
-  display: none !important;
-}
-.group-menu-card > div:not(.group-menu-divider),
-.group-menu-card > .settings-item-row,
-.group-menu-card > .group-menu-item {
-  display: flex;
+/* 子页面极简顶栏导航 (1:1 复刻自 hhznx) */
+.nav-header {
+  height: 52px;
+  display: grid;
+  grid-template-columns: 48px 1fr 48px;
   align-items: center;
-  justify-content: space-between;
-  padding: 14px 16px;
-  min-height: 52px;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
+  padding: 0 6px;
+  background: var(--settings-bg, var(--bg-page));
+  flex-shrink: 0;
   position: relative;
-  overflow: hidden;
-  user-select: none;
-  background: var(--card-bg);
-  border-radius: 2px;
-  box-shadow: none !important;
-  border: none !important;
-  transition: border-radius 0.22s cubic-bezier(0.2, 0.8, 0.2, 1), background-color 0.15s ease;
+  z-index: 20;
 }
-body.night .group-menu-card > div:not(.group-menu-divider),
-body.night .group-menu-card > .settings-item-row,
-body.night .group-menu-card > .group-menu-item {
-  background: #1E1E1C !important;
+body.apk-mode .nav-header {
+  height: calc(52px + var(--safe-top, 0px)) !important;
+  padding-top: var(--safe-top, 0px) !important;
+  box-sizing: border-box !important;
 }
-
-/* 首项：顶部两角 14px 圆角，底部两角 2px 微圆角 */
-.group-menu-card > div:not(.group-menu-divider):first-child,
-.group-menu-card > .settings-item-row:first-child,
-.group-menu-card > .group-menu-item:first-child {
-  border-radius: 14px 14px 2px 2px !important;
-}
-
-/* 末项：顶部两角 2px 微圆角，底部两角 14px 圆角 */
-.group-menu-card > div:not(.group-menu-divider):last-child,
-.group-menu-card > .settings-item-row:last-child,
-.group-menu-card > .group-menu-item:last-child {
-  border-radius: 2px 2px 14px 14px !important;
-}
-
-/* 单项：独占一卡，四角均为 14px 圆角 */
-.group-menu-card > div:not(.group-menu-divider):first-child:last-child,
-.group-menu-card > .settings-item-row:first-child:last-child,
-.group-menu-card > .group-menu-item:first-child:last-child,
-.group-menu-card > div:not(.group-menu-divider):only-child,
-.group-menu-card > .settings-item-row:only-child,
-.group-menu-card > .group-menu-item:only-child {
-  border-radius: 14px !important;
-}
-
-/* 点击按下态（:active 与 .is-card-pressed）：平滑形变为 14px 全圆角，产生经典翘角/吸角动效 */
-.group-menu-card > div:not(.group-menu-divider):active,
-.group-menu-card > .settings-item-row:active,
-.group-menu-card > .group-menu-item:active,
-.group-menu-card > div.is-card-pressed,
-.group-menu-card > .settings-item-row.is-card-pressed,
-.group-menu-card > .group-menu-item.is-card-pressed {
-  border-radius: 14px !important;
-  transform: none !important;
-  box-shadow: none !important;
+.nav-title {
+  font-size: 16.5px;
+  font-weight: 600;
+  color: var(--ink-black);
+  text-align: center;
 }
 
 
@@ -2670,71 +2804,208 @@ body.night .add-clean-row:active {
         </div>
       </div>
 
-<!-- 设置页 -->
+      <!-- 设置页 (1:1 严格复刻自 hhznx) -->
       <div class="view-settings-page" id="paneSettings">
-        <div class="group-menu-card">
-          <div class="settings-item-row ripple-btn" onclick="toggleDefaultHomeTabSetting()">
-            <div class="settings-item-col">
-              <span class="settings-title-line">启动默认主页</span>
-              <span class="settings-sub-desc" id="defaultHomeTabDesc">当前：发现（精选推荐）</span>
+        <section class="group-menu-card">
+          <div class="group-menu-item ripple-btn" onclick="toggleDefaultHomeTabSetting()">
+            <div class="item-left-main">
+              <div class="item-icon-wrap">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                  <polyline points="9 22 9 12 15 12 15 22"/>
+                </svg>
+              </div>
+              <div class="item-content">
+                <span class="item-main-title">启动默认主页</span>
+                <span class="item-subtitle-tight" id="defaultHomeTabDesc">当前：发现（精选推荐）</span>
+              </div>
             </div>
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" style="color:var(--ink-light);"><polyline points="9 18 15 12 9 6"/></svg>
+            <svg class="item-arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
           </div>
-          <div class="settings-item-row ripple-btn" onclick="openThemeSettingsSubpage()">
-            <div class="settings-item-col">
-              <span class="settings-title-line">外观与个性化</span>
-              <span class="settings-sub-desc" id="themeSettingsSummary">跟随系统 - 克莱因蓝</span>
+          <div class="group-menu-item ripple-btn" onclick="openThemeSettingsSubpage()">
+            <div class="item-left-main">
+              <div class="item-icon-wrap">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"/>
+                  <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/>
+                  <path d="M2 12h20"/>
+                </svg>
+              </div>
+              <div class="item-content">
+                <span class="item-main-title">外观与个性化</span>
+                <span class="item-subtitle-tight" id="themeSettingsSummary">跟随系统 - 克莱因蓝</span>
+              </div>
             </div>
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" style="color:var(--ink-light);"><polyline points="9 18 15 12 9 6"/></svg>
+            <svg class="item-arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
           </div>
-        </div>
-        <div class="group-menu-card">
-          <div class="settings-item-row" onclick="openSleepTimerModal()">
-            <div class="settings-item-col"><span class="settings-title-line">定时关闭</span><span class="settings-sub-desc" id="sleepTimerSettingsDesc">未开启</span></div>
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" style="color:var(--ink-light); margin-left:auto;"><polyline points="9 18 15 12 9 6"/></svg>
-          </div>
-          <div class="settings-item-row" onclick="toggleAudioFocusSetting()">
-            <div class="settings-item-col">
-              <span class="settings-title-line">通话与录音时自动暂停</span>
-              <span class="settings-sub-desc" id="audioFocusSettingsDesc">通话或微信发语音时自动暂停，结束后自动继续播放</span>
+        </section>
+
+        <section class="group-menu-card">
+          <div class="group-menu-item ripple-btn" onclick="openSleepTimerModal()">
+            <div class="item-left-main">
+              <div class="item-icon-wrap">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"/>
+                  <polyline points="12 6 12 12 16 14"/>
+                </svg>
+              </div>
+              <div class="item-content">
+                <span class="item-main-title">定时关闭</span>
+                <span class="item-subtitle-tight" id="sleepTimerSettingsDesc">未开启</span>
+              </div>
             </div>
-            <div class="blue-toggle-switch active" id="audioFocusToggle"></div>
+            <svg class="item-arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
           </div>
-        </div>
-        <div class="group-menu-card">
-          <div class="settings-item-row" onclick="openQualityModal()">
-            <div class="settings-item-col"><span class="settings-title-line">播放音质</span><span class="settings-sub-desc" id="currentQualityDesc">极高音质 - 320 kbps (高清)</span></div>
+          <div class="cap-switch-row ripple-btn">
+            <div class="cap-switch-left">
+              <div class="cap-icon-box">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+                </svg>
+              </div>
+              <div class="cap-switch-texts">
+                <span class="cap-switch-title">通话与录音时自动暂停</span>
+                <span class="cap-switch-desc" id="audioFocusSettingsDesc">通话或微信发语音时自动暂停，结束后自动继续播放</span>
+              </div>
+            </div>
+            <div class="blue-toggle-switch active" id="audioFocusToggle" onclick="toggleAudioFocusSetting(); event.stopPropagation();"></div>
           </div>
-          <div class="settings-item-row" onclick="triggerFileImport()">
-            <div class="settings-item-col"><span class="settings-title-line">导入本地音频</span><span class="settings-sub-desc">读取外部 MP3、FLAC、WAV 格式音频</span></div>
+        </section>
+
+        <section class="group-menu-card">
+          <div class="group-menu-item ripple-btn" onclick="openQualityModal()">
+            <div class="item-left-main">
+              <div class="item-icon-wrap">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M3 18v-6a9 9 0 0 1 18 0v6"/>
+                  <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/>
+                </svg>
+              </div>
+              <div class="item-content">
+                <span class="item-main-title">播放音质</span>
+                <span class="item-subtitle-tight" id="currentQualityDesc">极高音质 - 320 kbps (高清)</span>
+              </div>
+            </div>
+            <svg class="item-arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
           </div>
-          <div class="settings-item-row" onclick="openPlaylistImportDialog()">
-            <div class="settings-item-col"><span class="settings-title-line">导入外部歌单</span><span class="settings-sub-desc">支持酷狗概念版、网易云等分享文本直接导入</span></div>
+          <div class="group-menu-item ripple-btn" onclick="triggerFileImport()">
+            <div class="item-left-main">
+              <div class="item-icon-wrap">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                  <line x1="12" y1="11" x2="12" y2="17"/>
+                  <line x1="9" y1="14" x2="15" y2="14"/>
+                </svg>
+              </div>
+              <div class="item-content">
+                <span class="item-main-title">导入本地音频</span>
+                <span class="item-subtitle-tight">读取外部 MP3、FLAC、WAV 格式音频</span>
+              </div>
+            </div>
+            <svg class="item-arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
           </div>
-          <div class="settings-item-row" onclick="openApiConfigModal()">
-            <div class="settings-item-col"><span class="settings-title-line">自定义音乐接口</span><span class="settings-sub-desc" id="currentApiServerDesc">高可用聚合解析引擎</span></div>
+          <div class="group-menu-item ripple-btn" onclick="openPlaylistImportDialog()">
+            <div class="item-left-main">
+              <div class="item-icon-wrap">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+                  <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+                </svg>
+              </div>
+              <div class="item-content">
+                <span class="item-main-title">导入外部歌单</span>
+                <span class="item-subtitle-tight">支持酷狗概念版、网易云等分享文本直接导入</span>
+              </div>
+            </div>
+            <svg class="item-arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
           </div>
-          <div class="settings-item-row" onclick="clearCachedMedia()">
-            <div class="settings-item-col"><span class="settings-title-line">清理播放缓存</span><span class="settings-sub-desc" id="cacheStorageDesc">释放临时存储 - 当前 0.0 MB</span></div>
+          <div class="group-menu-item ripple-btn" onclick="openApiConfigModal()">
+            <div class="item-left-main">
+              <div class="item-icon-wrap">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="2" y="2" width="20" height="8" rx="2" ry="2"/>
+                  <rect x="2" y="14" width="20" height="8" rx="2" ry="2"/>
+                  <line x1="6" y1="6" x2="6.01" y2="6"/>
+                  <line x1="6" y1="18" x2="6.01" y2="18"/>
+                </svg>
+              </div>
+              <div class="item-content">
+                <span class="item-main-title">自定义音乐接口</span>
+                <span class="item-subtitle-tight" id="currentApiServerDesc">高可用聚合解析引擎</span>
+              </div>
+            </div>
+            <svg class="item-arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
           </div>
-        </div>
-        <div class="group-menu-card">
-          <div class="settings-item-row" onclick="openBeginnerGuideModal()">
-            <div class="settings-item-col"><span class="settings-title-line">新手入门指南</span><span class="settings-sub-desc">核心规则与操作指引</span></div>
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" style="color:var(--ink-light); margin-left:auto;"><polyline points="9 18 15 12 9 6"/></svg>
+          <div class="group-menu-item ripple-btn" onclick="clearCachedMedia()">
+            <div class="item-left-main">
+              <div class="item-icon-wrap">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="3 6 5 6 21 6"/>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                </svg>
+              </div>
+              <div class="item-content">
+                <span class="item-main-title">清理播放缓存</span>
+                <span class="item-subtitle-tight" id="cacheStorageDesc">释放临时存储 - 当前 0.0 MB</span>
+              </div>
+            </div>
+            <svg class="item-arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
           </div>
-        </div>
-        <div class="group-menu-card">
-          <div class="settings-item-row" onclick="checkAppUpdate(true)">
-            <div class="settings-item-col"><span class="settings-title-line">检查版本更新</span><span class="settings-sub-desc" id="aboutAppVersionDesc">自用无损音乐播放器 - v2.1.8</span></div>
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" style="color:var(--ink-light); margin-left:auto;"><polyline points="9 18 15 12 9 6"/></svg>
+        </section>
+
+        <section class="group-menu-card">
+          <div class="group-menu-item ripple-btn" onclick="openBeginnerGuideModal()">
+            <div class="item-left-main">
+              <div class="item-icon-wrap">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"/>
+                  <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+                  <line x1="12" y1="17" x2="12.01" y2="17"/>
+                </svg>
+              </div>
+              <div class="item-content">
+                <span class="item-main-title">新手入门指南</span>
+                <span class="item-subtitle-tight">核心规则与操作指引</span>
+              </div>
+            </div>
+            <svg class="item-arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
           </div>
-        </div>
-        <div class="group-menu-card">
-          <div class="settings-item-row" onclick="promptResetAppData()">
-            <div class="settings-item-col"><span class="settings-title-line" style="color:var(--brand-red);">重置灵犀音乐</span><span class="settings-sub-desc">清空搜索历史、恢复默认歌单与初始曲库</span></div>
+        </section>
+
+        <section class="group-menu-card">
+          <div class="group-menu-item ripple-btn" onclick="checkAppUpdate(true)">
+            <div class="item-left-main">
+              <div class="item-icon-wrap">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+                </svg>
+              </div>
+              <div class="item-content">
+                <span class="item-main-title">检查版本更新</span>
+                <span class="item-subtitle-tight" id="aboutAppVersionDesc">自用无损音乐播放器 - v2.3.1</span>
+              </div>
+            </div>
+            <svg class="item-arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
           </div>
-        </div>
+        </section>
+
+        <section class="group-menu-card">
+          <div class="group-menu-item ripple-btn" onclick="promptResetAppData()">
+            <div class="item-left-main">
+              <div class="item-icon-wrap" style="color:var(--brand-red);">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                  <polyline points="3 3 3 8 8 8"/>
+                </svg>
+              </div>
+              <div class="item-content">
+                <span class="item-main-title" style="color:var(--brand-red);">重置灵犀音乐</span>
+                <span class="item-subtitle-tight">清空搜索历史、恢复默认歌单与初始曲库</span>
+              </div>
+            </div>
+            <svg class="item-arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+        </section>
       </div>
     </div>
 
@@ -2947,54 +3218,114 @@ body.night .add-clean-row:active {
   
 
 
-  <!-- 4.6 外观与个性化子页（纯净卡片架构，无浮夸微缩光盘） -->
+  <!-- 4.6 外观与个性化子页（1:1 严格复刻自 hhznx） -->
   <div class="view-theme-subpage" id="viewThemeSettings">
-    <div class="playlist-header-nav" style="height:76px; padding:38px 14px 0;">
+    <header class="nav-header">
       <button class="nav-btn fine-back ripple-btn" onclick="closeThemeSettingsSubpage()" title="返回设置">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
           <line x1="19" y1="12" x2="5" y2="12"/>
           <polyline points="12 19 5 12 12 5"/>
         </svg>
       </button>
-      <div class="playlist-nav-title">外观与个性化</div>
-      <div style="width:36px;"></div>
-    </div>
+      <div class="nav-title">外观与个性化</div>
+      <div style="width:48px;"></div>
+    </header>
 
     <div class="settings-subview-scroll">
-      <div class="group-menu-card">
-        <div class="settings-item-row" onclick="openColorModal()">
-          <div class="settings-item-col">
-            <span class="settings-title-line">显示模式</span>
-            <span class="settings-sub-desc" id="main-theme-display">跟随系统</span>
+      <section class="group-menu-card">
+        <div class="group-menu-item ripple-btn" onclick="openColorModal()">
+          <div class="item-left-main">
+            <div class="item-icon-wrap">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="5"/>
+                <line x1="12" y1="1" x2="12" y2="3"/>
+                <line x1="12" y1="21" x2="12" y2="23"/>
+                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+                <line x1="1" y1="12" x2="3" y2="12"/>
+                <line x1="21" y1="12" x2="23" y2="12"/>
+                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+              </svg>
+            </div>
+            <div class="item-content">
+              <span class="item-main-title">显示模式</span>
+              <span class="item-subtitle-tight" id="main-theme-display">跟随系统</span>
+            </div>
           </div>
+          <svg class="item-arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
         </div>
-        <div class="settings-item-row" onclick="openThemeColorModal()">
-          <div class="settings-item-col">
-            <span class="settings-title-line">主题色调</span>
-            <span class="settings-sub-desc" id="main-theme-color-display">克莱因蓝</span>
+        <div class="group-menu-item ripple-btn" onclick="openThemeColorModal()">
+          <div class="item-left-main">
+            <div class="item-icon-wrap">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <circle cx="12" cy="12" r="4"/>
+                <line x1="4.93" y1="4.93" x2="9.17" y2="9.17"/>
+                <line x1="14.83" y1="14.83" x2="19.07" y2="19.07"/>
+                <line x1="14.83" y1="9.17" x2="19.07" y2="4.93"/>
+                <line x1="4.93" y1="19.07" x2="9.17" y2="14.83"/>
+              </svg>
+            </div>
+            <div class="item-content">
+              <span class="item-main-title">主题色调</span>
+              <span class="item-subtitle-tight" id="main-theme-color-display">克莱因蓝</span>
+            </div>
           </div>
+          <svg class="item-arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
         </div>
-        <div class="settings-item-row" onclick="openFontModal()">
-          <div class="settings-item-col">
-            <span class="settings-title-line">应用字体</span>
-            <span class="settings-sub-desc" id="main-font-display">霞鹜文楷</span>
+        <div class="group-menu-item ripple-btn" onclick="openFontModal()">
+          <div class="item-left-main">
+            <div class="item-icon-wrap">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="4 7 4 4 20 4 20 7"/>
+                <line x1="9" y1="20" x2="15" y2="20"/>
+                <line x1="12" y1="4" x2="12" y2="20"/>
+              </svg>
+            </div>
+            <div class="item-content">
+              <span class="item-main-title">应用字体</span>
+              <span class="item-subtitle-tight" id="main-font-display">霞鹜文楷</span>
+            </div>
           </div>
+          <svg class="item-arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
         </div>
-      </div>
+      </section>
 
-      <span class="settings-group-header">视觉与交互</span>
-      <div class="group-menu-card">
-        <div class="settings-item-row" onclick="toggleCoverDisplayMode()">
-          <div class="settings-item-col"><span class="settings-title-line">唱片封面展示</span><span class="settings-sub-desc" id="coverDisplayModeDesc">真实封面 (显示提取的专辑画作)</span></div>
+      <span class="sub-group-header">视觉与交互</span>
+      <section class="group-menu-card">
+        <div class="cap-switch-row ripple-btn" onclick="toggleCoverDisplayMode()">
+          <div class="cap-switch-left">
+            <div class="cap-icon-box">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                <circle cx="8.5" cy="8.5" r="1.5"/>
+                <polyline points="21 15 16 10 5 21"/>
+              </svg>
+            </div>
+            <div class="cap-switch-texts">
+              <span class="cap-switch-title">唱片封面展示</span>
+              <span class="cap-switch-desc" id="coverDisplayModeDesc">真实封面 (显示提取的专辑画作)</span>
+            </div>
+          </div>
           <div class="blue-toggle-switch active" id="coverDisplayToggle"></div>
         </div>
-        
-        <div class="settings-item-row" onclick="toggleDesktopLyricsFromUI()">
-          <div class="settings-item-col"><span class="settings-title-line">桌面悬浮歌词</span><span class="settings-sub-desc" id="desktopLyricsDesc">在手机桌面与应用上方浮窗显示歌词，支持滑动切词与拖拽</span></div>
+
+        <div class="cap-switch-row ripple-btn" onclick="toggleDesktopLyricsFromUI()">
+          <div class="cap-switch-left">
+            <div class="cap-icon-box">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+              </svg>
+            </div>
+            <div class="cap-switch-texts">
+              <span class="cap-switch-title">桌面悬浮歌词</span>
+              <span class="cap-switch-desc" id="desktopLyricsDesc">在手机桌面与应用上方浮窗显示歌词，支持滑动切词与拖拽</span>
+            </div>
+          </div>
           <div class="blue-toggle-switch" id="desktopLyricsToggle"></div>
         </div>
-
-      </div>
+      </section>
     </div>
   </div>
 
@@ -3707,7 +4038,7 @@ const OTHER_AVATAR_SVG = `<svg width="14" height="14" viewBox="0 0 24 24" fill="
 
 const APP_CONFIG = {
   name: '灵犀音乐',
-  version: '2.3.0',
+  version: '2.3.1',
   build: '2026.10.09',
   codename: 'Pure Sound'
 };
@@ -11422,26 +11753,26 @@ function toggleDefaultHomeTabSetting() {
 }
 
 
-/* ================== 顶部唱片滑动切歌 (卡片与轨道手势联动) ================== */
+/* ================== 顶部唱片滑动切歌 (全区域左右滑动手势) ================== */
 (function initVinylSwipeGesture() {
   function bindGesture() {
-    const card = document.querySelector('.fixed-radio-card');
-    if (!card) return;
+    const stage = document.querySelector('.radio-stage-viewport');
+    if (!stage) return;
     let startX = 0, startY = 0;
 
-    card.addEventListener('touchstart', (e) => {
+    stage.addEventListener('touchstart', (e) => {
       if (e.touches && e.touches.length > 0) {
         startX = e.touches[0].clientX;
         startY = e.touches[0].clientY;
       }
     }, { passive: true });
 
-    card.addEventListener('touchend', (e) => {
+    stage.addEventListener('touchend', (e) => {
       if (!e.changedTouches || e.changedTouches.length === 0) return;
       const deltaX = e.changedTouches[0].clientX - startX;
       const deltaY = e.changedTouches[0].clientY - startY;
 
-      if (Math.abs(deltaX) > 25 && Math.abs(deltaX) > Math.abs(deltaY) * 0.7) {
+      if (Math.abs(deltaX) > 20 && Math.abs(deltaX) > Math.abs(deltaY) * 0.5) {
         const total = topRecommendedTracks ? topRecommendedTracks.length : 0;
         if (deltaX < 0) {
           // 左滑 -> 下一曲
@@ -11471,6 +11802,19 @@ function toggleDefaultHomeTabSetting() {
     const scrollEl = document.querySelector('.xianyin-content-scroll');
     if (!scrollEl) return;
     let touchStartY = 0;
+    let isRefreshing = false;
+
+    const triggerRefresh = () => {
+      if (isRefreshing) return;
+      isRefreshing = true;
+      const bar = document.getElementById('discoverPullupBar');
+      if (bar) bar.classList.add('loading');
+      refreshRecommendations(true);
+      setTimeout(() => {
+        if (bar) bar.classList.remove('loading');
+        isRefreshing = false;
+      }, 1200);
+    };
 
     scrollEl.addEventListener('touchstart', (e) => {
       if (currentHomeTab !== 'discover') return;
@@ -11484,18 +11828,18 @@ function toggleDefaultHomeTabSetting() {
       if (e.changedTouches && e.changedTouches.length === 1) {
         const touchEndY = e.changedTouches[0].clientY;
         const deltaY = touchStartY - touchEndY;
-        // 用户向上滑动超过 40px，且位于或接近底部时触发刷新
-        if (deltaY > 40) {
-          const distFromBottom = scrollEl.scrollHeight - scrollEl.scrollTop - scrollEl.clientHeight;
-          if (distFromBottom <= 120) {
-            const bar = document.getElementById('discoverPullupBar');
-            if (bar) bar.classList.add('loading');
-            refreshRecommendations(true);
-            setTimeout(() => {
-              if (bar) bar.classList.remove('loading');
-            }, 1200);
-          }
+        const distFromBottom = scrollEl.scrollHeight - scrollEl.scrollTop - scrollEl.clientHeight;
+        if (deltaY > 30 && distFromBottom <= 160) {
+          triggerRefresh();
         }
+      }
+    }, { passive: true });
+
+    scrollEl.addEventListener('scroll', () => {
+      if (currentHomeTab !== 'discover') return;
+      const distFromBottom = scrollEl.scrollHeight - scrollEl.scrollTop - scrollEl.clientHeight;
+      if (distFromBottom <= 30) {
+        triggerRefresh();
       }
     }, { passive: true });
   }
@@ -11508,7 +11852,7 @@ function toggleDefaultHomeTabSetting() {
 })();
 
 
-/* ================== Google Material 3 物理水波纹引擎 (1:1 移植自 hhznx) ================== */
+/* ================== Google Material 3 物理水波纹引擎 (1:1 严格复刻自 hhznx) ================== */
 (function initGlobalRippleEngine() {
   const PRESS_GROW_MS = 450;
   const MINIMUM_PRESS_MS = 225;
@@ -11530,6 +11874,7 @@ function toggleDefaultHomeTabSetting() {
     if (!btn || !btn.isConnected) return;
     if (window.getComputedStyle(btn).pointerEvents === 'none') return;
 
+    // 清理旧波纹
     btn.querySelectorAll('.m3-ripple-ink').forEach(r => r.remove());
 
     const rect = btn.getBoundingClientRect();
@@ -11563,10 +11908,12 @@ function toggleDefaultHomeTabSetting() {
     activeRipple = ripple;
     pressTimestamp = Date.now();
 
+    // 淡入：按压态 105ms 线性淡入
     requestAnimationFrame(() => {
       ripple.classList.add('is-pressed');
     });
 
+    // 运行官方原版展开动画：触点扩散并自然流向组件几何中心，饱满充盈整个容器
     if (typeof ripple.animate === 'function') {
       growAnimation = ripple.animate({
         transform: [
@@ -11596,9 +11943,7 @@ function toggleDefaultHomeTabSetting() {
     pendingPoint = null;
   };
 
-  document.addEventListener('touchstart', () => {}, { passive: true });
-
-  const RIPPLE_SELECTOR = '.ripple-btn, .settings-item-row, .group-menu-item, .song-row, .discover-card-row, .library-album-pill, .voice-modal-btn, .modern-pill-btn, .icon-btn, .nav-btn, .fav-btn, .song-action-btn, .circle-btn, .color-option-row, .popup-menu-item, .modal-action-btn, .drawer-row';
+  const RIPPLE_SELECTOR = '.ripple-btn, .group-menu-item, .cap-switch-row, .settings-item-row, .song-row, .discover-card-row, .library-album-pill, .voice-modal-btn, .modern-pill-btn, .icon-btn, .nav-btn, .fav-btn, .song-action-btn, .circle-btn, .color-option-row, .popup-menu-item, .modal-action-btn, .drawer-row';
 
   document.addEventListener('pointerdown', (e) => {
     if (e.target.closest('input, textarea, select')) return;
@@ -11615,11 +11960,8 @@ function toggleDefaultHomeTabSetting() {
     activeBtn = btn;
     pendingPoint = { x: e.clientX, y: e.clientY };
 
-    if (btn.classList.contains('settings-item-row') || btn.classList.contains('group-menu-item')) {
-      btn.classList.add('is-card-pressed');
-    }
-
-    const scrollParent = btn.closest('.xianyin-content-scroll, .settings-subview-scroll, .playlist-page-scroll, .search-results-list');
+    // 核心防误触保护机制：如果在可滚动容器内，延迟 30ms 确认不是滑动，才触发水波纹
+    const scrollParent = btn.closest('.scroll-view, .page-settings-scroll, .view-settings-page, .settings-subview-scroll, .xianyin-content-scroll, .playlist-page-scroll, .playlist-track-scroll, .search-scroll-content, .search-results-list, .library-playlist-wrap, #discoverStream, #paneDiscover, #paneListen, #paneSettings');
     if (scrollParent) {
       pendingTimer = setTimeout(() => {
         pendingTimer = null;
@@ -11634,6 +11976,7 @@ function toggleDefaultHomeTabSetting() {
 
   document.addEventListener('pointermove', (e) => {
     if (!activeBtn && !activeRipple) return;
+    // 核心防误触保护机制：位移超过 7px 立即判定为手势滑动，取消水波纹
     const dist = Math.hypot(e.clientX - startX, e.clientY - startY);
     if (dist > 7) {
       cancelPending();
@@ -11644,14 +11987,7 @@ function toggleDefaultHomeTabSetting() {
     cancelPending();
   }, { passive: true, capture: true });
 
-  const clearCardPressed = () => {
-    document.querySelectorAll('.is-card-pressed').forEach(el => {
-      setTimeout(() => el.classList.remove('is-card-pressed'), 220);
-    });
-  };
-
   const finishRipple = () => {
-    clearCardPressed();
     if (pendingTimer && activeBtn && pendingPoint) {
       clearTimeout(pendingTimer);
       pendingTimer = null;
@@ -11665,6 +12001,7 @@ function toggleDefaultHomeTabSetting() {
     activeRipple = null;
 
     const elapsed = Date.now() - pressTimestamp;
+    // 官方标准：保证至少展示 MINIMUM_PRESS_MS (225ms)，松手后 375ms 柔和淡出
     const remainingPressTime = Math.max(0, MINIMUM_PRESS_MS - elapsed);
 
     setTimeout(() => {
@@ -11676,10 +12013,23 @@ function toggleDefaultHomeTabSetting() {
   };
 
   document.addEventListener('pointerup', finishRipple, { passive: true });
-  document.addEventListener('pointercancel', () => {
-    clearCardPressed();
-    cancelPending();
-  }, { passive: true });
+  document.addEventListener('pointercancel', cancelPending, { passive: true });
+  document.addEventListener('contextmenu', (e) => {
+    if (e.target.closest('.ripple-btn')) e.preventDefault();
+  });
+
+  // 点击开关行任意区域（文字/图标/留白）自动联动触发其开关切换，手感顺滑自然 (1:1 复刻自 hhznx)
+  document.addEventListener('click', (e) => {
+    const row = e.target.closest('.cap-switch-row, .dual-switch-row');
+    if (!row) return;
+    if (e.target.closest('.blue-toggle-switch, .sheet-toggle-switch')) return;
+    if (row.getAttribute('onclick')) return;
+
+    const sw = row.querySelector('.blue-toggle-switch, .sheet-toggle-switch');
+    if (sw) {
+      sw.click();
+    }
+  });
 })();
 
 </script>

@@ -158,7 +158,7 @@ public class MainActivity extends Activity {
     private boolean isControlCardExpanded = false;
     private long lastCardToggleTime = 0;
     private String currentFloatingThemeColor = "#234BB8";
-    private String currentFloatingLyricText = "灵犀音乐 · 随心听";
+    private String currentFloatingLyricText = "灵犀音乐 - 随心听";
     private String currentFloatingSubLyricText = "";
     private boolean isFloatingCurrentFav = false;
     private boolean isFloatingCurrentPlaying = true;
@@ -207,6 +207,16 @@ public class MainActivity extends Activity {
             window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
             window.setStatusBarColor(Color.TRANSPARENT);
             window.setNavigationBarColor(Color.TRANSPARENT);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                window.setDecorFitsSystemWindows(false);
+                android.view.WindowInsetsController controller = window.getInsetsController();
+                if (controller != null) {
+                    controller.setSystemBarsAppearance(
+                        android.view.WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS | android.view.WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS,
+                        android.view.WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS | android.view.WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS
+                    );
+                }
+            }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 window.setNavigationBarContrastEnforced(false);
                 window.setStatusBarContrastEnforced(false);
@@ -307,6 +317,9 @@ public class MainActivity extends Activity {
         settings.setLoadWithOverviewMode(true);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             settings.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+            WebView.setWebContentsDebuggingEnabled(true);
         }
 
         webView.setWebViewClient(new WebViewClient() {
@@ -2083,9 +2096,9 @@ public class MainActivity extends Activity {
         public String getAppVersion() {
             try {
                 PackageInfo pInfo = getPackageManager().getPackageInfo(getPackageName(), 0);
-                return pInfo.versionName;
+                return "2.3.1";
             } catch (Exception e) {
-                return "2.3.0";
+                return "2.3.1";
             }
         }
 
@@ -2099,7 +2112,7 @@ public class MainActivity extends Activity {
                     return pInfo.versionCode;
                 }
             } catch (Exception e) {
-                return 63;
+                return 64;
             }
         }
 
