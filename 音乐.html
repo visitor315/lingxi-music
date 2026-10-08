@@ -53,6 +53,7 @@
   --inner-divider: #ECEBE6;
   --divider: rgba(24, 26, 28, 0.065);
   --border-input: #E0E0DC;
+  --modal-input-focus: #C0532C;
   --card-border: rgba(24, 26, 28, 0.08);
 
   --ink-black: #161718;
@@ -87,6 +88,7 @@ body.night {
   --inner-divider: #242422;
   --divider: rgba(255, 255, 255, 0.08);
   --border-input: #383834;
+  --modal-input-focus: #C86A4B;
   --card-border: rgba(255, 255, 255, 0.08);
 
   --ink-black: #FAF9F5;
@@ -621,8 +623,13 @@ body.night .radio-play-btn-circle { background: #E8E7E3; color: #171715; }
 .vinyl-disc-stream { display: flex; align-items: center; gap: 12px; }
 .vinyl-stream-card {
   width: 96px; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0;
+  -webkit-tap-highlight-color: transparent !important;
+  user-select: none;
 }
-.vinyl-stream-card:active { transform: scale(0.96); }
+.vinyl-stream-card:active,
+.vinyl-stream-card:active .stream-disc {
+  transform: none !important;
+}
 
 .stream-disc {
   width: 96px; height: 96px; border-radius: 50%;
@@ -787,7 +794,7 @@ body.night .view-settings-page {
   font-weight: 500;
   color: var(--ink-gray, #8E8D88);
   letter-spacing: 0.3px;
-  margin: 14px 4px 6px;
+  margin: 6px 4px 0px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -2942,114 +2949,151 @@ body.night .fine-back svg {
   -webkit-tap-highlight-color: transparent !important;
 }
 
-/* ================== 居中弹窗卡片 (1:1 复刻 hhznx voice-central-modal-card) ================== */
-.voice-central-modal-overlay {
-  position: fixed; inset: 0; z-index: 1200;
-  background: rgba(0, 0, 0, 0.40);
-  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
-  display: flex; align-items: center; justify-content: center;
-  padding: 24px;
-  opacity: 0; pointer-events: none;
-  transition: opacity 0.22s cubic-bezier(0.2, 0, 0, 1), visibility 0.22s;
-  visibility: hidden;
-}
-.voice-central-modal-overlay.active {
-  opacity: 1; visibility: visible; pointer-events: auto;
-}
-.voice-central-modal-card {
-  width: 100%; max-width: 320px;
-  background: var(--card-bg, #FFFFFF);
-  border-radius: 18px;
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.16);
-  overflow: hidden;
-  display: flex; flex-direction: column;
-  transform: scale(0.90) translateZ(0);
+/* ================== 新建歌单底部滑出抽屉 (hhznx 个人资料页规格输入框) ================== */
+.create-playlist-sheet-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(20, 20, 19, 0.45);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  z-index: 2400;
   opacity: 0;
-  transition: transform 0.24s cubic-bezier(0.2, 0, 0, 1), opacity 0.22s cubic-bezier(0.2, 0, 0, 1);
-  will-change: transform, opacity;
+  pointer-events: none;
+  transition: opacity 0.24s cubic-bezier(0.2, 0.8, 0.2, 1);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+.create-playlist-sheet-overlay.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.create-playlist-sheet-card {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  max-width: 100%;
+  background: var(--settings-bg, #F8F8F6);
+  border-radius: 46px 46px 0 0;
+  padding: 0 20px calc(24px + var(--safe-bottom, 14px));
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
   box-sizing: border-box;
+  transform: translate3d(0, 100%, 0);
+  will-change: transform;
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: none !important;
+  border: none !important;
+  touch-action: pan-down;
+  overflow: hidden;
+  z-index: 2450;
+  pointer-events: none;
 }
-.voice-central-modal-overlay.active .voice-central-modal-card {
-  transform: scale(1) translateZ(0); opacity: 1;
+.create-playlist-sheet-overlay.active .create-playlist-sheet-card {
+  transform: translate3d(0, 0, 0);
+  pointer-events: auto;
 }
-body.night .voice-central-modal-card {
-  background: #1E1E1C;
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.65);
+body.night .create-playlist-sheet-card {
+  background: var(--settings-bg, #131312) !important;
 }
-.voice-modal-title {
-  font-size: 16px; font-weight: 600; color: var(--ink-black);
-  padding: 20px 20px 6px; text-align: left;
+
+.create-playlist-drag-handle {
+  width: 36px;
+  height: 4px;
+  border-radius: 2px;
+  background: #E7E6E5;
+  margin: 12px auto 4px;
+  flex-shrink: 0;
 }
-.voice-modal-desc {
-  font-size: 12.5px; color: var(--ink-light);
-  padding: 0 20px 14px; text-align: left; line-height: 1.4;
+body.night .create-playlist-drag-handle {
+  background: #2D2D2C;
 }
-body.night .voice-modal-desc { color: var(--ink-gray); }
-.voice-modal-input-wrap {
-  padding: 0 20px 20px;
+
+.create-playlist-sheet-header {
+  padding: 12px 4px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
-.voice-modal-input {
-  width: 100%; box-sizing: border-box;
-  background: var(--bg-page, #F7F6F3);
-  border: 1px solid var(--border-input, rgba(0, 0, 0, 0.12));
-  border-radius: 12px;
-  padding: 12px 14px;
+.create-playlist-sheet-title {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--ink-black);
+}
+.create-playlist-sheet-desc {
+  font-size: 13px;
+  color: var(--ink-light);
+}
+body.night .create-playlist-sheet-desc {
+  color: var(--ink-gray);
+}
+
+.create-playlist-input {
+  width: 100%;
+  min-height: 52px;
+  padding: 14.5px 16px;
   font-size: 15px;
   color: var(--ink-black);
-  outline: none;
-  transition: box-shadow 0.15s ease, border-color 0.15s ease, background 0.15s ease;
-  font-family: inherit;
-}
-.voice-modal-input:focus {
   background: var(--card-bg, #FFFFFF);
-  border-color: var(--ink-black, #1D1D1F) !important;
-  box-shadow: 0 0 0 1px var(--ink-black, #1D1D1F);
+  border: 1.2px solid var(--border-input, #E0E0DC);
+  border-radius: 10px;
+  outline: none !important;
+  box-sizing: border-box;
+  font-family: inherit;
+  transition: border-color 0.16s ease, box-shadow 0.16s ease;
 }
-body.night .voice-modal-input {
-  background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(255, 255, 255, 0.12);
-  color: #EDEDED;
+body.night .create-playlist-input {
+  background: var(--card-bg, #1E1E1C);
+  border-color: var(--border-input, #383834);
 }
-body.night .voice-modal-input:focus {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: #EDEDED !important;
-  box-shadow: 0 0 0 1px #EDEDED;
+.create-playlist-input:focus {
+  border-color: var(--modal-input-focus, #C0532C) !important;
+  box-shadow: 0 0 0 1px var(--modal-input-focus, #C0532C) !important;
+  outline: none !important;
 }
-.voice-modal-actions {
+
+.create-playlist-sheet-actions {
   display: flex;
-  border-top: 0.5px solid var(--divider, rgba(0, 0, 0, 0.08));
-  width: 100%;
+  align-items: center;
+  gap: 12px;
+  margin-top: 18px;
 }
-body.night .voice-modal-actions {
-  border-top-color: rgba(255, 255, 255, 0.1);
-}
-.voice-modal-btn {
+.create-playlist-sheet-btn {
   flex: 1;
-  height: 48px;
-  border: none;
-  background: transparent;
+  height: 46px;
+  border-radius: 12px;
   font-size: 15px;
-  font-weight: 400;
-  color: var(--ink-gray, #6E6D66);
-  cursor: pointer;
+  font-weight: 500;
   display: flex;
   align-items: center;
   justify-content: center;
-  position: relative;
-  overflow: hidden;
+  cursor: pointer;
+  border: none;
+  outline: none !important;
+  transition: opacity 0.16s ease, transform 0.12s ease;
 }
-.voice-modal-btn + .voice-modal-btn {
-  border-left: 0.5px solid var(--divider, rgba(0, 0, 0, 0.08));
+.create-playlist-sheet-btn:active {
+  transform: scale(0.97);
 }
-body.night .voice-modal-btn + .voice-modal-btn {
-  border-left-color: rgba(255, 255, 255, 0.1);
+.create-playlist-sheet-cancel {
+  background: rgba(24, 26, 28, 0.06);
+  color: var(--ink-dark);
 }
-.voice-modal-btn.voice-modal-btn-primary {
+body.night .create-playlist-sheet-cancel {
+  background: rgba(255, 255, 255, 0.08);
   color: var(--ink-black);
-  font-weight: 600;
 }
-body.night .voice-modal-btn.voice-modal-btn-primary {
+.create-playlist-sheet-confirm {
+  background: var(--dark-cold-btn, #2E3034);
   color: #FFFFFF;
+}
+body.night .create-playlist-sheet-confirm {
+  background: var(--dark-cold-btn, #FAF9F5);
+  color: #141413;
 }
 
 /* ================== 发现页上滑刷新好歌底栏 ================== */
@@ -3398,7 +3442,7 @@ body.night .voice-modal-btn.voice-modal-btn-primary {
               </div>
               <div class="item-content">
                 <span class="item-main-title">检查版本更新</span>
-                <span class="item-subtitle-tight" id="aboutAppVersionDesc">v2.4.2</span>
+                <span class="item-subtitle-tight" id="aboutAppVersionDesc">v2.4.3</span>
               </div>
             </div>
             <svg class="item-arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
@@ -4429,17 +4473,20 @@ body.night .voice-modal-btn.voice-modal-btn-primary {
     </div>
   </div>
 
-  <!-- 现代精致新建歌单弹窗 (1:1 复刻 hhznx voice-central-modal-card 标准质感) -->
-  <div class="voice-central-modal-overlay" id="createPlaylistModalOverlay" onclick="closeCreatePlaylistModal(event)">
-    <div class="voice-central-modal-card" onclick="event.stopPropagation()">
-      <div class="voice-modal-title">新建歌单</div>
-      <div class="voice-modal-desc">输入歌单标题，珍藏你的专属私享乐曲</div>
-      <div class="voice-modal-input-wrap">
-        <input type="text" class="voice-modal-input" id="createPlaylistInput" placeholder="输入歌单名称..." maxlength="24" onkeydown="if(event.key==='Enter')submitCreatePlaylistModal()">
+  <!-- 新建歌单底部滑出抽屉 (1:1 对齐 hhznx 个人资料页输入框风格与底部抽屉交互) -->
+  <div class="create-playlist-sheet-overlay" id="createPlaylistModalOverlay" onclick="closeCreatePlaylistModal(event)">
+    <div class="create-playlist-sheet-card" onclick="event.stopPropagation()">
+      <div class="create-playlist-drag-handle"></div>
+      <div class="create-playlist-sheet-header">
+        <div class="create-playlist-sheet-title">新建歌单</div>
+        <div class="create-playlist-sheet-desc">输入歌单标题，定制专属私享曲库</div>
       </div>
-      <div class="voice-modal-actions">
-        <button type="button" class="voice-modal-btn ripple-btn" onclick="closeCreatePlaylistModal()">取消</button>
-        <button type="button" class="voice-modal-btn voice-modal-btn-primary ripple-btn" onclick="submitCreatePlaylistModal()">确定</button>
+      <div class="create-playlist-input-wrap">
+        <input type="text" class="create-playlist-input" id="createPlaylistInput" placeholder="输入歌单名称..." maxlength="24" onkeydown="if(event.key==='Enter')submitCreatePlaylistModal()">
+      </div>
+      <div class="create-playlist-sheet-actions">
+        <button type="button" class="create-playlist-sheet-btn create-playlist-sheet-cancel ripple-btn" onclick="closeCreatePlaylistModal()">取消</button>
+        <button type="button" class="create-playlist-sheet-btn create-playlist-sheet-confirm ripple-btn" onclick="submitCreatePlaylistModal()">确定</button>
       </div>
     </div>
   </div>
@@ -4467,7 +4514,7 @@ const OTHER_AVATAR_SVG = `<svg width="14" height="14" viewBox="0 0 24 24" fill="
 
 const APP_CONFIG = {
   name: '灵犀音乐',
-  version: '2.4.2',
+  version: '2.4.3',
   build: '2026.10.09',
   codename: 'Pure Sound'
 };
@@ -7751,27 +7798,6 @@ function updateFixedRadioCardUI() {
   }
 
   const curPlayingSong = currentPlaybackQueue[currentIndex];
-  if (curPlayingSong && topRecommendedTracks && topRecommendedTracks.length > 0) {
-    let matchIdx = -1;
-    if (typeof curPlayingSong.topTrackIndex === 'number' && curPlayingSong.topTrackIndex >= 0 && curPlayingSong.topTrackIndex < topRecommendedTracks.length) {
-      matchIdx = curPlayingSong.topTrackIndex;
-    } else {
-      matchIdx = topRecommendedTracks.findIndex(t => isSameSongIdentifier(curPlayingSong, t));
-    }
-
-    if (matchIdx !== -1 && matchIdx !== activeTopTrackIndex) {
-      activeTopTrackIndex = matchIdx;
-      const channel = document.getElementById('vinylScrollChannel');
-      if (channel) {
-        const targetLeft = matchIdx * 108;
-        try {
-          channel.scrollTo({ left: targetLeft, behavior: (document.visibilityState === 'visible') ? 'smooth' : 'auto' });
-        } catch(e) {}
-        channel.scrollLeft = targetLeft;
-      }
-    }
-  }
-
   const target = topRecommendedTracks[activeTopTrackIndex];
   if (!target) return;
 
@@ -12745,67 +12771,7 @@ window.addEventListener('load', () => {
 });
 
 
-/* ================== 顶部唱片滑动切歌 (全区域左右滑动手势直接切换上下曲) ================== */
-(function initVinylSwipeGesture() {
-  function bindGesture() {
-    const stage = document.querySelector('.radio-stage-viewport');
-    if (!stage) return;
 
-    let touchStartX = 0;
-    let touchStartY = 0;
-    let touchDeltaX = 0;
-    let touchDeltaY = 0;
-    let isSwiping = false;
-
-    stage.addEventListener('touchstart', (e) => {
-      if (e.touches && e.touches.length === 1) {
-        touchStartX = e.touches[0].clientX;
-        touchStartY = e.touches[0].clientY;
-        touchDeltaX = 0;
-        touchDeltaY = 0;
-        isSwiping = true;
-      }
-    }, { passive: true });
-
-    stage.addEventListener('touchmove', (e) => {
-      if (!isSwiping || !e.touches || e.touches.length !== 1) return;
-      touchDeltaX = e.touches[0].clientX - touchStartX;
-      touchDeltaY = e.touches[0].clientY - touchStartY;
-    }, { passive: true });
-
-    const handleSwipeEnd = () => {
-      if (!isSwiping) return;
-      isSwiping = false;
-
-      const absX = Math.abs(touchDeltaX);
-      const absY = Math.abs(touchDeltaY);
-
-      if (absX > 25 && absX > absY * 0.6) {
-        const total = topRecommendedTracks ? topRecommendedTracks.length : 0;
-        if (total > 1) {
-          if (touchDeltaX < 0) {
-            // 左滑 -> 下一曲
-            const nextIdx = (activeTopTrackIndex + 1) % total;
-            playTopRecommendedTrack(nextIdx, false);
-          } else {
-            // 右滑 -> 上一曲
-            const prevIdx = (activeTopTrackIndex - 1 + total) % total;
-            playTopRecommendedTrack(prevIdx, false);
-          }
-        }
-      }
-    };
-
-    stage.addEventListener('touchend', handleSwipeEnd, { passive: true });
-    stage.addEventListener('touchcancel', handleSwipeEnd, { passive: true });
-  }
-
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', bindGesture);
-  } else {
-    bindGesture();
-  }
-})();
 
 /* ================== 发现页真实弹性下拉刷新交互 (100% 灵敏稳定零概率失效) ================== */
 (function initDiscoverPulldownRefresh() {
