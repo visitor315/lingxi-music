@@ -2062,11 +2062,20 @@ body.night .add-sheet-drag-handle, body.night .choose-drag-handle {
   background: #2D2D2C !important;
 }
 
-.playlist-header, .add-sheet-header, .choose-sheet-header {
+.playlist-header, .add-sheet-header {
   display: grid !important;
   grid-template-columns: 36px 1fr 36px !important;
   align-items: center !important;
-  padding: 14px 20px 8px !important;
+  padding: 14px 20px 14px !important;
+  flex-shrink: 0 !important;
+  box-sizing: border-box !important;
+  width: 100% !important;
+}
+.choose-sheet-header {
+  display: grid !important;
+  grid-template-columns: 68px 1fr 68px !important;
+  align-items: center !important;
+  padding: 14px 20px 14px !important;
   flex-shrink: 0 !important;
   box-sizing: border-box !important;
   width: 100% !important;
@@ -2104,6 +2113,47 @@ body.night .add-sheet-drag-handle, body.night .choose-drag-handle {
   height: 20px !important;
   stroke-width: 1.5 !important;
 }
+.choose-sheet-header-action-btn {
+  background: transparent !important;
+  border: none !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  color: var(--ink-dark) !important;
+  cursor: pointer !important;
+  padding: 4px 0 !important;
+  white-space: nowrap !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  -webkit-tap-highlight-color: transparent !important;
+}
+body.night .choose-sheet-header-action-btn {
+  color: #FAF9F5 !important;
+}
+.choose-sheet-confirm-btn {
+  width: 100% !important;
+  height: 48px !important;
+  border-radius: 12px !important;
+  font-size: 15.5px !important;
+  font-weight: 600 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  border: none !important;
+  outline: none !important;
+  background: var(--dark-cold-btn, #2E3034) !important;
+  color: #FFFFFF !important;
+  transition: opacity 0.16s ease, transform 0.12s ease !important;
+}
+body.night .choose-sheet-confirm-btn {
+  background: var(--dark-cold-btn, #FAF9F5) !important;
+  color: #141413 !important;
+}
+.choose-sheet-confirm-btn:active {
+  transform: scale(0.98) !important;
+  opacity: 0.9 !important;
+}
 .choose-sheet-done-btn {
   border: none !important;
   background: transparent !important;
@@ -2115,6 +2165,7 @@ body.night .add-sheet-drag-handle, body.night .choose-drag-handle {
   border-radius: 8px !important;
   -webkit-tap-highlight-color: transparent !important;
 }
+
 
 .playlist-items, .add-clean-list, .choose-playlist-list, #choosePlaylistItems {
   display: flex !important;
@@ -3428,7 +3479,7 @@ body.night .create-playlist-sheet-confirm {
               </div>
               <div class="item-content">
                 <span class="item-main-title">检查版本更新</span>
-                <span class="item-subtitle-tight" id="aboutAppVersionDesc">v2.4.4</span>
+                <span class="item-subtitle-tight" id="aboutAppVersionDesc">v2.4.5</span>
               </div>
             </div>
             <svg class="item-arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
@@ -4019,11 +4070,11 @@ body.night .create-playlist-sheet-confirm {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
         </button>
         <div class="choose-sheet-title">加入歌单</div>
-        <button class="choose-sheet-done-btn" onclick="confirmBatchAddToPlaylists()">完成</button>
+        <button class="choose-sheet-header-action-btn ripple-btn" onclick="openCreatePlaylistFromChoose()">新建歌单</button>
       </div>
       <div id="choosePlaylistItems" class="choose-playlist-list" style="max-height:48vh; overflow-y:auto;"></div>
       <div class="choose-capsule-wrap">
-        <button class="choose-capsule-btn ripple-btn" onclick="openCreatePlaylistFromChoose()">新建歌单</button>
+        <button class="choose-sheet-confirm-btn ripple-btn" onclick="confirmBatchAddToPlaylists()">完成</button>
       </div>
     </div>
   </div>
@@ -4502,7 +4553,7 @@ const OTHER_AVATAR_SVG = `<svg width="14" height="14" viewBox="0 0 24 24" fill="
 
 const APP_CONFIG = {
   name: '灵犀音乐',
-  version: '2.4.4',
+  version: '2.4.5',
   build: '2026.10.09',
   codename: 'Pure Sound'
 };
@@ -6627,34 +6678,34 @@ const INITIAL_DISCOVER_SECTIONS = [
   {
     title: '灵犀新推 - 今日佳作',
     songs: [
-      { id: 'init_1', name: '愿我', artist: '伦桑', album: '愿我', source: 'netease', duration: 252, url_id: '1815967406', pic_id: '109951165671182684', reason: '伦桑心选' },
-      { id: 'init_2', name: '断桥残雪', artist: '许嵩', album: '断桥残雪', source: 'netease', duration: 226, url_id: '167827', pic_id: '109951165671182684', reason: '经典流传' },
-      { id: 'init_3', name: '云与海', artist: '胡夏', album: '云与海', source: 'netease', duration: 241, url_id: '1492323898', pic_id: '109951165671182684', reason: '温润治愈' },
-      { id: 'init_4', name: '山有木兮', artist: '伦桑', album: '橙光《人鱼传说》', source: 'netease', duration: 260, url_id: '426804563', pic_id: '109951165671182684', reason: '古风雅韵' },
-      { id: 'init_5', name: '故梦', artist: '双笙', album: '故梦', source: 'netease', duration: 288, url_id: '436514315', pic_id: '109951165671182684', reason: '水墨诗画' },
-      { id: 'init_6', name: '红马', artist: '王琪', album: '红马', source: 'netease', duration: 245, url_id: '1475330366', pic_id: '109951165671182684', reason: '清亮静听' }
+      { id: 'init_1', name: '愿我', artist: '伦桑', album: '愿我', source: 'netease', duration: 252, url_id: '1815967406', reason: '伦桑心选' },
+      { id: 'init_2', name: '断桥残雪', artist: '许嵩', album: '断桥残雪', source: 'netease', duration: 226, url_id: '167827', reason: '经典流传' },
+      { id: 'init_3', name: '云与海', artist: '胡夏', album: '云与海', source: 'netease', duration: 241, url_id: '1492323898', reason: '温润治愈' },
+      { id: 'init_4', name: '山有木兮', artist: '伦桑', album: '橙光《人鱼传说》', source: 'netease', duration: 260, url_id: '426804563', reason: '古风雅韵' },
+      { id: 'init_5', name: '故梦', artist: '双笙', album: '故梦', source: 'netease', duration: 288, url_id: '436514315', reason: '水墨诗画' },
+      { id: 'init_6', name: '红马', artist: '王琪', album: '红马', source: 'netease', duration: 245, url_id: '1475330366', reason: '清亮静听' }
     ]
   },
   {
     title: '私人专属好歌',
     songs: [
-      { id: 'init_7', name: '冬天的秘密', artist: '张仲谋', album: '冬天的秘密', source: 'netease', duration: 265, url_id: '1859245776', pic_id: '109951165671182684', reason: '深情低语' },
-      { id: 'init_8', name: '花季', artist: '鱼儿七', album: '花季', source: 'netease', duration: 218, url_id: '1888497678', pic_id: '109951165671182684', reason: '空灵清澈' },
-      { id: 'init_9', name: '消失的黎明', artist: 'Babystop_山竹 / 糯米Nomi', album: '消失的黎明', source: 'netease', duration: 232, url_id: '1878345712', pic_id: '109951165671182684', reason: '宝藏小众' },
-      { id: 'init_10', name: '起风了', artist: '买辣椒也用券', album: '起风了', source: 'netease', duration: 325, url_id: '1330348068', pic_id: '109951165671182684', reason: '清雅悠远' },
-      { id: 'init_11', name: '晴天', artist: '周杰伦', album: '叶惠美', source: 'netease', duration: 269, url_id: '186016', pic_id: '109951165671182684', reason: '青春心选' },
-      { id: 'init_12', name: '像风一样', artist: '薛之谦', album: '渡', source: 'netease', duration: 255, url_id: '516657051', pic_id: '109951165671182684', reason: '伴茶细酌' }
+      { id: 'init_7', name: '冬天的秘密', artist: '张仲谋', album: '冬天的秘密', source: 'netease', duration: 265, url_id: '1859245776', reason: '深情低语' },
+      { id: 'init_8', name: '花季', artist: '鱼儿七', album: '花季', source: 'netease', duration: 218, url_id: '1888497678', reason: '空灵清澈' },
+      { id: 'init_9', name: '消失的黎明', artist: 'Babystop_山竹 / 糯米Nomi', album: '消失的黎明', source: 'netease', duration: 232, url_id: '1878345712', reason: '宝藏小众' },
+      { id: 'init_10', name: '起风了', artist: '买辣椒也用券', album: '起风了', source: 'netease', duration: 325, url_id: '1330348068', reason: '清雅悠远' },
+      { id: 'init_11', name: '晴天', artist: '周杰伦', album: '叶惠美', source: 'netease', duration: 269, url_id: '186016', reason: '青春心选' },
+      { id: 'init_12', name: '像风一样', artist: '薛之谦', album: '渡', source: 'netease', duration: 255, url_id: '516657051', reason: '伴茶细酌' }
     ]
   },
   {
     title: '小众宝藏佳作',
     songs: [
-      { id: 'init_13', name: '空谷幽兰', artist: '阿鲲', album: '新萧十一郎', source: 'netease', duration: 186, url_id: '405485307', pic_id: '109951165671182684', reason: '古典意境' },
-      { id: 'init_14', name: '千度', artist: '许嵩', album: '苏格拉没有底', source: 'netease', duration: 247, url_id: '167876', pic_id: '109951165671182684', reason: '细腻婉转' },
-      { id: 'init_15', name: '青花瓷', artist: '周杰伦', album: '我很忙', source: 'netease', duration: 239, url_id: '185997', pic_id: '109951165671182684', reason: '余韵悠长' },
-      { id: 'init_16', name: '水星记', artist: '郭顶', album: '飞行器的执行周期', source: 'netease', duration: 325, url_id: '441491828', pic_id: '109951165671182684', reason: '深夜独享' },
-      { id: 'init_17', name: '借月', artist: '王宇宙 / 乔浚丞', album: '借月', source: 'netease', duration: 220, url_id: '1969248538', pic_id: '109951165671182684', reason: '月色温柔' },
-      { id: 'init_18', name: '琵琶行', artist: '奇然 / 沈谧仁', album: '高考背诵曲目', source: 'netease', duration: 312, url_id: '504262174', pic_id: '109951165671182684', reason: '弦音如诉' }
+      { id: 'init_13', name: '空谷幽兰', artist: '阿鲲', album: '新萧十一郎', source: 'netease', duration: 186, url_id: '405485307', reason: '古典意境' },
+      { id: 'init_14', name: '千度', artist: '许嵩', album: '苏格拉没有底', source: 'netease', duration: 247, url_id: '167876', reason: '细腻婉转' },
+      { id: 'init_15', name: '青花瓷', artist: '周杰伦', album: '我很忙', source: 'netease', duration: 239, url_id: '185997', reason: '余韵悠长' },
+      { id: 'init_16', name: '水星记', artist: '郭顶', album: '飞行器的执行周期', source: 'netease', duration: 325, url_id: '441491828', reason: '深夜独享' },
+      { id: 'init_17', name: '借月', artist: '王宇宙 / 乔浚丞', album: '借月', source: 'netease', duration: 220, url_id: '1969248538', reason: '月色温柔' },
+      { id: 'init_18', name: '琵琶行', artist: '奇然 / 沈谧仁', album: '高考背诵曲目', source: 'netease', duration: 312, url_id: '504262174', reason: '弦音如诉' }
     ]
   }
 ];
@@ -7882,6 +7933,9 @@ function extractCardGlowColor(imgUrl) {
   img.src = imgUrl;
 }
 
+let isProgrammaticVinylScroll = false;
+let programmaticVinylScrollTimer = null;
+
 function scrollVinylToTrack(idx, smooth = true) {
   const channel = document.getElementById('vinylScrollChannel');
   if (!channel) return;
@@ -7889,6 +7943,12 @@ function scrollVinylToTrack(idx, smooth = true) {
   const validIdx = Math.min(count - 1, Math.max(0, idx));
   activeTopTrackIndex = validIdx;
   const targetLeft = validIdx * 108;
+
+  isProgrammaticVinylScroll = true;
+  if (programmaticVinylScrollTimer) clearTimeout(programmaticVinylScrollTimer);
+  programmaticVinylScrollTimer = setTimeout(() => {
+    isProgrammaticVinylScroll = false;
+  }, 380);
 
   if (smooth && document.visibilityState === 'visible') {
     try {
@@ -7903,13 +7963,6 @@ function scrollVinylToTrack(idx, smooth = true) {
     channel.scrollLeft = targetLeft;
   }
 
-  // 强力确定性保险：确保 scrollLeft 必须精准到位，杜绝后台丢帧或 smooth 被取消
-  setTimeout(() => {
-    if (channel && Math.abs(channel.scrollLeft - targetLeft) > 2) {
-      channel.scrollLeft = targetLeft;
-    }
-  }, 160);
-
   updateFixedRadioCardUI();
 }
 
@@ -7918,6 +7971,7 @@ function handleStreamCardClick(idx) {
 }
 
 function handleVinylScroll(el) {
+  if (isProgrammaticVinylScroll) return;
   const step = 108;
   const count = topRecommendedTracks ? topRecommendedTracks.length : 1;
   const newIdx = Math.min(count - 1, Math.max(0, Math.round(el.scrollLeft / step)));
@@ -9029,6 +9083,7 @@ function handleDeletePlaylistMenu() {
 
 /* 新建歌单功能 */
 function openCreatePlaylistPrompt() {
+  if (typeof closePlaylistDrawer === 'function') closePlaylistDrawer();
   const overlay = document.getElementById('createPlaylistModalOverlay');
   const input = document.getElementById('createPlaylistInput');
   if (!overlay || !input) return;
@@ -12810,6 +12865,107 @@ window.addEventListener('load', () => {
 
     stage.addEventListener('touchend', handleSwipeEnd, { passive: true });
     stage.addEventListener('touchcancel', handleSwipeEnd, { passive: true });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', bindGesture);
+  } else {
+    bindGesture();
+  }
+})();
+/* ================== 主页标签左右滑动切换 (发现页与乐库页手势互通) ================== */
+(function initHomeTabSwipeGesture() {
+  function bindGesture() {
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let touchStartTime = 0;
+    let isTracking = false;
+
+    document.addEventListener('touchstart', (e) => {
+      if (!e.touches || e.touches.length !== 1) return;
+
+      const fullP = document.getElementById('viewPlayerFull');
+      const searchP = document.getElementById('viewSearchFull');
+      const themeP = document.getElementById('viewThemeSettings');
+      const detailP = document.getElementById('viewPlaylistDetail');
+      const editP = document.getElementById('viewEditPlaylist');
+      if (
+        (fullP && fullP.classList.contains('active')) ||
+        (searchP && searchP.classList.contains('active')) ||
+        (themeP && themeP.classList.contains('active')) ||
+        (detailP && detailP.classList.contains('active')) ||
+        (editP && editP.classList.contains('active'))
+      ) {
+        isTracking = false;
+        return;
+      }
+
+      if (document.querySelector('.create-playlist-sheet-overlay.active, .choose-playlist-modal.active, .song-menu-overlay.active, .playlist-drawer.open, .beginner-guide-modal.active, .cover-preview-modal.active, .audio-quality-modal.active, .universal-confirm-modal.active, .app-update-modal.active')) {
+        isTracking = false;
+        return;
+      }
+
+      const touch = e.touches[0];
+      const startX = touch.clientX;
+      const startY = touch.clientY;
+
+      if (startX < 22 || startX > window.innerWidth - 22) {
+        isTracking = false;
+        return;
+      }
+
+      const target = e.target;
+      if (
+        target.closest('.radio-stage-viewport') ||
+        target.closest('.vinyl-scroll-channel') ||
+        target.closest('.library-album-pills-bar') ||
+        target.closest('.discover-columns-scroll') ||
+        target.closest('.slider-track') ||
+        target.closest('input, textarea, select')
+      ) {
+        isTracking = false;
+        return;
+      }
+
+      if (!target.closest('.xianyin-content-scroll') && !target.closest('#listenHeaderBar')) {
+        isTracking = false;
+        return;
+      }
+
+      touchStartX = startX;
+      touchStartY = startY;
+      touchStartTime = Date.now();
+      isTracking = true;
+    }, { passive: true });
+
+    document.addEventListener('touchend', (e) => {
+      if (!isTracking) return;
+      isTracking = false;
+
+      const touch = e.changedTouches ? e.changedTouches[0] : null;
+      if (!touch) return;
+
+      const diffX = touch.clientX - touchStartX;
+      const diffY = touch.clientY - touchStartY;
+      const duration = Date.now() - touchStartTime;
+
+      if (duration > 650) return;
+
+      const absX = Math.abs(diffX);
+      const absY = Math.abs(diffY);
+
+      if (absX > 45 && absX > absY * 1.3) {
+        if (currentHomeTab === 'discover') {
+          switchHomeNavTab('library');
+        } else if (currentHomeTab === 'library') {
+          switchHomeNavTab('discover');
+        }
+      }
+    }, { passive: true });
+
+    document.addEventListener('touchcancel', () => {
+      isTracking = false;
+    }, { passive: true });
   }
 
   if (document.readyState === 'loading') {
