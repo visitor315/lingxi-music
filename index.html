@@ -1937,7 +1937,52 @@ body.night .add-sheet-drag-handle, body.night .choose-drag-handle {
   background: #2D2D2C !important;
 }
 
-.playlist-header, .add-sheet-header, .choose-sheet-header {
+.playlist-header {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 14px 20px 8px !important;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  width: 100%;
+}
+.playlist-header-left {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  flex: 1;
+  min-width: 0;
+}
+.playlist-title {
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  color: var(--ink-black) !important;
+  letter-spacing: -0.2px !important;
+  white-space: nowrap !important;
+}
+.drawer-mode-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  font-size: 12px !important;
+  padding: 4px 10px !important;
+  border-radius: 12px !important;
+  background: var(--card-bg, #FFFFFF) !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+  color: var(--ink-dark) !important;
+  cursor: pointer !important;
+  flex-shrink: 0 !important;
+  white-space: nowrap !important;
+  transition: transform 0.12s ease;
+}
+.drawer-mode-btn:active { transform: scale(0.95); }
+body.night .drawer-mode-btn {
+  background: #1E1E1C !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  color: #FAF9F5 !important;
+}
+
+.add-sheet-header, .choose-sheet-header {
   display: grid !important;
   grid-template-columns: 36px 1fr 36px !important;
   align-items: center !important;
@@ -1946,7 +1991,7 @@ body.night .add-sheet-drag-handle, body.night .choose-drag-handle {
   box-sizing: border-box;
   width: 100%;
 }
-.playlist-title, .add-sheet-title, .choose-sheet-title {
+.add-sheet-title, .choose-sheet-title {
   text-align: center !important;
   font-size: 16.5px !important;
   font-weight: 600 !important;
@@ -1958,6 +2003,17 @@ body.night .add-sheet-drag-handle, body.night .choose-drag-handle {
   overflow: hidden !important;
   text-overflow: ellipsis !important;
   line-height: 1.25;
+}
+
+/* 爱心点击动效：自然轻快放大弹性动画 */
+@keyframes heartPulse {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.36); }
+  70% { transform: scale(0.94); }
+  100% { transform: scale(1); }
+}
+.fav-btn.pulse-heart svg {
+  animation: heartPulse 0.35s cubic-bezier(0.18, 0.89, 0.32, 1.28) !important;
 }
 .add-sheet-close-btn, .choose-sheet-close-btn {
   width: 32px !important;
@@ -3215,7 +3271,7 @@ body.night .voice-modal-btn.voice-modal-btn-primary {
               </div>
               <div class="item-content">
                 <span class="item-main-title">检查版本更新</span>
-                <span class="item-subtitle-tight" id="aboutAppVersionDesc">v2.3.5</span>
+                <span class="item-subtitle-tight" id="aboutAppVersionDesc">v2.3.6</span>
               </div>
             </div>
             <svg class="item-arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
@@ -3736,15 +3792,18 @@ body.night .voice-modal-btn.voice-modal-btn-primary {
   <!-- 7. 播放队列抽屉 -->
   <div class="playlist-drawer-backdrop" id="playlistDrawerBackdrop" onclick="closePlaylistDrawer()"></div>
   <div class="playlist-drawer" id="playlistDrawer">
-    <div class="playlist-header" style="display:flex; align-items:center; justify-content:space-between;">
-      <div style="display:flex; align-items:center; gap:8px;">
+    <div class="add-sheet-drag-handle"></div>
+    <div class="playlist-header">
+      <div class="playlist-header-left">
         <div class="playlist-title">当前播放列表 (<span id="drawerCountText">6</span>)</div>
-        <button class="drawer-mode-btn" id="drawerPlayModeBtn" onclick="togglePlayMode()" title="切换播放模式" style="display:inline-flex; align-items:center; gap:4px; font-size:11.5px; padding:3px 8px; border-radius:12px; background:var(--pinned-bg); color:var(--ink-dark); border:none; cursor:pointer;">
+        <button class="drawer-mode-btn" id="drawerPlayModeBtn" onclick="togglePlayMode()" title="切换播放模式">
           <span id="drawerPlayModeIcon" style="display:inline-flex; align-items:center;"></span>
           <span id="drawerPlayModeText">列表循环</span>
         </button>
       </div>
-      <button class="icon-btn" onclick="closePlaylistDrawer()"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+      <button class="add-sheet-close-btn" onclick="closePlaylistDrawer()" title="关闭">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
     </div>
     <div class="playlist-items" id="drawerItemsList"></div>
   </div>
@@ -4286,7 +4345,7 @@ const OTHER_AVATAR_SVG = `<svg width="14" height="14" viewBox="0 0 24 24" fill="
 
 const APP_CONFIG = {
   name: '灵犀音乐',
-  version: '2.3.5',
+  version: '2.3.6',
   build: '2026.10.09',
   codename: 'Pure Sound'
 };
@@ -4761,7 +4820,7 @@ function renderSongList() {
         </div>
         <div class="song-actions-cluster">
           ${isFavAlbum ? '' : `
-          <div class="fav-btn ${song.isFav ? 'active' : ''}" onclick="event.stopPropagation(); toggleSongFav('${song.id}')">
+          <div class="fav-btn ${song.isFav ? 'active' : ''}" data-song-id="${song.id}" onclick="event.stopPropagation(); toggleSongFav('${song.id}', this, event)">
             <svg viewBox="0 0 24 24" width="18" height="18" fill="${song.isFav ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="1.4"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
           </div>`}
           <div class="more-dots-btn" onclick="openSongMenu(event, ${idx})" title="更多操作">
@@ -4788,8 +4847,16 @@ function renderDrawerList() {
         <div class="song-title">${song.title}</div>
         <div class="song-artist">${song.artist}</div>
       </div>
-      <div class="fav-btn ${song.isFav ? 'active' : ''}" onclick="event.stopPropagation(); toggleSongFav('${song.id}')">
-        <svg viewBox="0 0 24 24" width="16" height="16" fill="${song.isFav ? 'currentColor' : 'none'}" stroke="currentColor"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+      <div class="song-actions-cluster">
+        <div class="fav-btn ${song.isFav ? 'active' : ''}" data-song-id="${song.id}" onclick="event.stopPropagation(); toggleSongFav('${song.id}', this, event)" title="收藏歌曲">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="${song.isFav ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="1.4"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+        </div>
+        <div class="more-dots-btn" onclick="event.stopPropagation(); openSongMenuById('${song.id}', event)" title="更多操作">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8">
+            <circle cx="12" cy="7" r="2.2"></circle>
+            <circle cx="12" cy="17" r="2.2"></circle>
+          </svg>
+        </div>
       </div>
     </div>
   `).join('');
@@ -7782,7 +7849,7 @@ function renderPlaylistDetailSongsOnly() {
           <div class="song-info"><div class="song-title">${s.title}</div><div class="song-artist">${s.artist}</div></div>
           <div class="song-actions-cluster">
             ${(alb.id === 'alb_fav' || alb.hasRose) ? '' : `
-            <div class="fav-btn ${s.isFav ? 'active' : ''}" onclick="event.stopPropagation(); toggleSongFav('${s.id}')">
+            <div class="fav-btn ${s.isFav ? 'active' : ''}" data-song-id="${s.id}" onclick="event.stopPropagation(); toggleSongFav('${s.id}', this, event)">
               <svg viewBox="0 0 24 24" width="18" height="18" fill="${s.isFav ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="1.4"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
             </div>`}
             <div class="more-dots-btn" onclick="openSongMenu(event, ${sIdx})">
@@ -9275,36 +9342,92 @@ function executeUniversalConfirm() {
 function toggleFavCurrent() {
   const song = currentPlaybackQueue[currentIndex];
   if (!song) return;
-  song.isFav = !song.isFav;
-  const target = ALL_LIBRARY_SONGS.find(s => s.id === song.id);
-  if (target) target.isFav = song.isFav;
-  persistData();
-  updateUI();
-  syncCurrentLyricToDesktop();
-  toast(song.isFav ? '已加入我喜欢的音乐' : '已取消收藏');
+  toggleSongFav(song.id, document.getElementById('topHeartBtn') || document.getElementById('bottomHeartBtn'));
 }
 
 window.toggleSongFavFromNotification = function() {
   toggleFavCurrent();
 };
 
-function toggleSongFav(id) {
-  const target = ALL_LIBRARY_SONGS.find(s => s.id === id);
-  if (target) {
-    target.isFav = !target.isFav;
-    const qSong = currentPlaybackQueue.find(s => s.id === id);
-    if (qSong) qSong.isFav = target.isFav;
-    persistData();
-    updateUI();
-    syncCurrentLyricToDesktop();
-    toast(target.isFav ? `已收藏《${target.title}》` : `已取消收藏《${target.title}》`);
+function toggleSongFav(id, triggerBtn, event) {
+  if (event && event.stopPropagation) event.stopPropagation();
+
+  let target = ALL_LIBRARY_SONGS.find(s => s.id === id);
+  if (!target) {
+    const qSong = currentPlaybackQueue.find(s => s.id === id) || (typeof currentSong !== 'undefined' && currentSong && currentSong.id === id ? currentSong : null);
+    if (qSong) {
+      target = { ...qSong, isFav: false };
+      ALL_LIBRARY_SONGS.unshift(target);
+    }
   }
+  if (!target) return;
+
+  target.isFav = !target.isFav;
+  const newFav = target.isFav;
+
+  // 同步当前播放队列中的对应歌曲状态
+  const qSong = currentPlaybackQueue.find(s => s.id === id);
+  if (qSong) qSong.isFav = newFav;
+
+  // 同步系统「我喜欢的音乐」歌单
+  const favAlb = VINYL_ALBUMS.find(a => a.id === 'alb_fav') || VINYL_ALBUMS[1];
+  if (favAlb && favAlb.songs) {
+    if (newFav) {
+      if (!favAlb.songs.some(s => s.id === id)) {
+        favAlb.songs.unshift(target);
+      }
+    } else {
+      favAlb.songs = favAlb.songs.filter(s => s.id !== id);
+    }
+  }
+
+  persistData();
+
+  // 动效：如果传入了触发按钮，为其触发心跳放大弹性动效
+  if (triggerBtn) {
+    triggerBtn.classList.remove('pulse-heart');
+    void triggerBtn.offsetWidth;
+    triggerBtn.classList.add('pulse-heart');
+    setTimeout(() => {
+      triggerBtn.classList.remove('pulse-heart');
+    }, 400);
+  }
+
+  // 精准局部 DOM 更新：找到所有匹配 data-song-id 的爱心按钮，直接切换状态，绝不重构列表 DOM，彻底根除封面闪烁
+  const matchingFavBtns = document.querySelectorAll(`.fav-btn[data-song-id="${id}"]`);
+  matchingFavBtns.forEach(btn => {
+    btn.classList.toggle('active', newFav);
+    const svg = btn.querySelector('svg');
+    if (svg) {
+      svg.setAttribute('fill', newFav ? 'currentColor' : 'none');
+    }
+  });
+
+  // 若当前正在播放这首歌，同步全屏播放页与底栏/锁屏爱心
+  const curPlaying = currentPlaybackQueue[currentIndex] || (typeof currentSong !== 'undefined' ? currentSong : null);
+  if (curPlaying && curPlaying.id === id) {
+    curPlaying.isFav = newFav;
+    const heartBtn = document.getElementById('topHeartBtn') || document.getElementById('bottomHeartBtn');
+    if (heartBtn) heartBtn.classList.toggle('unfav', !newFav);
+    if (window.AndroidBridge && window.AndroidBridge.updateMediaCardFull) {
+      try {
+        const curSec = isNativeAudioSupported
+          ? (window.AndroidBridge.getNativePosition ? window.AndroidBridge.getNativePosition() : currentSec)
+          : ((typeof audioPlayer !== 'undefined' && audioPlayer) ? (audioPlayer.currentTime || 0) : 0);
+        window.AndroidBridge.updateMediaCardFull(curPlaying.title || '灵犀音乐', curPlaying.artist || '随心听', curPlaying.cover || '', isPlaying, newFav, curSec, curPlaying.duration || 180);
+      } catch(e) {}
+    }
+  }
+
+  syncCurrentLyricToDesktop();
+  toast(newFav ? `已收藏《${target.title}》` : `已取消收藏《${target.title}》`);
 }
 
 function openSongMenu(e, idx) {
   if (e && e.stopPropagation) e.stopPropagation();
   activeMenuIdx = idx;
   window._isSearchResultMenu = false;
+  window._isDrawerMenu = false;
   const activeAlb = VINYL_ALBUMS[activeRadioIndex] || VINYL_ALBUMS[0];
   const s = (activeAlb && activeAlb.songs && activeAlb.songs[idx]) ? activeAlb.songs[idx] : ALL_LIBRARY_SONGS[idx];
   currentActionSong = s;
@@ -9331,6 +9454,36 @@ function openSongMenu(e, idx) {
   if (deleteTextEl) deleteTextEl.textContent = isSpecificSubAlbum ? '移出此歌曲' : '删除此歌曲';
   document.getElementById('songMenuOverlay').classList.add('active');
 }
+
+function openSongMenuById(id, e) {
+  if (e && e.stopPropagation) e.stopPropagation();
+  window._isSearchResultMenu = false;
+  window._isDrawerMenu = true;
+  const s = currentPlaybackQueue.find(item => item.id === id) || ALL_LIBRARY_SONGS.find(item => item.id === id);
+  if (!s) return;
+  currentActionSong = s;
+  document.getElementById('sheetSongTitle').textContent = `歌曲：${s.title}`;
+  const isFav = !!(s && (s.isFav || ALL_LIBRARY_SONGS.some(item => (item.id === s.id || (item.title === s.title && item.artist === s.artist)) && item.isFav)));
+  const favIconEl = document.getElementById('sheetFavIcon');
+  const favTextEl = document.getElementById('sheetFavText');
+  if (isFav) {
+    if (favIconEl) favIconEl.classList.add('is-favorited');
+    if (favTextEl) {
+      favTextEl.classList.add('is-favorited');
+      favTextEl.textContent = '已收藏歌曲';
+    }
+  } else {
+    if (favIconEl) favIconEl.classList.remove('is-favorited');
+    if (favTextEl) {
+      favTextEl.classList.remove('is-favorited');
+      favTextEl.textContent = '收藏歌曲';
+    }
+  }
+  const deleteTextEl = document.getElementById('sheetDeleteText');
+  if (deleteTextEl) deleteTextEl.textContent = '从队列移除';
+  document.getElementById('songMenuOverlay').classList.add('active');
+}
+
 function closeSongMenu() { document.getElementById('songMenuOverlay').classList.remove('active'); }
 
 function triggerSheetAction(action) {
@@ -9339,6 +9492,19 @@ function triggerSheetAction(action) {
   if (!s) return;
 
   if (action === 'delete') {
+    if (window._isDrawerMenu) {
+      const qIdx = currentPlaybackQueue.findIndex(item => item.id === s.id);
+      if (qIdx !== -1) {
+        currentPlaybackQueue.splice(qIdx, 1);
+        if (currentIndex >= currentPlaybackQueue.length) {
+          currentIndex = Math.max(0, currentPlaybackQueue.length - 1);
+        }
+        renderDrawerList();
+        toast(`已从队列移除《${s.title}》`);
+      }
+      return;
+    }
+
     if (window._isSearchResultMenu) {
       toast('搜索结果未保存在本地，无需删除');
       return;
@@ -12326,6 +12492,7 @@ function toggleDefaultHomeTabSetting() {
 
   document.addEventListener('pointerdown', (e) => {
     if (e.target.closest('input, textarea, select')) return;
+    if (e.target.closest('.more-dots-btn, .multi-select-check-box')) return;
 
     const btn = e.target.closest(RIPPLE_SELECTOR);
     if (!btn) return;
