@@ -312,167 +312,153 @@ html, body {
 .nav-tag-btn.active { font-size: 19px; font-weight: 600; color: var(--ink-black); }
 
 /* ================== 灵犀推荐模块样式（古典文人水墨纸质风，绝无半透明橙色与橙色描边） ================== */
-.discover-banner-card {
-  margin: 6px 16px 14px;
-  padding: 16px 18px 14px;
-  background: var(--card-bg);
-  border-radius: 18px;
-  border: 1px solid var(--card-border);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
+/* ================== 灵犀推荐模块样式（完全对齐用户参考图2多板块推荐流） ================== */
+.discover-sections-wrap {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  position: relative;
-  overflow: hidden;
+  gap: 20px;
+  padding: 6px 0 20px;
 }
-body.night .discover-banner-card {
-  background: #1C1B19;
-  border-color: rgba(255, 255, 255, 0.08);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.22);
-}
-.discover-banner-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-}
-.discover-title-wrap {
+.discover-section-block {
   display: flex;
   flex-direction: column;
-  gap: 4px;
 }
-.discover-main-title-row {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.discover-classic-title {
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--ink-black);
-  letter-spacing: 0.5px;
-}
-.discover-seal-tag {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 10px;
-  line-height: 1;
-  padding: 2px 4px;
-  border-radius: 3px;
-  color: var(--brand-red, #B24036);
-  border: 1px solid var(--brand-red, #B24036);
-  font-weight: normal;
-  letter-spacing: 0.5px;
-  user-select: none;
-}
-.discover-classic-sub {
-  font-size: 12px;
-  color: var(--ink-gray);
-  letter-spacing: 0.3px;
-  max-width: 260px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.discover-banner-footer {
+.discover-section-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
-  padding-top: 10px;
-  border-top: 1px solid var(--divider, rgba(0, 0, 0, 0.05));
+  padding: 4px 0 10px;
 }
-.discover-clue-text {
-  font-size: 11.5px;
-  color: var(--ink-light);
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  flex: 1;
-}
-.discover-clue-text span:last-child {
-  color: var(--ink-gray);
-}
-.discover-actions-cluster {
+.discover-section-title-wrap {
   display: flex;
   align-items: center;
   gap: 8px;
-  flex-shrink: 0;
-}
-/* 换一批：素雅宣纸墨韵按键，微墨线边框，绝无橙色 */
-.discover-btn-refresh {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  height: 30px;
-  padding: 0 11px;
-  border-radius: 15px;
-  background: var(--bg-page);
-  color: var(--ink-dark);
-  border: 1px solid var(--border-input);
-  font-size: 12px;
-  font-weight: 500;
   cursor: pointer;
-  transition: all 0.18s ease;
   user-select: none;
 }
-.discover-btn-refresh:active {
-  transform: scale(0.95);
-  background: var(--pinned-bg);
+.discover-section-title {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--ink-black);
+  letter-spacing: 0.3px;
 }
-.discover-btn-refresh svg.spin {
-  animation: iconSpin 0.7s linear infinite;
-}
-@keyframes iconSpin { 100% { transform: rotate(360deg); } }
-
-/* 播放全部：典雅深墨主按键，白字与墨黑呼应，庄重大气，绝无橙色 */
-.discover-btn-playall {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  height: 30px;
-  padding: 0 13px;
-  border-radius: 15px;
+.discover-section-play-btn {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
   background: var(--ink-black);
   color: #FFFFFF;
-  border: 1px solid var(--ink-black);
-  font-size: 12px;
-  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-  transition: all 0.18s ease;
-  user-select: none;
+  transition: transform 0.15s ease, opacity 0.15s ease;
+  flex-shrink: 0;
 }
-.discover-btn-playall:active {
-  transform: scale(0.95);
-  opacity: 0.9;
+.discover-section-play-btn:active {
+  transform: scale(0.9);
+  opacity: 0.85;
 }
-body.night .discover-btn-playall {
+body.night .discover-section-play-btn {
   background: #ECE9E2;
   color: #1C1B19;
-  border-color: #ECE9E2;
+}
+.discover-section-play-btn svg {
+  width: 9px;
+  height: 9px;
+  fill: currentColor;
+  margin-left: 1.5px;
+}
+.discover-section-more {
+  color: var(--ink-light);
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  padding: 4px;
+  transition: transform 0.15s ease, color 0.15s ease;
+}
+.discover-section-more:active {
+  opacity: 0.6;
+  transform: translateX(2px);
 }
 
-/* 推荐理由素雅墨韵标签，去除半透明橙色与橙色描边 */
-.recommend-reason-tag {
-  font-size: 10px;
-  padding: 1px 6px;
-  border-radius: 3px;
-  background: var(--pinned-bg);
-  color: var(--ink-gray);
-  border: 0.5px solid var(--card-border);
-  margin-left: 6px;
-  font-weight: normal;
-  display: inline-block;
-  vertical-align: middle;
+/* 推荐歌曲项（图2单曲行） */
+.discover-card-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 7px 0;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
 }
-body.night .recommend-reason-tag {
-  background: #242320;
-  border-color: rgba(255, 255, 255, 0.08);
+.discover-card-row:active {
+  opacity: 0.72;
+}
+.discover-card-cover-wrap {
+  width: 52px;
+  height: 52px;
+  border-radius: 8px;
+  overflow: hidden;
+  position: relative;
+  flex-shrink: 0;
+  background: var(--claude-pill-bg);
+}
+.discover-card-cover {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.discover-card-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+}
+.discover-card-title {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--ink-black);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.discover-card-row.playing .discover-card-title {
+  color: var(--brand-blue);
+  font-weight: 600;
+}
+.discover-card-artist {
+  font-size: 12.5px;
+  color: var(--ink-gray);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.discover-card-reason {
+  font-size: 11.5px;
   color: var(--ink-light);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 1px;
+}
+.discover-card-fav {
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink-light);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.discover-card-fav.active {
+  color: var(--brand-red);
+}
+.discover-card-fav:active {
+  transform: scale(0.9);
 }
 
 .listen-header-actions { display: flex; align-items: center; gap: 6px; }
@@ -492,17 +478,40 @@ body.night .recommend-reason-tag {
 .fixed-radio-card {
   position: absolute; top: 0; left: 0; z-index: 10;
   width: 136px; height: 142px; border-radius: 20px;
-  background: rgba(255, 255, 255, 0.46);
-  backdrop-filter: blur(12px) saturate(160%); -webkit-backdrop-filter: blur(12px) saturate(160%);
+  background: rgba(255, 255, 255, 0.42);
+  backdrop-filter: blur(14px) saturate(160%); -webkit-backdrop-filter: blur(14px) saturate(160%);
   border: 1px solid rgba(255, 255, 255, 0.75); padding: 14px 12px;
   display: flex; flex-direction: column; justify-content: space-between; cursor: pointer;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
+  position: relative; overflow: hidden;
 }
 body.night .fixed-radio-card {
   background: rgba(24, 24, 22, 0.52);
   border-color: rgba(255, 255, 255, 0.08);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.22);
 }
+
+/* 卡片内部像云层般流动舒卷的柔和水墨雾霭浮动效果 */
+.fixed-radio-card::before {
+  content: ''; position: absolute; inset: -45%;
+  background: radial-gradient(circle at 25% 30%, rgba(198, 212, 226, 0.42) 0%, transparent 48%),
+              radial-gradient(circle at 75% 65%, rgba(228, 220, 206, 0.55) 0%, transparent 52%),
+              radial-gradient(circle at 45% 85%, rgba(206, 218, 212, 0.38) 0%, transparent 56%);
+  filter: blur(18px);
+  animation: cloudMistDrift 16s ease-in-out infinite alternate;
+  pointer-events: none; z-index: 0;
+}
+body.night .fixed-radio-card::before {
+  background: radial-gradient(circle at 25% 30%, rgba(50, 62, 74, 0.45) 0%, transparent 48%),
+              radial-gradient(circle at 75% 65%, rgba(68, 60, 48, 0.5) 0%, transparent 52%),
+              radial-gradient(circle at 45% 85%, rgba(45, 58, 52, 0.4) 0%, transparent 56%);
+}
+@keyframes cloudMistDrift {
+  0% { transform: translate(0, 0) scale(1) rotate(0deg); }
+  50% { transform: translate(14%, 9%) scale(1.18) rotate(7deg); }
+  100% { transform: translate(-10%, -12%) scale(1.06) rotate(-6deg); }
+}
+.fixed-radio-card > * { position: relative; z-index: 1; }
 
 .radio-card-header { display: flex; align-items: center; gap: 6px; font-size: 15px; font-weight: 600; color: var(--ink-black); }
 
@@ -513,25 +522,11 @@ body.night .fixed-radio-card {
 
 .radio-card-bottom { display: flex; align-items: flex-end; justify-content: space-between; }
 .radio-live-bars { display: flex; align-items: flex-end; gap: 2px; height: 14px; }
-.radio-live-bar { width: 2px; background: var(--ink-gray); border-radius: 1px; transition: height 0.2s ease, background 0.3s ease; }
+.radio-live-bar { width: 2px; background: var(--ink-light); border-radius: 1px; }
 .radio-live-bar:nth-child(1) { height: 4px; }
 .radio-live-bar:nth-child(2) { height: 12px; }
 .radio-live-bar:nth-child(3) { height: 7px; }
 .radio-live-bar:nth-child(4) { height: 10px; }
-
-/* 卡片内部右下角音波条播放跳动 */
-.fixed-radio-card.playing .radio-live-bar {
-  animation: radioBarBounce 0.9s ease-in-out infinite alternate;
-}
-.fixed-radio-card.playing .radio-live-bar:nth-child(1) { animation-delay: 0.05s; background: var(--brand-terracotta); }
-.fixed-radio-card.playing .radio-live-bar:nth-child(2) { animation-delay: 0.3s; background: var(--brand-blue); }
-.fixed-radio-card.playing .radio-live-bar:nth-child(3) { animation-delay: 0.15s; background: var(--brand-red); }
-.fixed-radio-card.playing .radio-live-bar:nth-child(4) { animation-delay: 0.4s; background: var(--brand-terracotta); }
-
-@keyframes radioBarBounce {
-  0% { height: 3px; }
-  100% { height: 14px; }
-}
 
 .radio-play-btn-circle {
   width: 28px; height: 28px; border-radius: 50%; background: var(--dark-cold-btn);
@@ -556,32 +551,13 @@ body.night .radio-play-btn-circle { color: #141413; }
   background: radial-gradient(circle at 50% 50%, #292825 0%, #151413 72%, #262420 100%);
   border: 4px solid #ECE9E2; display: flex; align-items: center; justify-content: center;
   position: relative; overflow: hidden;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12), 0 1px 4px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08), 0 1px 4px rgba(0, 0, 0, 0.05);
   animation: discSpinSlow 18s linear infinite; animation-play-state: paused;
 }
-body.night .stream-disc { border-color: #2D2C28; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4); }
+body.night .stream-disc { border-color: #2D2C28; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35); }
 .stream-disc.playing { animation-play-state: running; }
 
-/* 真实黑胶唱片同心微槽沟纹（与歌曲详情页完全看齐） */
-.stream-disc::before {
-  content: ''; position: absolute; inset: 6px; border-radius: 50%;
-  border: 1px dashed rgba(255, 255, 255, 0.14);
-  box-shadow: inset 0 0 0 9px rgba(0, 0, 0, 0.45), inset 0 0 0 10px rgba(255, 255, 255, 0.05);
-  pointer-events: none; z-index: 3;
-}
-
-/* 真实黑胶反光扇形双翼高光（与歌曲详情页完全看齐） */
-.stream-disc::after {
-  content: ''; position: absolute; inset: 0; border-radius: 50%;
-  background: conic-gradient(from 35deg, rgba(255,255,255,0) 0deg, rgba(255,255,255,0.11) 32deg, rgba(255,255,255,0.22) 48deg, rgba(255,255,255,0.08) 64deg, rgba(255,255,255,0) 90deg, rgba(255,255,255,0) 180deg, rgba(255,255,255,0.11) 212deg, rgba(255,255,255,0.22) 228deg, rgba(255,255,255,0.08) 244deg, rgba(255,255,255,0) 270deg);
-  pointer-events: none; z-index: 4; mix-blend-mode: screen;
-}
-
-/* 新建歌单留白光盘排除伪元素 */
-.stream-disc.stream-disc-add::before,
-.stream-disc.stream-disc-add::after {
-  display: none;
-}
+/* 留白添加按钮光盘 */
 .stream-disc.stream-disc-add {
   background: transparent; border: 2px dashed #D1D1CF;
   box-shadow: none;
@@ -593,6 +569,9 @@ body.night .stream-disc.stream-disc-add { border-color: #444; }
   position: relative; z-index: 5;
   width: 42px; height: 42px; border-radius: 50%; background: var(--card-bg);
   border: 1.5px solid var(--ink-black); display: flex; align-items: center; justify-content: center; color: var(--ink-dark);
+}
+.stream-disc-core.has-cover {
+  display: none !important;
 }
 .stream-disc-core svg { width: 19px; height: 19px; stroke: currentColor; stroke-width: 1.5; fill: none; }
 .stream-disc-core.rose-core svg { width: 20px; height: 20px; stroke: none; fill: var(--brand-red) !important; }
@@ -702,78 +681,37 @@ body.night .xianyin-bottom-nav { background: rgba(20, 20, 19, 0.96); }
 .bottom-tab-item svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 1.4; flex-shrink: 0; }
 .bottom-tab-title { font-size: 11.5px; }
 
-/* 底部导航跳频音波 */
+/* 底部导航跳频音波（形状与图1完全对齐，垂直居中对称分布） */
 .nav-wave-bars {
   width: 22px;
   height: 22px;
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: center;
-  gap: 2.2px;
-  padding-bottom: 2px;
+  gap: 2.8px;
   color: inherit;
   transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
-  transform-origin: center bottom;
+  transform-origin: center center;
 }
 .nav-wave-bar {
-  width: 2.2px;
-  border-radius: 1.5px;
+  width: 2.6px;
+  border-radius: 2px;
   background: currentColor;
-  transition: height 0.25s ease, background 0.25s ease;
+  transition: transform 0.2s ease;
 }
-.nav-wave-bar:nth-child(1) { height: 6px; }
-.nav-wave-bar:nth-child(2) { height: 14px; }
-.nav-wave-bar:nth-child(3) { height: 9px; }
-.nav-wave-bar:nth-child(4) { height: 5px; }
+.nav-wave-bar:nth-child(1) { height: 9px; }
+.nav-wave-bar:nth-child(2) { height: 20px; }
+.nav-wave-bar:nth-child(3) { height: 14px; }
+.nav-wave-bar:nth-child(4) { height: 9px; }
 
-/* 无论是否在播放，点击听歌时触发的灵动弹性敲击反馈 */
+/* 仅在点击时触发灵动弹性反馈，放歌时不跳动 */
 .nav-wave-bars.anim-wave-tap {
-  animation: waveTapFeedback 0.42s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: waveTapFeedback 0.38s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
-.nav-wave-bars.anim-wave-tap .nav-wave-bar {
-  animation: waveBarPop 0.42s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
-}
-.nav-wave-bars.anim-wave-tap .nav-wave-bar:nth-child(1) { animation-delay: 0s !important; }
-.nav-wave-bars.anim-wave-tap .nav-wave-bar:nth-child(2) { animation-delay: 0.04s !important; }
-.nav-wave-bars.anim-wave-tap .nav-wave-bar:nth-child(3) { animation-delay: 0.08s !important; }
-.nav-wave-bars.anim-wave-tap .nav-wave-bar:nth-child(4) { animation-delay: 0.12s !important; }
-
 @keyframes waveTapFeedback {
   0% { transform: scale(0.85); }
-  45% { transform: scale(1.22) translateY(-2px); }
-  100% { transform: scale(1) translateY(0); }
-}
-
-@keyframes waveBarPop {
-  0% { height: 4px; }
-  50% { height: 19px; }
-  100% { height: 8px; }
-}
-
-/* 播放时的灵动音波起伏跳跃动画 */
-.nav-wave-bars.playing:not(.anim-wave-tap) .nav-wave-bar {
-  animation: navWaveDance 0.8s ease-in-out infinite alternate;
-}
-.nav-wave-bars.playing:not(.anim-wave-tap) .nav-wave-bar:nth-child(1) {
-  animation-delay: 0.08s;
-  animation-duration: 0.72s;
-}
-.nav-wave-bars.playing:not(.anim-wave-tap) .nav-wave-bar:nth-child(2) {
-  animation-delay: 0.3s;
-  animation-duration: 0.88s;
-}
-.nav-wave-bars.playing:not(.anim-wave-tap) .nav-wave-bar:nth-child(3) {
-  animation-delay: 0.18s;
-  animation-duration: 0.78s;
-}
-.nav-wave-bars.playing:not(.anim-wave-tap) .nav-wave-bar:nth-child(4) {
-  animation-delay: 0.42s;
-  animation-duration: 0.92s;
-}
-
-@keyframes navWaveDance {
-  0% { height: 3.5px; }
-  100% { height: 17.5px; }
+  50% { transform: scale(1.18); }
+  100% { transform: scale(1); }
 }
 
 /* 底部导航设置 SVG 动态旋转动画 */
@@ -2229,52 +2167,9 @@ body.in-pip-mode .view-player-full {
         </div>
       </div>
 
-      <!-- 灵犀推荐页面 -->
-      <div id="paneDiscover" style="display:none; padding-bottom:20px;">
-        <div class="discover-banner-card">
-          <div class="discover-banner-header">
-            <div class="discover-title-wrap">
-              <div class="discover-main-title-row">
-                <span class="discover-classic-title">灵犀漫步</span>
-                <span class="discover-seal-tag">心选</span>
-              </div>
-              <div class="discover-classic-sub" id="discoverHeroSubtitle">以乐为引 · 偶得佳音</div>
-            </div>
-            <div style="opacity:0.22; color:var(--ink-black);">
-              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="9"/>
-                <path d="M12 7v5l3 2"/>
-              </svg>
-            </div>
-          </div>
-          <div class="discover-banner-footer">
-            <div class="discover-clue-text">
-              <span>寻声：</span><span id="discoverHeroSeeds">灵犀私人精选</span>
-            </div>
-            <div class="discover-actions-cluster">
-              <button class="discover-btn-refresh" id="discoverRefreshBtn" onclick="refreshRecommendations(true)" title="换一批推荐">
-                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" id="discoverRefreshIcon">
-                  <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
-                </svg>
-                <span>换一批</span>
-              </button>
-              <button class="discover-btn-playall" onclick="playAllDiscoverTracks()" title="播放当前推荐">
-                <svg viewBox="0 0 24 24" width="10" height="10" fill="currentColor"><polygon points="6 3 20 12 6 21 6 3"/></svg>
-                <span>播放全部</span>
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div class="song-list-panel">
-          <div class="list-panel-header">
-            <div style="display:flex; align-items:center; justify-content:space-between; width:100%;">
-              <span id="discoverListPanelTitle">推荐曲目</span>
-              <span style="font-size:11.5px; color:var(--ink-light);">心选好歌 · 点击即播</span>
-            </div>
-          </div>
-          <div id="discoverSongsContainer"></div>
-        </div>
+      <!-- 灵犀推荐页面（完全对齐用户参考图2多板块推荐流） -->
+      <div id="paneDiscover" style="display:none; padding: 6px 16px 40px;">
+        <div id="discoverSectionsContainer"></div>
       </div>
 
 <!-- 设置页 -->
@@ -2336,7 +2231,7 @@ body.in-pip-mode .view-player-full {
         <span class="settings-group-header">关于与更新</span>
         <div class="group-menu-card">
           <div class="settings-item-row" onclick="checkAppUpdate(true)">
-            <div class="settings-item-col"><span class="settings-title-line">检查版本更新</span><span class="settings-sub-desc" id="aboutAppVersionDesc">自用无损音乐播放器 · v2.1.5</span></div>
+            <div class="settings-item-col"><span class="settings-title-line">检查版本更新</span><span class="settings-sub-desc" id="aboutAppVersionDesc">自用无损音乐播放器 · v2.1.6</span></div>
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" style="color:var(--ink-light); margin-left:auto;"><polyline points="9 18 15 12 9 6"/></svg>
           </div>
         </div>
@@ -3308,7 +3203,7 @@ const OTHER_AVATAR_SVG = `<svg width="14" height="14" viewBox="0 0 24 24" fill="
 
 const APP_CONFIG = {
   name: '灵犀音乐',
-  version: '2.1.5',
+  version: '2.1.6',
   build: '2026.09.23',
   codename: 'Pure Sound'
 };
@@ -5050,7 +4945,7 @@ function switchHomeNavTab(tab) {
     if (tabNavDiscover) tabNavDiscover.classList.add('active');
     if (paneListen) paneListen.style.display = 'none';
     if (paneDiscover) paneDiscover.style.display = 'block';
-    if (currentDiscoverSongs.length === 0) {
+    if (currentDiscoverSections.length === 0 || currentDiscoverSongs.length === 0) {
       refreshRecommendations(false);
     } else {
       renderDiscoverPane();
@@ -5058,20 +4953,29 @@ function switchHomeNavTab(tab) {
   }
 }
 
+let currentDiscoverSections = [];
+
+const DISCOVER_NOTE_TEMPLATES = [
+  '尝试了全新的古典风格，意境悠远',
+  '旋律如空谷幽兰，每次听心都很平静',
+  '词曲入木三分，曲终人亦不散',
+  '弦音清亮入耳，适合静心聆听',
+  '山有木兮木有枝，温润抚慰人心',
+  '前奏一响，便已落入水墨诗画之中',
+  '细腻婉转，意韵百转千回',
+  '灵犀专属心选，余韵悠长耐品',
+  '清雅恬淡，适合伴茶细酌'
+];
+
 async function refreshRecommendations(showToast = false) {
   if (isDiscoverLoading) return;
   isDiscoverLoading = true;
-  const icon = document.getElementById('discoverRefreshIcon');
-  if (icon) icon.classList.add('spin');
-  const subtitleEl = document.getElementById('discoverHeroSubtitle');
-  if (subtitleEl) subtitleEl.textContent = '灵犀正在为你探索推荐曲目...';
-
-  const container = document.getElementById('discoverSongsContainer');
-  if (container && currentDiscoverSongs.length === 0) {
+  const container = document.getElementById('discoverSectionsContainer');
+  if (container && (!currentDiscoverSections || currentDiscoverSections.length === 0)) {
     container.innerHTML = `
-      <div style="padding:48px 20px; text-align:center; color:var(--ink-light); font-size:13px; display:flex; flex-direction:column; align-items:center; gap:10px;">
-        <div style="width:26px; height:26px; border:2.5px solid var(--border-input); border-top-color:var(--brand-terracotta); border-radius:50%; animation:iconSpin 0.8s linear infinite;"></div>
-        <span>正在推算常听喜好与相似好歌...</span>
+      <div style="padding:56px 20px; text-align:center; color:var(--ink-light); font-size:13px; display:flex; flex-direction:column; align-items:center; gap:12px;">
+        <div style="width:26px; height:26px; border:2px solid var(--border-input); border-top-color:var(--ink-dark); border-radius:50%; animation:iconSpin 0.8s linear infinite;"></div>
+        <span>正在为你探索精选好歌...</span>
       </div>
     `;
   }
@@ -5094,12 +4998,12 @@ async function refreshRecommendations(showToast = false) {
     if (sortedArtists.length > 0) {
       const pool = sortedArtists.slice(0, 8);
       const shuffled = [...pool].sort(() => 0.5 - Math.random());
-      selectedSeeds = shuffled.slice(0, 2);
+      selectedSeeds = shuffled.slice(0, 3);
     }
 
-    const defaultSeeds = ['阿鲲', '周杰伦', '毛不易', '陈奕迅', '许嵩', '纯音乐', '国风流行'];
+    const defaultSeeds = ['阿鲲', '周杰伦', '毛不易', '陈奕迅', '许嵩', '纯音乐', '国风'];
     const shuffledDefault = [...defaultSeeds].sort(() => 0.5 - Math.random());
-    while (selectedSeeds.length < 2) {
+    while (selectedSeeds.length < 3) {
       const candidate = shuffledDefault.pop();
       if (!selectedSeeds.includes(candidate)) {
         selectedSeeds.push(candidate);
@@ -5109,7 +5013,7 @@ async function refreshRecommendations(showToast = false) {
     currentDiscoverSeeds = selectedSeeds;
 
     // 2. 并行拉取线上优质曲目
-    const searchPromises = selectedSeeds.map(seed => requestOnlineSearch(seed, 16));
+    const searchPromises = selectedSeeds.map(seed => requestOnlineSearch(seed, 10));
     const resultsLists = await Promise.all(searchPromises);
 
     // 3. 构建本地已知歌曲排重集
@@ -5130,16 +5034,17 @@ async function refreshRecommendations(showToast = false) {
           const songKey = `${song.source || ''}_${song.url_id || song.id}`;
           if (!localSongSet.has(lowTitle) && !seenOnlineIds.has(songKey)) {
             seenOnlineIds.add(songKey);
-            song.reason = `常听 ${selectedSeeds[sIdx]}`;
+            const template = DISCOVER_NOTE_TEMPLATES[(merged.length) % DISCOVER_NOTE_TEMPLATES.length];
+            song.reason = `${selectedSeeds[sIdx]} 推荐 - ${template}`;
             merged.push(song);
           }
         }
       }
-      if (merged.length >= 18) break;
+      if (merged.length >= 12) break;
     }
 
-    // 4. 若候选较少则补充热歌榜
-    if (merged.length < 10) {
+    // 若不足 9 首则补充热歌榜
+    if (merged.length < 9) {
       const fallbackList = await requestOnlineSearch('热歌榜', 15);
       if (Array.isArray(fallbackList)) {
         for (const fbSong of fallbackList) {
@@ -5147,15 +5052,52 @@ async function refreshRecommendations(showToast = false) {
           const songKey = `${fbSong.source || ''}_${fbSong.url_id || fbSong.id}`;
           if (!localSongSet.has(lowTitle) && !seenOnlineIds.has(songKey)) {
             seenOnlineIds.add(songKey);
-            fbSong.reason = '精选推荐';
+            const template = DISCOVER_NOTE_TEMPLATES[(merged.length) % DISCOVER_NOTE_TEMPLATES.length];
+            fbSong.reason = `精选热播 推荐 - ${template}`;
             merged.push(fbSong);
           }
-          if (merged.length >= 15) break;
+          if (merged.length >= 12) break;
         }
       }
     }
 
-    currentDiscoverSongs = merged.slice(0, 18);
+    // 4. 构建图2风格的多板块分组
+    const sec1Songs = merged.slice(0, 3);
+    const sec2Songs = merged.slice(3, 6);
+    const sec3Songs = merged.slice(6, 9);
+
+    const nowMonthDay = (() => {
+      const now = new Date();
+      const m = String(now.getMonth() + 1).padStart(2, '0');
+      const d = String(now.getDate()).padStart(2, '0');
+      return `${m}.${d}`;
+    })();
+
+    currentDiscoverSections = [
+      {
+        title: `灵犀新推 · ${nowMonthDay}佳作`,
+        songs: sec1Songs.length > 0 ? sec1Songs : merged.slice(0, 3)
+      },
+      {
+        title: '私人专属好歌',
+        songs: sec2Songs.length > 0 ? sec2Songs : merged.slice(0, 3)
+      },
+      {
+        title: '频道推荐 · 悠然随听',
+        songs: sec3Songs.length > 0 ? sec3Songs : merged.slice(0, 3)
+      }
+    ];
+
+    // 同步展平为扁平数组供查找与播放
+    currentDiscoverSongs = [];
+    currentDiscoverSections.forEach((sec, secIdx) => {
+      sec.songs.forEach(song => {
+        song._globalIdx = currentDiscoverSongs.length;
+        song._secIdx = secIdx;
+        currentDiscoverSongs.push(song);
+      });
+    });
+
     renderDiscoverPane();
     if (showToast) toast('已更新推荐曲目');
   } catch (err) {
@@ -5163,33 +5105,20 @@ async function refreshRecommendations(showToast = false) {
     if (showToast) toast('网络连接较慢，推荐获取失败');
   } finally {
     isDiscoverLoading = false;
-    if (icon) icon.classList.remove('spin');
   }
 }
 
 function renderDiscoverPane() {
-  const container = document.getElementById('discoverSongsContainer');
-  const subtitleEl = document.getElementById('discoverHeroSubtitle');
-  const clueSeedsEl = document.getElementById('discoverHeroSeeds');
-  const titleCountEl = document.getElementById('discoverListPanelTitle');
+  const container = document.getElementById('discoverSectionsContainer');
   if (!container) return;
 
-  if (currentDiscoverSeeds && currentDiscoverSeeds.length > 0) {
-    if (subtitleEl) subtitleEl.textContent = '循你所爱 · 寻觅知音';
-    if (clueSeedsEl) clueSeedsEl.textContent = currentDiscoverSeeds.join('、');
-  } else {
-    if (subtitleEl) subtitleEl.textContent = '以乐为引 · 偶得佳音';
-    if (clueSeedsEl) clueSeedsEl.textContent = '灵犀私人精选';
-  }
-
-  if (titleCountEl) {
-    titleCountEl.textContent = `推荐曲目 · ${currentDiscoverSongs.length}首`;
-  }
-
-  if (currentDiscoverSongs.length === 0) {
+  if (!currentDiscoverSections || currentDiscoverSections.length === 0 || currentDiscoverSongs.length === 0) {
     container.innerHTML = `
-      <div style="padding:40px 20px; text-align:center; color:var(--ink-light); font-size:13px;">
-        暂无推荐歌曲，点击上方「换一批」探索
+      <div style="padding:60px 20px; text-align:center; color:var(--ink-light); font-size:13px; display:flex; flex-direction:column; align-items:center; gap:12px;">
+        <span>暂无推荐歌曲，点击下方刷新探索</span>
+        <button class="discover-btn-refresh" onclick="refreshRecommendations(true)" style="margin-top:6px;">
+          <span>探索好歌</span>
+        </button>
       </div>
     `;
     return;
@@ -5197,52 +5126,97 @@ function renderDiscoverPane() {
 
   const curPlayingSong = currentPlaybackQueue[currentIndex];
 
-  container.innerHTML = currentDiscoverSongs.map((song, idx) => {
-    const isCurPlaying = curPlayingSong && 
-      (curPlayingSong.id === 'online_' + song.id || (curPlayingSong.title === song.name && curPlayingSong.artist === song.artist)) && 
-      isPlaying;
+  container.innerHTML = `
+    <div class="discover-sections-wrap">
+      ${currentDiscoverSections.map((sec, secIdx) => `
+        <div class="discover-section-block">
+          <div class="discover-section-header">
+            <div class="discover-section-title-wrap" onclick="playDiscoverSection(${secIdx})">
+              <span class="discover-section-title">${escapeHtml(sec.title)}</span>
+              <div class="discover-section-play-btn" title="播放此板块">
+                <svg viewBox="0 0 24 24"><polygon points="7 4 19 12 7 20 7 4"/></svg>
+              </div>
+            </div>
+            <div class="discover-section-more" onclick="refreshRecommendations(true)" title="换一组推荐">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="9 18 15 12 9 6"/>
+              </svg>
+            </div>
+          </div>
+          <div class="discover-section-items">
+            ${sec.songs.map(song => {
+              const globalIdx = song._globalIdx;
+              const isCurPlaying = curPlayingSong && 
+                (curPlayingSong.id === 'online_' + song.id || (curPlayingSong.title === song.name && curPlayingSong.artist === song.artist)) && 
+                isPlaying;
 
-    const isFav = ALL_LIBRARY_SONGS.some(item => 
-      (item.id === 'online_' + song.id || 
-       item.onlineId === (song.url_id || song.id) || 
-       (item.title === song.name && item.artist === song.artist)) && 
-      item.isFav
-    );
+              const isFav = ALL_LIBRARY_SONGS.some(item => 
+                (item.id === 'online_' + song.id || 
+                 item.onlineId === (song.url_id || song.id) || 
+                 (item.title === song.name && item.artist === song.artist)) && 
+                item.isFav
+              );
 
-    return `
-      <div class="song-row ${isCurPlaying ? 'playing' : ''}" onclick="playDiscoverTrack(${idx})">
-        <div class="song-cover-mini" onclick="event.stopPropagation(); playDiscoverTrack(${idx});" title="点击播放">
-          <div class="static-icon">
-            <svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+              const coverUrl = song.cover || song.pic || '';
+
+              return `
+                <div class="discover-card-row ${isCurPlaying ? 'playing' : ''}" onclick="playDiscoverTrack(${globalIdx})">
+                  <div class="discover-card-cover-wrap">
+                    ${coverUrl ? `
+                      <img src="${coverUrl}" class="discover-card-cover" alt="cover" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                    ` : ''}
+                    <div style="display:${coverUrl ? 'none' : 'flex'}; width:100%; height:100%; align-items:center; justify-content:center; color:var(--ink-light); background:var(--claude-pill-bg);">
+                      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+                    </div>
+                    ${isCurPlaying ? `
+                      <div class="playing-bars" style="z-index:4;"><div class="bar"></div><div class="bar"></div><div class="bar"></div></div>
+                    ` : ''}
+                  </div>
+                  <div class="discover-card-info">
+                    <div class="discover-card-title">${escapeHtml(song.name)}</div>
+                    <div class="discover-card-artist">${escapeHtml(song.artist)}${song.album ? ' · ' + escapeHtml(song.album) : ''}</div>
+                    <div class="discover-card-reason">${escapeHtml(song.reason || '灵犀精选 · 值得一听')}</div>
+                  </div>
+                  <div class="discover-card-fav ${isFav ? 'active' : ''}" onclick="event.stopPropagation(); toggleDiscoverSongFav(${globalIdx})" title="收藏">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="${isFav ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="1.4">
+                      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                    </svg>
+                  </div>
+                </div>
+              `;
+            }).join('')}
           </div>
-          ${(useExtractedCover && song.cover) ? `
-            <img src="${song.cover}" class="song-cover-thumb" alt="cover" onerror="this.remove()">
-          ` : ''}
-          <div class="playing-bars"><div class="bar"></div><div class="bar"></div><div class="bar"></div></div>
         </div>
-        <div class="song-info">
-          <div class="song-title">
-            ${escapeHtml(song.name)}
-            ${song.reason ? `<span class="recommend-reason-tag">${escapeHtml(song.reason)}</span>` : ''}
-          </div>
-          <div class="song-artist">${escapeHtml(song.artist)}${song.album ? ' · ' + escapeHtml(song.album) : ''}</div>
-        </div>
-        <div class="song-actions-cluster">
-          <div class="fav-btn ${isFav ? 'active' : ''}" onclick="event.stopPropagation(); toggleDiscoverSongFav(${idx})" title="收藏">
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="${isFav ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="1.4">
-              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-            </svg>
-          </div>
-          <div class="more-dots-btn" onclick="openDiscoverSongMenu(event, ${idx})" title="更多操作">
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8">
-              <circle cx="12" cy="7" r="2.2"></circle>
-              <circle cx="12" cy="17" r="2.2"></circle>
-            </svg>
-          </div>
-        </div>
-      </div>
-    `;
-  }).join('');
+      `).join('')}
+    </div>
+  `;
+}
+
+function playDiscoverSection(secIdx) {
+  const sec = currentDiscoverSections[secIdx];
+  if (!sec || !sec.songs || sec.songs.length === 0) return;
+
+  const queue = sec.songs.map(item => ({
+    id: 'online_' + item.id,
+    onlineId: item.url_id || item.id,
+    source: item.source || 'netease',
+    title: item.name,
+    artist: item.artist,
+    album: item.album || '',
+    duration: item.duration || 240,
+    fileUrl: '',
+    urlFetchedAt: 0,
+    cover: item.cover || item.pic || '',
+    pic_id: item.pic_id || item.url_id || item.id,
+    lyric_id: item.lyric_id || item.url_id || item.id,
+    isFav: false
+  }));
+
+  currentPlaybackQueue = queue;
+  currentIndex = 0;
+  openPlayerFull();
+  playSongAtQueue(0);
+  toast(`开始播放「${sec.title}」`);
 }
 
 function playDiscoverTrack(idx) {
@@ -5259,7 +5233,7 @@ function playDiscoverTrack(idx) {
     duration: item.duration || 240,
     fileUrl: '',
     urlFetchedAt: 0,
-    cover: item.cover || '',
+    cover: item.cover || item.pic || '',
     pic_id: item.pic_id || item.url_id || item.id,
     lyric_id: item.lyric_id || item.url_id || item.id,
     isFav: false
@@ -5296,7 +5270,7 @@ function playAllDiscoverTracks() {
     duration: item.duration || 240,
     fileUrl: '',
     urlFetchedAt: 0,
-    cover: item.cover || '',
+    cover: item.cover || item.pic || '',
     pic_id: item.pic_id || item.url_id || item.id,
     lyric_id: item.lyric_id || item.url_id || item.id,
     isFav: false
@@ -5332,7 +5306,7 @@ function toggleDiscoverSongFav(idx) {
       duration: item.duration || 240,
       fileUrl: '',
       urlFetchedAt: 0,
-      cover: item.cover || '',
+      cover: item.cover || item.pic || '',
       pic_id: item.pic_id || item.url_id || item.id,
       lyric_id: item.lyric_id || item.url_id || item.id,
       isFav: true
@@ -5541,7 +5515,7 @@ function updateDynamicAppVersion(ver) {
       ver = window.AndroidBridge.getAppVersion();
     } catch(e) {}
   }
-  if (!ver) ver = '2.1.5';
+  if (!ver) ver = '2.1.6';
   APP_CONFIG.version = ver;
   const descEl = document.getElementById('aboutAppVersionDesc');
   if (descEl) {
@@ -5960,17 +5934,16 @@ function renderVinylDiscs() {
     const albumCover = getAlbumCover(alb);
     const hasCover = !!albumCover;
     const discOuterStyle = hasCover
-      ? `background: radial-gradient(circle at 50% 50%, rgba(20,20,20,0.5) 0%, #151413 75%), url('${albumCover}') center/cover no-repeat;`
-      : '';
-    const coreCoverStyle = hasCover
-      ? `background-image: url('${albumCover}'); background-size: cover; background-position: center; border: 2px solid rgba(255,255,255,0.9); box-shadow: 0 0 0 1px rgba(0,0,0,0.3);`
+      ? `background: url('${albumCover}') center/cover no-repeat; border-color: rgba(255, 255, 255, 0.75);`
       : '';
     return `
       <div class="vinyl-stream-card" onclick="handleStreamCardClick(${idx})">
         <div class="stream-disc ${isThisPlaying ? 'playing' : ''}" id="streamDisc${idx}" style="${discOuterStyle}">
-          <div class="stream-disc-core ${isRose && !hasCover ? 'rose-core' : ''}" style="${coreCoverStyle}">
-            ${hasCover ? '' : iconSvg}
-          </div>
+          ${hasCover ? '' : `
+            <div class="stream-disc-core ${isRose ? 'rose-core' : ''}">
+              ${iconSvg}
+            </div>
+          `}
         </div>
       </div>
     `;

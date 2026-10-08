@@ -1,6 +1,6 @@
 {
-  "versionCode": 46,
-  "versionName": "2.1.5",
-  "changelog": "1. 重塑灵犀漫步推荐卡片为古典水墨宣纸风，彻底剔除现代橙色按键与描边\n2. 歌单封面光盘补齐真实黑胶同心微槽与反射高光，与播放详情页质感完全统一\n3. 听歌导航新增即时灵动点击弹性触感反馈",
+  "versionCode": 47,
+  "versionName": "2.1.6",
+  "changelog": "1. 顶部正方形卡片新增温润浮动水墨雾霭流云效果，还原左下角静态音波\n2. 顶部唱片移除繁复修饰，还原纯粹圆形封面展示\n3. 导航音波图标按最新视觉规范重塑，放歌时保持静止，仅保留灵动点击弹性触感反馈\n4. 灵犀推荐页全面重构为多主题板块流，支持分组一键播放与生动真挚的歌曲推荐语",
   "downloadUrl": "https://ghfast.top/https://github.com/visitor315/lingxi-music/releases/download/v1.4.0/LingXiMusic.apk"
 }
