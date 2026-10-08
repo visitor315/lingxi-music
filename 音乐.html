@@ -385,7 +385,7 @@ body.night .discover-section-play-btn {
 /* 推荐双列横滑流容器（每列3首歌，横向滑动切至下一列，右侧露出一截诱导滑动） */
 .discover-columns-scroll {
   display: flex;
-  gap: 16px;
+  gap: 14px;
   overflow-x: auto;
   padding-bottom: 6px;
   -webkit-overflow-scrolling: touch;
@@ -393,9 +393,9 @@ body.night .discover-section-play-btn {
 }
 .discover-columns-scroll::-webkit-scrollbar { display: none; }
 .discover-column {
-  width: calc(88vw - 32px);
-  min-width: 270px;
-  max-width: 330px;
+  width: calc(82vw - 24px);
+  min-width: 250px;
+  max-width: 305px;
   flex-shrink: 0;
   scroll-snap-align: start;
   display: flex;
@@ -416,19 +416,21 @@ body.night .discover-section-play-btn {
   opacity: 0.72;
 }
 .discover-card-cover-wrap {
-  width: 52px;
-  height: 52px;
-  border-radius: 8px;
+  width: 46px;
+  height: 60px;
+  border-radius: 7px;
   overflow: hidden;
   position: relative;
   flex-shrink: 0;
   background: var(--claude-pill-bg);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
 }
 .discover-card-cover {
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
+  border-radius: 7px;
 }
 .discover-card-info {
   flex: 1;
@@ -499,37 +501,77 @@ body.night .discover-section-play-btn {
 .fixed-radio-card {
   position: absolute; top: 0; left: 0; z-index: 10;
   width: 118px; height: 122px; border-radius: 16px;
-  background: rgba(255, 255, 255, 0.72);
-  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
-  border: none !important; padding: 10px 10px;
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.85) !important;
+  padding: 11px 11px;
   display: flex; flex-direction: column; justify-content: space-between; cursor: pointer;
-  box-shadow: none !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04) !important;
   position: relative; overflow: hidden;
 }
 body.night .fixed-radio-card {
-  background: rgba(30, 30, 28, 0.76);
-  border: none !important;
+  background: rgba(28, 28, 26, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
   box-shadow: none !important;
 }
 
-/* 内部上白下其他色温润云层效果，播放时流动浮动 */
+/* 底层柔和流动的云雾色彩层，播放时缓缓流转 */
 .fixed-radio-card::before {
-  content: ''; position: absolute; inset: -45%;
-  background: radial-gradient(circle at 35% 85%, var(--card-glow-color, rgba(195, 215, 226, 0.52)) 0%, transparent 62%),
-              radial-gradient(circle at 75% 90%, var(--card-glow-color-2, rgba(228, 218, 204, 0.42)) 0%, transparent 60%);
-  filter: blur(14px);
+  content: ''; position: absolute;
+  left: -20%; right: -20%; bottom: -30%; height: 95px;
+  background: radial-gradient(circle at 30% 70%, var(--card-glow-1, rgba(168, 218, 220, 0.65)) 0%, transparent 60%),
+              radial-gradient(circle at 75% 75%, var(--card-glow-2, rgba(230, 204, 178, 0.55)) 0%, transparent 58%),
+              radial-gradient(circle at 50% 90%, var(--card-glow-3, rgba(200, 214, 229, 0.50)) 0%, transparent 55%);
+  filter: blur(12px);
   pointer-events: none; z-index: 0;
-  opacity: 0.9;
+  opacity: 0.88;
+  transform-origin: 50% 80%;
+  transition: opacity 0.5s ease;
 }
 .fixed-radio-card.playing::before {
-  animation: cloudMistDrift 14s ease-in-out infinite alternate;
+  animation: cloudColorFlow 12s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite alternate;
 }
-@keyframes cloudMistDrift {
-  0% { transform: translate(0, 0) scale(1) rotate(0deg); }
-  50% { transform: translate(12%, -8%) scale(1.15) rotate(6deg); }
-  100% { transform: translate(-10%, 10%) scale(1.06) rotate(-5deg); }
+
+@keyframes cloudColorFlow {
+  0% {
+    transform: scale(1) translate(0%, 0%) rotate(0deg);
+    filter: blur(12px) hue-rotate(0deg);
+  }
+  33% {
+    transform: scale(1.12) translate(8%, -6%) rotate(7deg);
+    filter: blur(14px) hue-rotate(22deg);
+  }
+  66% {
+    transform: scale(1.05) translate(-8%, 5%) rotate(-6deg);
+    filter: blur(13px) hue-rotate(-16deg);
+  }
+  100% {
+    transform: scale(1) translate(0%, 0%) rotate(0deg);
+    filter: blur(12px) hue-rotate(0deg);
+  }
 }
-.fixed-radio-card > * { position: relative; z-index: 1; }
+
+/* 顶部白色清透遮罩：保证卡片上半部分纯净素白，文字高清晰，下方才透出柔和云雾色彩 */
+.fixed-radio-card::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(to bottom, 
+    rgba(255, 255, 255, 0.98) 0%, 
+    rgba(255, 255, 255, 0.92) 36%, 
+    rgba(255, 255, 255, 0.45) 70%, 
+    rgba(255, 255, 255, 0.08) 100%
+  );
+  pointer-events: none; z-index: 1;
+}
+body.night .fixed-radio-card::after {
+  background: linear-gradient(to bottom, 
+    rgba(28, 28, 26, 0.96) 0%, 
+    rgba(28, 28, 26, 0.90) 36%, 
+    rgba(28, 28, 26, 0.45) 70%, 
+    rgba(28, 28, 26, 0.08) 100%
+  );
+}
+
+.fixed-radio-card > * { position: relative; z-index: 2; }
 
 .radio-card-header {
   display: flex; align-items: center; gap: 5px;
@@ -3643,7 +3685,23 @@ function init() {
   renderVinylDiscs();
   renderSongList();
   renderLibraryAlbumPills();
+  renderDiscoverPane();
   setTimeout(() => {
+    const initNeedPicSongs = currentDiscoverSongs.filter(s => !s.cover && (s.pic_id || s.url_id));
+    if (initNeedPicSongs.length > 0) {
+      Promise.all(initNeedPicSongs.slice(0, 18).map(async song => {
+        try {
+          const targetId = song.pic_id || song.url_id || song.id;
+          const picRes = await universalFetch(`${currentApiBase}?types=pic&id=${targetId}&source=${song.source || 'netease'}`, { timeout: 2500 });
+          if (picRes.ok) {
+            const pData = await picRes.json();
+            if (pData && pData.url) song.cover = pData.url;
+          }
+        } catch(e) {}
+      })).then(() => {
+        if (currentHomeTab === 'discover') renderDiscoverPane();
+      });
+    }
     if (typeof refreshRecommendations === 'function') refreshRecommendations(false);
   }, 100);
   const initialSong = currentPlaybackQueue[currentIndex];
@@ -5086,7 +5144,51 @@ function switchHomeNavTab(tab) {
   }
 }
 
-let currentDiscoverSections = [];
+const INITIAL_DISCOVER_SECTIONS = [
+  {
+    title: '灵犀新推 · 今日佳作',
+    songs: [
+      { id: 'init_1', name: '愿我', artist: '伦桑', album: '愿我', source: 'netease', duration: 252, url_id: '1815967406', pic_id: '109951165671182684', reason: '伦桑 推荐 - 浅雪点点 推荐 · 很好听，一听就喜欢的歌' },
+      { id: 'init_2', name: '断桥残雪', artist: '许嵩', album: '断桥残雪', source: 'netease', duration: 226, url_id: '167827', pic_id: '109951165671182684', reason: '直视 推荐 - 经典永流传' },
+      { id: 'init_3', name: '云与海', artist: '胡夏', album: '云与海', source: 'netease', duration: 241, url_id: '1492323898', pic_id: '109951165671182684', reason: 'Spring 推荐 - 昨天考的数学试卷发下来了，早上...' },
+      { id: 'init_4', name: '山有木兮', artist: '伦桑', album: '橙光《人鱼传说》', source: 'netease', duration: 260, url_id: '426804563', pic_id: '109951165671182684', reason: '古风雅韵 - 山有木兮木有枝，温润抚慰人心' },
+      { id: 'init_5', name: '故梦', artist: '双笙', album: '故梦', source: 'netease', duration: 288, url_id: '436514315', pic_id: '109951165671182684', reason: '灵犀专属心选 - 前奏一响，便已落入水墨诗画之中' },
+      { id: 'init_6', name: '红马', artist: '王琪', album: '红马', source: 'netease', duration: 245, url_id: '1475330366', pic_id: '109951165671182684', reason: '纯正国风 - 弦音清亮入耳，适合静心聆听' }
+    ]
+  },
+  {
+    title: '私人专属好歌',
+    songs: [
+      { id: 'init_7', name: '冬天的秘密', artist: '张仲谋', album: '冬天的秘密', source: 'netease', duration: 265, url_id: '1859245776', pic_id: '109951165671182684', reason: '7月的极光 推荐 - 哪怕热恋的人跟我唱过这首歌' },
+      { id: 'init_8', name: '花季', artist: '鱼儿七', album: '花季', source: 'netease', duration: 218, url_id: '1888497678', pic_id: '109951165671182684', reason: '吃柴 推荐 - 这个人的声音跟一只白羊的声音好像' },
+      { id: 'init_9', name: '消失的黎明', artist: 'Babystop_山竹 / 糯米Nomi', album: '消失的黎明', source: 'netease', duration: 232, url_id: '1878345712', pic_id: '109951165671182684', reason: '蝉 推荐 - 好好听，纯圈外人喜欢' },
+      { id: 'init_10', name: '起风了', artist: '买辣椒也用券', album: '起风了', source: 'netease', duration: 325, url_id: '1330348068', pic_id: '109951165671182684', reason: '心选推荐 - 旋律如空谷幽兰，每次听心都很平静' },
+      { id: 'init_11', name: '晴天', artist: '周杰伦', album: '叶惠美', source: 'netease', duration: 269, url_id: '186016', pic_id: '109951165671182684', reason: '青春记忆 - 词曲入木三分，曲终人亦不散' },
+      { id: 'init_12', name: '像风一样', artist: '薛之谦', album: '渡', source: 'netease', duration: 255, url_id: '516657051', pic_id: '109951165671182684', reason: '薛之谦 推荐 - 清雅恬淡，适合伴茶细酌' }
+    ]
+  },
+  {
+    title: '小众宝藏佳作',
+    songs: [
+      { id: 'init_13', name: '空谷幽兰', artist: '阿鲲', album: '新萧十一郎', source: 'netease', duration: 186, url_id: '405485307', pic_id: '109951165671182684', reason: '灵犀原声心选 - 尝试了全新的古典风格，意境悠远' },
+      { id: 'init_14', name: '千度', artist: '许嵩', album: '苏格拉没有底', source: 'netease', duration: 247, url_id: '167876', pic_id: '109951165671182684', reason: '国风经典 - 细腻婉转，意韵百转千回' },
+      { id: 'init_15', name: '青花瓷', artist: '周杰伦', album: '我很忙', source: 'netease', duration: 239, url_id: '185997', pic_id: '109951165671182684', reason: '天青色等烟雨 - 余韵悠长耐品' },
+      { id: 'init_16', name: '水星记', artist: '郭顶', album: '飞行器的执行周期', source: 'netease', duration: 325, url_id: '441491828', pic_id: '109951165671182684', reason: '深情低语 - 适合夜深人静时独享' },
+      { id: 'init_17', name: '借月', artist: '王宇宙 / 乔浚丞', album: '借月', source: 'netease', duration: 220, url_id: '1969248538', pic_id: '109951165671182684', reason: '借一缕月色 - 温润抚慰风尘' },
+      { id: 'init_18', name: '琵琶行', artist: '奇然 / 沈谧仁', album: '高考背诵曲目', source: 'netease', duration: 312, url_id: '504262174', pic_id: '109951165671182684', reason: '转轴拨弦三两声 - 寻声暗问弹者谁' }
+    ]
+  }
+];
+
+let currentDiscoverSections = JSON.parse(JSON.stringify(INITIAL_DISCOVER_SECTIONS));
+let currentDiscoverSongs = [];
+currentDiscoverSections.forEach((sec, secIdx) => {
+  sec.songs.forEach(song => {
+    song._globalIdx = currentDiscoverSongs.length;
+    song._secIdx = secIdx;
+    currentDiscoverSongs.push(song);
+  });
+});
 
 const DISCOVER_NOTE_TEMPLATES = [
   '尝试了全新的古典风格，意境悠远',
@@ -5134,7 +5236,7 @@ async function refreshRecommendations(showToast = false) {
       selectedSeeds = shuffled.slice(0, 3);
     }
 
-    const defaultSeeds = ['阿鲲', '周杰伦', '毛不易', '陈奕迅', '许嵩', '纯音乐', '国风'];
+    const defaultSeeds = ['伦桑', '许嵩', '胡夏', '周杰伦', '毛不易', '薛之谦', '国风', '阿鲲'];
     const shuffledDefault = [...defaultSeeds].sort(() => 0.5 - Math.random());
     while (selectedSeeds.length < 3) {
       const candidate = shuffledDefault.pop();
@@ -5146,7 +5248,7 @@ async function refreshRecommendations(showToast = false) {
     currentDiscoverSeeds = selectedSeeds;
 
     // 2. 并行拉取线上优质曲目
-    const searchPromises = selectedSeeds.map(seed => requestOnlineSearch(seed, 10));
+    const searchPromises = selectedSeeds.map(seed => requestOnlineSearch(seed, 20));
     const resultsLists = await Promise.all(searchPromises);
 
     // 3. 构建本地已知歌曲排重集
@@ -5173,12 +5275,12 @@ async function refreshRecommendations(showToast = false) {
           }
         }
       }
-      if (merged.length >= 12) break;
+      if (merged.length >= 24) break;
     }
 
-    // 若不足 9 首则补充热歌榜
-    if (merged.length < 9) {
-      const fallbackList = await requestOnlineSearch('热歌榜', 15);
+    // 若不足 18 首则补充热歌榜
+    if (merged.length < 18) {
+      const fallbackList = await requestOnlineSearch('热歌榜', 30);
       if (Array.isArray(fallbackList)) {
         for (const fbSong of fallbackList) {
           const lowTitle = (fbSong.name || '').trim().toLowerCase();
@@ -5189,15 +5291,15 @@ async function refreshRecommendations(showToast = false) {
             fbSong.reason = `精选热播 推荐 - ${template}`;
             merged.push(fbSong);
           }
-          if (merged.length >= 12) break;
+          if (merged.length >= 24) break;
         }
       }
     }
 
-    // 4. 构建图2风格的多板块分组
-    const sec1Songs = merged.slice(0, 3);
-    const sec2Songs = merged.slice(3, 6);
-    const sec3Songs = merged.slice(6, 9);
+    // 4. 构建多板块双列横滑流分组（每个板块 6 首歌曲，每列 3 首）
+    const sec1Songs = merged.slice(0, 6);
+    const sec2Songs = merged.slice(6, 12);
+    const sec3Songs = merged.slice(12, 18);
 
     const nowMonthDay = (() => {
       const now = new Date();
@@ -5209,15 +5311,15 @@ async function refreshRecommendations(showToast = false) {
     currentDiscoverSections = [
       {
         title: `灵犀新推 · ${nowMonthDay}佳作`,
-        songs: sec1Songs.length > 0 ? sec1Songs : merged.slice(0, 3)
+        songs: sec1Songs.length >= 6 ? sec1Songs : (sec1Songs.concat(INITIAL_DISCOVER_SECTIONS[0].songs)).slice(0, 6)
       },
       {
         title: '私人专属好歌',
-        songs: sec2Songs.length > 0 ? sec2Songs : merged.slice(0, 3)
+        songs: sec2Songs.length >= 6 ? sec2Songs : (sec2Songs.concat(INITIAL_DISCOVER_SECTIONS[1].songs)).slice(0, 6)
       },
       {
-        title: '频道推荐 · 悠然随听',
-        songs: sec3Songs.length > 0 ? sec3Songs : merged.slice(0, 3)
+        title: '小众宝藏佳作',
+        songs: sec3Songs.length >= 6 ? sec3Songs : (sec3Songs.concat(INITIAL_DISCOVER_SECTIONS[2].songs)).slice(0, 6)
       }
     ];
 
@@ -5233,6 +5335,25 @@ async function refreshRecommendations(showToast = false) {
 
     renderDiscoverPane();
     if (showToast) toast('已更新推荐曲目');
+
+    // 异步拉取真实封面，使长方形卡片展示精美专辑画报
+    const needPicSongs = currentDiscoverSongs.filter(s => !s.cover && (s.pic_id || s.url_id));
+    if (needPicSongs.length > 0) {
+      Promise.all(needPicSongs.slice(0, 18).map(async song => {
+        try {
+          const targetId = song.pic_id || song.url_id || song.id;
+          const picRes = await universalFetch(`${currentApiBase}?types=pic&id=${targetId}&source=${song.source || 'netease'}`, { timeout: 2500 });
+          if (picRes.ok) {
+            const pData = await picRes.json();
+            if (pData && pData.url) {
+              song.cover = pData.url;
+            }
+          }
+        } catch(e) {}
+      })).then(() => {
+        renderDiscoverPane();
+      });
+    }
   } catch (err) {
     console.warn('推荐生成异常:', err);
     if (showToast) toast('网络连接较慢，推荐获取失败');
@@ -6131,11 +6252,17 @@ function updateFixedRadioCardUI() {
 function extractCardGlowColor(imgUrl) {
   const card = document.querySelector('.fixed-radio-card');
   if (!card) return;
+  const setDefaultGlow = () => {
+    card.style.setProperty('--card-glow-1', 'rgba(168, 218, 220, 0.65)');
+    card.style.setProperty('--card-glow-2', 'rgba(230, 204, 178, 0.55)');
+    card.style.setProperty('--card-glow-3', 'rgba(200, 214, 229, 0.50)');
+  };
+
   if (!imgUrl) {
-    card.style.setProperty('--card-glow-color', 'rgba(195, 215, 226, 0.52)');
-    card.style.setProperty('--card-glow-color-2', 'rgba(228, 218, 204, 0.42)');
+    setDefaultGlow();
     return;
   }
+
   const img = new Image();
   img.crossOrigin = 'Anonymous';
   img.onload = function() {
@@ -6145,17 +6272,44 @@ function extractCardGlowColor(imgUrl) {
       const ctx = cvs.getContext('2d');
       ctx.drawImage(img, 0, 0, 16, 16);
       const data = ctx.getImageData(0, 0, 16, 16).data;
-      let r = 0, g = 0, b = 0, count = 0;
+      let rSum = 0, gSum = 0, bSum = 0, count = 0;
       for (let i = 0; i < data.length; i += 16) {
-        r += data[i]; g += data[i+1]; b += data[i+2]; count++;
+        rSum += data[i]; gSum += data[i+1]; bSum += data[i+2]; count++;
       }
-      r = Math.round(r / count);
-      g = Math.round(g / count);
-      b = Math.round(b / count);
-      card.style.setProperty('--card-glow-color', `rgba(${r}, ${g}, ${b}, 0.52)`);
-      card.style.setProperty('--card-glow-color-2', `rgba(${Math.min(255, r + 20)}, ${Math.min(255, g + 15)}, ${Math.max(0, b - 15)}, 0.42)`);
-    } catch(e) {}
+      const r = rSum / count;
+      const g = gSum / count;
+      const b = bSum / count;
+
+      // 转换为 HSL 并校准饱和度与高明度，确保呈现纯净、通透的宣纸水粉轻云质感，绝不浑浊
+      const rNorm = r / 255, gNorm = g / 255, bNorm = b / 255;
+      const max = Math.max(rNorm, gNorm, bNorm), min = Math.min(rNorm, gNorm, bNorm);
+      let h = 0, s = 0, l = (max + min) / 2;
+      if (max !== min) {
+        const d = max - min;
+        s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+        switch (max) {
+          case rNorm: h = (gNorm - bNorm) / d + (gNorm < bNorm ? 6 : 0); break;
+          case gNorm: h = (bNorm - rNorm) / d + 2; break;
+          case bNorm: h = (rNorm - gNorm) / d + 4; break;
+        }
+        h = Math.round(h * 60);
+      }
+
+      // 保持清透雅致的浅云色温
+      const hue1 = h;
+      const hue2 = (h + 35) % 360;
+      const hue3 = (h + 315) % 360;
+      const sat = Math.max(45, Math.min(70, Math.round(s * 100)));
+      const light = 76; // 76% 高明度，明亮清丽，与白色自然融为一体
+
+      card.style.setProperty('--card-glow-1', `hsla(${hue1}, ${sat}%, ${light}%, 0.65)`);
+      card.style.setProperty('--card-glow-2', `hsla(${hue2}, ${Math.max(40, sat - 10)}%, ${light + 4}%, 0.55)`);
+      card.style.setProperty('--card-glow-3', `hsla(${hue3}, ${sat}%, ${light + 2}%, 0.50)`);
+    } catch(e) {
+      setDefaultGlow();
+    }
   };
+  img.onerror = setDefaultGlow;
   img.src = imgUrl;
 }
 
