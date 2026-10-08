@@ -2186,6 +2186,208 @@ body.in-pip-mode .view-player-full {
   padding-bottom: 0 !important;
 }
 
+
+/* ================== Material 3 物理水波纹体系 (1:1 移植自 hhznx) ================== */
+:root {
+  --ripple-solid-color: rgba(24, 26, 28, 0.08);
+}
+body.night {
+  --ripple-solid-color: rgba(255, 255, 255, 0.12);
+}
+
+.ripple-btn, .settings-item-row, .song-row, .discover-card-row, .library-album-pill, .voice-modal-btn, .icon-btn, .nav-btn, .popup-menu-item, .modal-action-btn {
+  position: relative;
+  overflow: hidden !important;
+  -webkit-tap-highlight-color: transparent !important;
+}
+
+.m3-ripple-ink {
+  position: absolute;
+  top: 0;
+  left: 0;
+  border-radius: 50%;
+  pointer-events: none;
+  will-change: transform, opacity;
+  opacity: 0;
+  transform-origin: center center;
+  background: radial-gradient(
+    closest-side,
+    var(--ripple-solid-color) max(calc(100% - 70px), 65%),
+    transparent 100%
+  );
+  transition: opacity 375ms linear;
+  z-index: 10;
+}
+.m3-ripple-ink.is-pressed {
+  opacity: 1;
+  transition: opacity 105ms linear;
+}
+
+/* ================== 设置页 Morphing CardGroup (参考 hhznx) ================== */
+.group-menu-card {
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  overflow: visible !important;
+  display: flex;
+  flex-direction: column;
+  gap: 2px !important;
+  box-shadow: none !important;
+  flex-shrink: 0;
+}
+.group-menu-divider {
+  display: none !important;
+}
+.settings-item-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 13px 16px;
+  min-height: 52px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  position: relative;
+  overflow: hidden;
+  user-select: none;
+  background: var(--card-bg);
+  border-radius: 2px;
+  transition: border-radius 0.22s cubic-bezier(0.2, 0.8, 0.2, 1), background-color 0.15s ease;
+}
+.group-menu-card > .settings-item-row:first-child {
+  border-radius: 14px 14px 2px 2px;
+}
+.group-menu-card > .settings-item-row:last-child {
+  border-radius: 2px 2px 14px 14px;
+}
+.group-menu-card > .settings-item-row:first-child:last-child {
+  border-radius: 14px !important;
+}
+.group-menu-card > .settings-item-row:active {
+  border-radius: 14px !important;
+}
+
+/* 细腻返回键 */
+.nav-btn.fine-back, .icon-btn.fine-back {
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+}
+.fine-back svg {
+  width: 20px !important; height: 20px !important;
+  stroke-width: 1.4 !important;
+}
+
+/* ================== 居中弹窗卡片 (1:1 复刻 hhznx voice-central-modal-card) ================== */
+.voice-central-modal-overlay {
+  position: fixed; inset: 0; z-index: 1200;
+  background: rgba(0, 0, 0, 0.40);
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  display: flex; align-items: center; justify-content: center;
+  padding: 24px;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.22s cubic-bezier(0.2, 0, 0, 1), visibility 0.22s;
+  visibility: hidden;
+}
+.voice-central-modal-overlay.active {
+  opacity: 1; visibility: visible; pointer-events: auto;
+}
+.voice-central-modal-card {
+  width: 100%; max-width: 320px;
+  background: var(--card-bg, #FFFFFF);
+  border-radius: 18px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.16);
+  overflow: hidden;
+  display: flex; flex-direction: column;
+  transform: scale(0.90) translateZ(0);
+  opacity: 0;
+  transition: transform 0.24s cubic-bezier(0.2, 0, 0, 1), opacity 0.22s cubic-bezier(0.2, 0, 0, 1);
+  will-change: transform, opacity;
+  box-sizing: border-box;
+}
+.voice-central-modal-overlay.active .voice-central-modal-card {
+  transform: scale(1) translateZ(0); opacity: 1;
+}
+body.night .voice-central-modal-card {
+  background: #1E1E1C;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.65);
+}
+.voice-modal-title {
+  font-size: 16px; font-weight: 600; color: var(--ink-black);
+  padding: 20px 20px 6px; text-align: left;
+}
+.voice-modal-desc {
+  font-size: 12.5px; color: var(--ink-light);
+  padding: 0 20px 14px; text-align: left; line-height: 1.4;
+}
+body.night .voice-modal-desc { color: var(--ink-gray); }
+.voice-modal-input-wrap {
+  padding: 0 20px 20px;
+}
+.voice-modal-input {
+  width: 100%; box-sizing: border-box;
+  background: #F4F3EF; border: 1px solid transparent;
+  border-radius: 10px; padding: 10px 12px;
+  font-size: 14px; color: var(--ink-black);
+  outline: none; transition: border-color 0.15s ease, background 0.15s ease;
+  font-family: inherit;
+}
+.voice-modal-input:focus {
+  background: #FFFFFF; border-color: #1D1D1F;
+}
+body.night .voice-modal-input {
+  background: rgba(255, 255, 255, 0.06); color: #EDEDED;
+}
+body.night .voice-modal-input:focus {
+  background: rgba(255, 255, 255, 0.1); border-color: #EDEDED;
+}
+.voice-modal-actions {
+  display: flex; border-top: 0.5px solid var(--divider, rgba(0, 0, 0, 0.08));
+  width: 100%;
+}
+body.night .voice-modal-actions { border-top-color: rgba(255, 255, 255, 0.1); }
+.voice-modal-btn {
+  flex: 1; height: 48px; border: none; background: transparent;
+  font-size: 15px; font-weight: 400; color: var(--ink-gray, #6E6D66);
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  position: relative; overflow: hidden;
+}
+.voice-modal-btn.voice-modal-btn-primary {
+  color: var(--ink-black); font-weight: 600;
+}
+body.night .voice-modal-btn.voice-modal-btn-primary {
+  color: #FFFFFF;
+}
+
+/* ================== 发现页上滑刷新好歌底栏 ================== */
+.discover-pullup-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 16px 0 26px;
+  color: var(--ink-light);
+  font-size: 12.5px;
+  cursor: pointer;
+  user-select: none;
+  transition: color 0.18s ease;
+}
+.discover-pullup-bar:active { color: var(--ink-dark); }
+.discover-pullup-spinner {
+  width: 14px;
+  height: 14px;
+  border: 1.5px solid var(--border-input);
+  border-top-color: var(--ink-dark);
+  border-radius: 50%;
+  display: none;
+  animation: discSpinSlow 0.75s linear infinite;
+}
+.discover-pullup-bar.loading .discover-pullup-spinner { display: inline-block; }
+
+/* 保证所有弹窗容器均为 18px 圆角 */
+.choose-playlist-modal, .menu-modal, .confirm-modal-card {
+  border-radius: 18px !important;
+}
+
 </style>
 </head>
 <body class="apk-mode">
@@ -2238,9 +2440,6 @@ body.in-pip-mode .view-player-full {
             <div class="fixed-radio-card" onclick="openCurrentRadioAlbum()">
               <div>
                 <div class="radio-card-header">
-                  <svg id="radioHeaderRoseIcon" class="radio-header-rose-icon" viewBox="0 0 24 24" style="width:16px; height:16px; fill:#F87171; stroke:none; flex-shrink:0;">
-                    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
-                  </svg>
                   <span id="dynamicCardTitle">全部歌曲</span>
                 </div>
                 <div class="radio-card-sub" id="dynamicCardSub">灵犀漫步 - 遇见知音</div>
@@ -2270,6 +2469,10 @@ body.in-pip-mode .view-player-full {
         <!-- 推荐多板块流：宝藏故事、私人专属好歌等 -->
         <div style="padding: 0 16px 40px;">
           <div id="discoverSectionsContainer"></div>
+          <div class="discover-pullup-bar ripple-btn" id="discoverPullupBar" onclick="refreshRecommendations(true)">
+            <div class="discover-pullup-spinner" id="discoverPullupSpinner"></div>
+            <span id="discoverPullupText">上滑或点击刷新推荐好歌</span>
+          </div>
         </div>
       </div>
 
@@ -2320,7 +2523,15 @@ body.in-pip-mode .view-player-full {
       <div class="view-settings-page" id="paneSettings">
         <span class="settings-group-header">个性化</span>
         <div class="group-menu-card">
-          <div class="settings-item-row" onclick="openThemeSettingsSubpage()">
+          <div class="settings-item-row ripple-btn" onclick="toggleDefaultHomeTabSetting()">
+            <div class="settings-item-col">
+              <span class="settings-title-line">启动默认主页</span>
+              <span class="settings-sub-desc" id="defaultHomeTabDesc">当前：发现（精选推荐）</span>
+            </div>
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" style="color:var(--ink-light);"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+          <div class="group-menu-divider"></div>
+          <div class="settings-item-row ripple-btn" onclick="openThemeSettingsSubpage()">
             <div class="settings-item-col">
               <span class="settings-title-line">外观与个性化</span>
               <span class="settings-sub-desc" id="themeSettingsSummary">跟随系统 - 克莱因蓝</span>
@@ -6279,14 +6490,6 @@ function updateFixedRadioCardUI() {
     subEl.textContent = `${cleanArt} - 灵犀心选`;
   }
 
-  const roseIcon = document.getElementById('radioHeaderRoseIcon');
-  if (roseIcon) {
-    const isFav = ALL_LIBRARY_SONGS.some(s => 
-      (s.id === 'online_' + target.id || (s.title === (target.name || target.title) && s.artist === target.artist)) && s.isFav
-    );
-    roseIcon.classList.toggle('hide', !isFav);
-  }
-
   const radioPlayBtn = document.getElementById('radioPlayBtnCircle');
   if (radioPlayBtn) {
     const pauseSvg = '<svg viewBox="0 0 24 24"><rect x="6" y="4" width="3.5" height="16" fill="currentColor"/><rect x="14.5" y="4" width="3.5" height="16" fill="currentColor"/></svg>';
@@ -6399,7 +6602,7 @@ function handleVinylScroll(el) {
 }
 
 function openCurrentRadioAlbum() {
-  playTopRecommendedTrack(activeTopTrackIndex);
+  playTopRecommendedTrack(activeTopTrackIndex, true);
 }
 
 function togglePlayCurrentRadioAlbum() {
@@ -6414,16 +6617,17 @@ function togglePlayCurrentRadioAlbum() {
   if (isTargetPlaying) {
     togglePlayState();
   } else {
-    playTopRecommendedTrack(activeTopTrackIndex);
+    // 点击正方形播放键只触发播放，不自动进入歌曲全屏详情页
+    playTopRecommendedTrack(activeTopTrackIndex, false);
   }
 }
 
-function playTopRecommendedTrack(idx) {
+function playTopRecommendedTrack(idx, openFull = true) {
   if (!topRecommendedTracks || !topRecommendedTracks[idx]) return;
   scrollVinylToTrack(idx, true);
-  const song = topRecommendedTracks[idx];
 
-  const trackObj = {
+  // 将顶部全部推荐曲目作为播放队列，听完一首自然播放下一首推荐曲目
+  const queue = topRecommendedTracks.map(song => ({
     id: 'online_' + song.id,
     onlineId: song.url_id || song.id,
     source: song.source || 'netease',
@@ -6436,22 +6640,15 @@ function playTopRecommendedTrack(idx) {
     cover: song.cover || song.pic || '',
     pic_id: song.pic_id || song.url_id || song.id,
     lyric_id: song.lyric_id || song.url_id || song.id,
-    isFav: false
-  };
+    isFav: ALL_LIBRARY_SONGS.some(s => (s.id === 'online_' + song.id || (s.title === (song.name || song.title) && s.artist === song.artist)) && s.isFav)
+  }));
 
-  const existingIdx = currentPlaybackQueue.findIndex(s => 
-    s.id === trackObj.id || (s.title === trackObj.title && s.artist === trackObj.artist)
-  );
-
-  if (existingIdx !== -1) {
-    currentIndex = existingIdx;
-  } else {
-    currentPlaybackQueue.splice(currentIndex + 1, 0, trackObj);
-    currentIndex = currentIndex + 1;
+  currentPlaybackQueue = queue;
+  currentIndex = idx;
+  if (openFull) {
+    openPlayerFull();
   }
-
-  openPlayerFull();
-  playSongAtQueue(currentIndex);
+  playSongAtQueue(idx);
 }
 
 /* ================== 乐库歌单切换与播放（第二页：我的曲库） ================== */
@@ -6961,6 +7158,7 @@ function updateSettingsSummary() {
 
   const fontDisp = document.getElementById('main-font-display');
   if (fontDisp) fontDisp.textContent = (currentAppFont === 'system' ? '系统自带' : '霞鹜文楷');
+  if (typeof updateDefaultHomeTabUI === 'function') updateDefaultHomeTabUI();
 }
 
 function openColorModal() {
@@ -7411,23 +7609,52 @@ function handleDeletePlaylistMenu() {
 
 /* 新建歌单功能 */
 function openCreatePlaylistPrompt() {
-  const name = prompt("请输入新建歌单名称：");
-  if (name && name.trim()) {
-    const trimmedName = name.trim();
-    const newAlb = {
-      id: 'alb_custom_' + Date.now(),
-      title: trimmedName,
-      author: '我',
-      sub: '自建私享 - 触碰进入',
-      hasRose: false,
-      songs: []
-    };
-    VINYL_ALBUMS.push(newAlb);
-    persistData();
-    renderVinylDiscs();
-    const newIdx = VINYL_ALBUMS.length - 1;
-    scrollVinylToAlbum(newIdx, true);
-    toast(`已创建歌单「${trimmedName}」`);
+  const overlay = document.getElementById('createPlaylistModalOverlay');
+  const input = document.getElementById('createPlaylistInput');
+  if (!overlay || !input) return;
+  input.value = '';
+  overlay.classList.add('active');
+  setTimeout(() => input.focus(), 80);
+}
+
+function closeCreatePlaylistModal() {
+  const overlay = document.getElementById('createPlaylistModalOverlay');
+  if (overlay) overlay.classList.remove('active');
+}
+
+function submitCreatePlaylistModal() {
+  const input = document.getElementById('createPlaylistInput');
+  if (!input) return;
+  const name = input.value.trim();
+  if (!name) {
+    toast('请输入歌单名称');
+    return;
+  }
+  closeCreatePlaylistModal();
+  const newAlb = {
+    id: 'alb_custom_' + Date.now(),
+    title: name,
+    author: '我',
+    sub: '自建私享 - 触碰进入',
+    hasRose: false,
+    songs: []
+  };
+  VINYL_ALBUMS.push(newAlb);
+  persistData();
+  renderLibraryAlbumPills();
+  const newIdx = VINYL_ALBUMS.length - 1;
+  scrollVinylToAlbum(newIdx, true);
+  toast(`已创建歌单「${name}」`);
+
+  const chooseModal = document.getElementById('choosePlaylistModal');
+  if (chooseModal && chooseModal.classList.contains('active')) {
+    if (typeof selectedPlaylistIndices !== 'undefined') {
+      selectedPlaylistIndices.add(newIdx);
+    }
+    if (typeof renderChoosePlaylistItems === 'function') {
+      renderChoosePlaylistItems();
+    }
+  } else {
     openPlaylistDetail(newIdx);
   }
 }
@@ -9893,26 +10120,7 @@ window.onAppUpdateFailed = function(err) {
 };
 
 function openCreatePlaylistFromChoose() {
-  const name = prompt("请输入新建歌单名称：");
-  if (name && name.trim()) {
-    const trimmedName = name.trim();
-    const newAlb = {
-      id: 'alb_custom_' + Date.now(),
-      title: trimmedName,
-      author: '我',
-      sub: '自建私享 - 触碰进入',
-      hasRose: false,
-      songs: []
-    };
-    VINYL_ALBUMS.push(newAlb);
-    persistData();
-    renderVinylDiscs();
-    renderSongList();
-    const newAIdx = VINYL_ALBUMS.length - 1;
-    selectedPlaylistIndices.add(newAIdx);
-    renderChoosePlaylistItems();
-    toast(`已创建歌单「${trimmedName}」`);
-  }
+  openCreatePlaylistPrompt();
 }
 
 /* 新手入门指南：滑动式引导卡片，一信息一页 */
@@ -10307,6 +10515,7 @@ function executeResetAppData() {
 }
 
 function handleSystemBack() {
+  const createPlaylistM = document.getElementById('createPlaylistModalOverlay');
   const guideM = document.getElementById('beginnerGuideModal');
   const qualityM = document.getElementById('audioQualityModal');
   const coverM = document.getElementById('coverPreviewModal');
@@ -10324,7 +10533,8 @@ function handleSystemBack() {
   const editP = document.getElementById('viewEditPlaylist');
   const detailP = document.getElementById('viewPlaylistDetail');
 
-  if (guideM && guideM.classList.contains('active')) closeBeginnerGuideModal();
+  if (createPlaylistM && createPlaylistM.classList.contains('active')) closeCreatePlaylistModal();
+  else if (guideM && guideM.classList.contains('active')) closeBeginnerGuideModal();
   else if (qualityM && qualityM.classList.contains('active')) closeQualityModal();
   else if (coverM && coverM.classList.contains('active')) closeCoverPreview();
   else if (uniConfirm && uniConfirm.classList.contains('active')) closeUniversalConfirm();
@@ -10340,8 +10550,8 @@ function handleSystemBack() {
   else if (searchP && searchP.classList.contains('active')) closeSearchView();
   else if (editP && editP.classList.contains('active')) closeEditPlaylistPage();
   else if (detailP && detailP.classList.contains('active')) closePlaylistDetail();
-  else if (currentHomeTab === 'library') {
-    switchHomeNavTab('discover');
+  else if (currentHomeTab !== (localStorage.getItem('lingxi_default_tab') || 'discover')) {
+    switchHomeNavTab(localStorage.getItem('lingxi_default_tab') || 'discover');
   } else {
     // 已经位于应用主界面，按返回键直接退回手机桌面
     if (window.AndroidBridge && window.AndroidBridge.minimizeApp) {
@@ -11006,9 +11216,241 @@ function checkFirstLaunchTutorial() {
 window.addEventListener('load', () => {
   checkFirstLaunchTutorial();
   if (typeof initProgressBarDrag === 'function') initProgressBarDrag();
+  if (defaultHomeTab === 'library' && typeof switchHomeNavTab === 'function') {
+    switchHomeNavTab('library');
+  }
+  if (typeof updateDefaultHomeTabUI === 'function') updateDefaultHomeTabUI();
   setTimeout(() => checkAppUpdate(false), 1500);
 });
+
+/* ================== 设置页主页面切换（发现 vs 乐库） ================== */
+let defaultHomeTab = localStorage.getItem('lingxi_default_tab') || 'discover';
+
+function updateDefaultHomeTabUI() {
+  const descEl = document.getElementById('defaultHomeTabDesc');
+  if (descEl) {
+    descEl.textContent = defaultHomeTab === 'library' ? '当前：乐库（我的曲库）' : '当前：发现（精选推荐）';
+  }
+}
+
+function toggleDefaultHomeTabSetting() {
+  defaultHomeTab = (defaultHomeTab === 'discover') ? 'library' : 'discover';
+  localStorage.setItem('lingxi_default_tab', defaultHomeTab);
+  updateDefaultHomeTabUI();
+  toast(defaultHomeTab === 'library' ? '已设为启动默认进入「乐库」' : '已设为启动默认进入「发现」');
+}
+
+/* ================== 发现页上滑手势触发刷新推荐 ================== */
+(function initDiscoverPullupRefresh() {
+  document.addEventListener('DOMContentLoaded', () => {
+    const scrollEl = document.querySelector('.xianyin-content-scroll');
+    if (!scrollEl) return;
+    let touchStartY = 0;
+    let isPullingUp = false;
+
+    scrollEl.addEventListener('touchstart', (e) => {
+      if (currentHomeTab !== 'discover') return;
+      if (e.touches && e.touches.length === 1) {
+        touchStartY = e.touches[0].clientY;
+        const atBottom = (scrollEl.scrollHeight - scrollEl.scrollTop - scrollEl.clientHeight) <= 12;
+        isPullingUp = atBottom;
+      }
+    }, { passive: true });
+
+    scrollEl.addEventListener('touchend', (e) => {
+      if (!isPullingUp || currentHomeTab !== 'discover') return;
+      isPullingUp = false;
+      if (e.changedTouches && e.changedTouches.length === 1) {
+        const touchEndY = e.changedTouches[0].clientY;
+        const deltaY = touchStartY - touchEndY;
+        if (deltaY > 55) {
+          const bar = document.getElementById('discoverPullupBar');
+          if (bar) bar.classList.add('loading');
+          refreshRecommendations(true);
+          setTimeout(() => {
+            if (bar) bar.classList.remove('loading');
+          }, 1200);
+        }
+      }
+    }, { passive: true });
+  });
+})();
+
+/* ================== Google Material 3 物理水波纹引擎 (1:1 移植自 hhznx) ================== */
+(function initGlobalRippleEngine() {
+  const PRESS_GROW_MS = 450;
+  const MINIMUM_PRESS_MS = 225;
+  const INITIAL_ORIGIN_SCALE = 0.2;
+  const PADDING = 10;
+  const SOFT_EDGE_MINIMUM_SIZE = 75;
+  const SOFT_EDGE_CONTAINER_RATIO = 0.35;
+  const EASING_STANDARD = 'cubic-bezier(0.2, 0, 0, 1)';
+
+  let activeRipple = null;
+  let growAnimation = null;
+  let pressTimestamp = 0;
+  let pendingTimer = null;
+  let startX = 0, startY = 0;
+  let activeBtn = null;
+  let pendingPoint = null;
+
+  const spawnRipple = (btn, clientX, clientY) => {
+    if (!btn || !btn.isConnected) return;
+    if (window.getComputedStyle(btn).pointerEvents === 'none') return;
+
+    btn.querySelectorAll('.m3-ripple-ink').forEach(r => r.remove());
+
+    const rect = btn.getBoundingClientRect();
+    const width = rect.width;
+    const height = rect.height;
+    const maxDim = Math.max(height, width);
+    const softEdgeSize = Math.max(SOFT_EDGE_CONTAINER_RATIO * maxDim, SOFT_EDGE_MINIMUM_SIZE);
+    const initialSize = Math.max(1, Math.floor(maxDim * INITIAL_ORIGIN_SCALE));
+    const hypotenuse = Math.hypot(width, height);
+    const maxRadius = hypotenuse + PADDING;
+    const rippleScale = (maxRadius + softEdgeSize) / initialSize;
+
+    const x = clientX - rect.left;
+    const y = clientY - rect.top;
+
+    const startPoint = {
+      x: x - initialSize / 2,
+      y: y - initialSize / 2
+    };
+    const endPoint = {
+      x: (width - initialSize) / 2,
+      y: (height - initialSize) / 2
+    };
+
+    const ripple = document.createElement('span');
+    ripple.className = 'm3-ripple-ink';
+    ripple.style.width = initialSize + 'px';
+    ripple.style.height = initialSize + 'px';
+
+    btn.appendChild(ripple);
+    activeRipple = ripple;
+    pressTimestamp = Date.now();
+
+    requestAnimationFrame(() => {
+      ripple.classList.add('is-pressed');
+    });
+
+    if (typeof ripple.animate === 'function') {
+      growAnimation = ripple.animate({
+        transform: [
+          `translate(${startPoint.x}px, ${startPoint.y}px) scale(1)`,
+          `translate(${endPoint.x}px, ${endPoint.y}px) scale(${rippleScale})`
+        ]
+      }, {
+        duration: PRESS_GROW_MS,
+        easing: EASING_STANDARD,
+        fill: 'forwards'
+      });
+    }
+  };
+
+  const cancelPending = () => {
+    if (pendingTimer) {
+      clearTimeout(pendingTimer);
+      pendingTimer = null;
+    }
+    if (activeRipple) {
+      const r = activeRipple;
+      activeRipple = null;
+      r.classList.remove('is-pressed');
+      setTimeout(() => { if (r.parentNode) r.remove(); }, 380);
+    }
+    activeBtn = null;
+    pendingPoint = null;
+  };
+
+  const RIPPLE_SELECTOR = '.ripple-btn, .settings-item-row, .song-row, .discover-card-row, .library-album-pill, .voice-modal-btn, .modern-pill-btn, .icon-btn, .nav-btn, .popup-menu-item, .modal-action-btn, .drawer-row';
+
+  document.addEventListener('pointerdown', (e) => {
+    if (e.target.closest('input, textarea, select')) return;
+
+    const btn = e.target.closest(RIPPLE_SELECTOR);
+    if (!btn) return;
+    if (btn.classList.contains('no-ripple')) return;
+    if (window.getComputedStyle(btn).pointerEvents === 'none') return;
+
+    if (pendingTimer || activeRipple) cancelPending();
+
+    startX = e.clientX;
+    startY = e.clientY;
+    activeBtn = btn;
+    pendingPoint = { x: e.clientX, y: e.clientY };
+
+    const scrollParent = btn.closest('.xianyin-content-scroll, .settings-subview-scroll, .playlist-page-scroll, .search-results-list');
+    if (scrollParent) {
+      pendingTimer = setTimeout(() => {
+        pendingTimer = null;
+        if (activeBtn && pendingPoint) {
+          spawnRipple(activeBtn, pendingPoint.x, pendingPoint.y);
+        }
+      }, 30);
+    } else {
+      spawnRipple(btn, e.clientX, e.clientY);
+    }
+  }, { passive: true, capture: true });
+
+  document.addEventListener('pointermove', (e) => {
+    if (!activeBtn && !activeRipple) return;
+    const dist = Math.hypot(e.clientX - startX, e.clientY - startY);
+    if (dist > 7) {
+      cancelPending();
+    }
+  }, { passive: true, capture: true });
+
+  window.addEventListener('scroll', () => {
+    cancelPending();
+  }, { passive: true, capture: true });
+
+  const finishRipple = () => {
+    if (pendingTimer && activeBtn && pendingPoint) {
+      clearTimeout(pendingTimer);
+      pendingTimer = null;
+      spawnRipple(activeBtn, pendingPoint.x, pendingPoint.y);
+    }
+    activeBtn = null;
+    pendingPoint = null;
+
+    if (!activeRipple) return;
+    const ripple = activeRipple;
+    activeRipple = null;
+
+    const elapsed = Date.now() - pressTimestamp;
+    const remainingPressTime = Math.max(0, MINIMUM_PRESS_MS - elapsed);
+
+    setTimeout(() => {
+      ripple.classList.remove('is-pressed');
+      setTimeout(() => {
+        if (ripple.parentNode) ripple.remove();
+      }, 380);
+    }, remainingPressTime);
+  };
+
+  document.addEventListener('pointerup', finishRipple, { passive: true });
+  document.addEventListener('pointercancel', cancelPending, { passive: true });
+})();
+
 </script>
+
+
+  <!-- 现代精致新建歌单弹窗 (1:1 复刻 hhznx voice-central-modal-card 标准质感) -->
+  <div class="voice-central-modal-overlay" id="createPlaylistModalOverlay" onclick="closeCreatePlaylistModal()">
+    <div class="voice-central-modal-card" onclick="event.stopPropagation()">
+      <div class="voice-modal-title">新建歌单</div>
+      <div class="voice-modal-desc">输入歌单标题，珍藏你的专属私享乐曲</div>
+      <div class="voice-modal-input-wrap">
+        <input type="text" class="voice-modal-input" id="createPlaylistInput" placeholder="输入歌单名称" maxlength="24" onkeydown="if(event.key==='Enter')submitCreatePlaylistModal()">
+      </div>
+      <div class="voice-modal-actions">
+        <button type="button" class="voice-modal-btn ripple-btn" onclick="closeCreatePlaylistModal()">取消</button>
+        <button type="button" class="voice-modal-btn voice-modal-btn-primary ripple-btn" onclick="submitCreatePlaylistModal()">确定</button>
+      </div>
+    </div>
+  </div>
 
 </body>
 </html>
