@@ -382,6 +382,27 @@ body.night .discover-section-play-btn {
   transform: translateX(2px);
 }
 
+/* 推荐双列横滑流容器（每列3首歌，横向滑动切至下一列，右侧露出一截诱导滑动） */
+.discover-columns-scroll {
+  display: flex;
+  gap: 16px;
+  overflow-x: auto;
+  padding-bottom: 6px;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x mandatory;
+}
+.discover-columns-scroll::-webkit-scrollbar { display: none; }
+.discover-column {
+  width: calc(88vw - 32px);
+  min-width: 270px;
+  max-width: 330px;
+  flex-shrink: 0;
+  scroll-snap-align: start;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
 /* 推荐歌曲项（图2单曲行） */
 .discover-card-row {
   display: flex;
@@ -472,59 +493,79 @@ body.night .discover-section-play-btn {
 .xianyin-content-scroll::-webkit-scrollbar { display: none; }
 
 /* 顶部光盘专栏（光盘本身即歌单） */
-.radio-stage-viewport { position: relative; width: 100%; padding: 4px 0 14px; overflow: hidden; }
-.radio-stage-inner { position: relative; margin: 0 16px; height: 142px; }
+.radio-stage-viewport { position: relative; width: 100%; padding: 4px 0 10px; overflow: hidden; }
+.radio-stage-inner { position: relative; margin: 0 16px; height: 124px; }
 
 .fixed-radio-card {
   position: absolute; top: 0; left: 0; z-index: 10;
-  width: 136px; height: 142px; border-radius: 20px;
-  background: var(--card-bg);
-  border: none !important; padding: 14px 12px;
+  width: 118px; height: 122px; border-radius: 16px;
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  border: none !important; padding: 10px 10px;
   display: flex; flex-direction: column; justify-content: space-between; cursor: pointer;
   box-shadow: none !important;
   position: relative; overflow: hidden;
 }
 body.night .fixed-radio-card {
-  background: #20201E;
+  background: rgba(30, 30, 28, 0.76);
   border: none !important;
   box-shadow: none !important;
 }
 
+/* 内部上白下其他色温润云层效果，播放时流动浮动 */
+.fixed-radio-card::before {
+  content: ''; position: absolute; inset: -45%;
+  background: radial-gradient(circle at 35% 85%, var(--card-glow-color, rgba(195, 215, 226, 0.52)) 0%, transparent 62%),
+              radial-gradient(circle at 75% 90%, var(--card-glow-color-2, rgba(228, 218, 204, 0.42)) 0%, transparent 60%);
+  filter: blur(14px);
+  pointer-events: none; z-index: 0;
+  opacity: 0.9;
+}
+.fixed-radio-card.playing::before {
+  animation: cloudMistDrift 14s ease-in-out infinite alternate;
+}
+@keyframes cloudMistDrift {
+  0% { transform: translate(0, 0) scale(1) rotate(0deg); }
+  50% { transform: translate(12%, -8%) scale(1.15) rotate(6deg); }
+  100% { transform: translate(-10%, 10%) scale(1.06) rotate(-5deg); }
+}
+.fixed-radio-card > * { position: relative; z-index: 1; }
+
 .radio-card-header {
-  display: flex; align-items: center; gap: 6px;
-  font-size: 15px; font-weight: 600; color: var(--ink-black);
+  display: flex; align-items: center; gap: 5px;
+  font-size: 14px; font-weight: 600; color: var(--ink-black);
 }
 
 .radio-header-rose-icon {
-  width: 15px; height: 15px; fill: var(--brand-red) !important;
+  width: 14px; height: 14px; fill: var(--brand-red) !important;
   display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
 }
 .radio-header-rose-icon.hide { display: none !important; }
 
 .radio-card-sub {
-  font-size: 11px; color: var(--ink-gray);
-  margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  font-size: 10.5px; color: var(--ink-gray);
+  margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 
 .radio-card-bottom { display: flex; align-items: flex-end; justify-content: space-between; }
-.radio-live-bars { display: flex; align-items: flex-end; gap: 2.5px; height: 14px; }
+.radio-live-bars { display: flex; align-items: flex-end; gap: 2.2px; height: 12px; }
 .radio-live-bar {
-  width: 1.8px; background: var(--ink-light); border-radius: 1px;
+  width: 1.6px; background: var(--ink-light); border-radius: 1px;
 }
 .radio-live-bar:nth-child(1) { height: 4px; }
-.radio-live-bar:nth-child(2) { height: 12px; }
-.radio-live-bar:nth-child(3) { height: 7px; }
-.radio-live-bar:nth-child(4) { height: 10px; }
+.radio-live-bar:nth-child(2) { height: 11px; }
+.radio-live-bar:nth-child(3) { height: 6px; }
+.radio-live-bar:nth-child(4) { height: 9px; }
 
 .radio-play-btn-circle {
-  width: 28px; height: 28px; border-radius: 50%; background: var(--ink-black);
+  width: 26px; height: 26px; border-radius: 50%; background: var(--ink-black);
   color: #FFFFFF; display: flex; align-items: center; justify-content: center;
   border: none !important; box-shadow: none !important;
   transition: transform 0.18s ease;
 }
 .radio-play-btn-circle:active { transform: scale(0.92); }
 body.night .radio-play-btn-circle { background: #E8E7E3; color: #171715; }
-.radio-play-btn-circle svg { width: 11px; height: 11px; fill: currentColor; stroke: none; margin-left: 1px; }
+.radio-play-btn-circle svg { width: 10px; height: 10px; fill: currentColor; stroke: none; margin-left: 1px; }
 
 .vinyl-scroll-channel {
   position: absolute; top: 0; left: 0; right: -16px; bottom: 0;
@@ -532,13 +573,13 @@ body.night .radio-play-btn-circle { background: #E8E7E3; color: #171715; }
   -webkit-overflow-scrolling: touch; clip-path: inset(-10px -40px -10px 1px);
 }
 .vinyl-scroll-channel::-webkit-scrollbar { display: none; }
-.vinyl-initial-offset { width: 76px; flex-shrink: 0; }
+.vinyl-initial-offset { width: 62px; flex-shrink: 0; }
 .vinyl-disc-stream { display: flex; align-items: center; gap: 8px; }
-.vinyl-stream-card { width: 116px; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
+.vinyl-stream-card { width: 98px; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
 .vinyl-stream-card:active { transform: scale(0.96); }
 
 .stream-disc {
-  width: 114px; height: 114px; border-radius: 50%;
+  width: 96px; height: 96px; border-radius: 50%;
   background: #F4F1EA;
   border: none !important; display: flex; align-items: center; justify-content: center;
   position: relative; overflow: hidden;
@@ -568,8 +609,8 @@ body.night .stream-disc.stream-disc-add { border-color: #444 !important; }
 .stream-disc-core.has-cover {
   display: none !important;
 }
-.stream-disc-core svg { width: 32px; height: 32px; stroke: var(--ink-gray); stroke-width: 1.5; fill: none; }
-.stream-disc-core.rose-core svg { width: 32px; height: 32px; stroke: none; fill: var(--brand-red) !important; }
+.stream-disc-core svg { width: 28px; height: 28px; stroke: var(--ink-gray); stroke-width: 1.5; fill: none; }
+.stream-disc-core.rose-core svg { width: 28px; height: 28px; stroke: none; fill: var(--brand-red) !important; }
 
 @keyframes discSpinSlow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
@@ -706,7 +747,12 @@ body.night .library-album-pill.active {
   padding: 0 24px; z-index: 60;
 }
 body.night .xianyin-bottom-nav { background: rgba(20, 20, 19, 0.96); }
-.bottom-tab-item { display: flex; flex-direction: column; align-items: center; gap: 3px; cursor: pointer; color: var(--ink-light); width: 60px; user-select: none; }
+.bottom-tab-item {
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  cursor: pointer; color: var(--ink-light); width: 60px; user-select: none;
+  transition: transform 0.15s ease;
+}
+.bottom-tab-item:active { transform: scale(0.94); }
 .bottom-tab-item.active { color: var(--ink-black); font-weight: 600; }
 .bottom-tab-item svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 1.4; flex-shrink: 0; }
 .bottom-tab-title { font-size: 11.5px; }
@@ -766,7 +812,7 @@ body.night .xianyin-bottom-nav { background: rgba(20, 20, 19, 0.96); }
   55% { height: 5px; }
 }
 
-/* 底部导航设置 SVG 动态旋转动画 */
+/* 底部导航设置 SVG 动态旋转动画（移除放大，保持纯水墨纯粹旋转） */
 .nav-settings-svg {
   transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
   transform-origin: center center;
@@ -775,9 +821,8 @@ body.night .xianyin-bottom-nav { background: rgba(20, 20, 19, 0.96); }
   animation: settingsGearSpin 0.65s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 @keyframes settingsGearSpin {
-  0% { transform: rotate(0deg) scale(0.9); }
-  60% { transform: rotate(180deg) scale(1.15); }
-  100% { transform: rotate(180deg) scale(1); }
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(180deg); }
 }
 
 .bottom-center-disc-wrap { position: relative; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
@@ -4992,11 +5037,15 @@ let isDiscoverLoading = false;
 function renderLibraryAlbumPills() {
   const bar = document.getElementById('libraryAlbumPills');
   if (!bar) return;
-  bar.innerHTML = VINYL_ALBUMS.map((alb, idx) => {
+  const albumPillsHtml = VINYL_ALBUMS.map((alb, idx) => {
     const isActive = (activeRadioIndex === idx);
     const count = (alb.songs ? alb.songs.length : 0);
     return `<div class="library-album-pill ${isActive ? 'active' : ''}" onclick="selectLibraryAlbum(${idx})">${escapeHtml(alb.title)} (${count})</div>`;
   }).join('');
+
+  const addPillHtml = `<div class="library-album-pill" onclick="openCreatePlaylistPrompt()" style="display:inline-flex; align-items:center; gap:3px;"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>新建歌单</div>`;
+
+  bar.innerHTML = albumPillsHtml + addPillHtml;
 }
 
 function selectLibraryAlbum(idx) {
@@ -5227,48 +5276,58 @@ function renderDiscoverPane() {
               </svg>
             </div>
           </div>
-          <div class="discover-section-items">
-            ${sec.songs.map(song => {
-              const globalIdx = song._globalIdx;
-              const isCurPlaying = curPlayingSong && 
-                (curPlayingSong.id === 'online_' + song.id || (curPlayingSong.title === song.name && curPlayingSong.artist === song.artist)) && 
-                isPlaying;
+          <div class="discover-columns-scroll">
+            ${(() => {
+              const cols = [];
+              for (let i = 0; i < sec.songs.length; i += 3) {
+                cols.push(sec.songs.slice(i, i + 3));
+              }
+              return cols.map(colSongs => `
+                <div class="discover-column">
+                  ${colSongs.map(song => {
+                    const globalIdx = song._globalIdx;
+                    const isCurPlaying = curPlayingSong && 
+                      (curPlayingSong.id === 'online_' + song.id || (curPlayingSong.title === song.name && curPlayingSong.artist === song.artist)) && 
+                      isPlaying;
 
-              const isFav = ALL_LIBRARY_SONGS.some(item => 
-                (item.id === 'online_' + song.id || 
-                 item.onlineId === (song.url_id || song.id) || 
-                 (item.title === song.name && item.artist === song.artist)) && 
-                item.isFav
-              );
+                    const isFav = ALL_LIBRARY_SONGS.some(item => 
+                      (item.id === 'online_' + song.id || 
+                       item.onlineId === (song.url_id || song.id) || 
+                       (item.title === song.name && item.artist === song.artist)) && 
+                      item.isFav
+                    );
 
-              const coverUrl = song.cover || song.pic || '';
+                    const coverUrl = song.cover || song.pic || '';
 
-              return `
-                <div class="discover-card-row ${isCurPlaying ? 'playing' : ''}" onclick="playDiscoverTrack(${globalIdx})">
-                  <div class="discover-card-cover-wrap">
-                    ${coverUrl ? `
-                      <img src="${coverUrl}" class="discover-card-cover" alt="cover" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                    ` : ''}
-                    <div style="display:${coverUrl ? 'none' : 'flex'}; width:100%; height:100%; align-items:center; justify-content:center; color:var(--ink-light); background:var(--claude-pill-bg);">
-                      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
-                    </div>
-                    ${isCurPlaying ? `
-                      <div class="playing-bars" style="z-index:4;"><div class="bar"></div><div class="bar"></div><div class="bar"></div></div>
-                    ` : ''}
-                  </div>
-                  <div class="discover-card-info">
-                    <div class="discover-card-title">${escapeHtml(song.name)}</div>
-                    <div class="discover-card-artist">${escapeHtml(song.artist)}${song.album ? ' · ' + escapeHtml(song.album) : ''}</div>
-                    <div class="discover-card-reason">${escapeHtml(song.reason || '灵犀精选 · 值得一听')}</div>
-                  </div>
-                  <div class="discover-card-fav ${isFav ? 'active' : ''}" onclick="event.stopPropagation(); toggleDiscoverSongFav(${globalIdx})" title="收藏">
-                    <svg viewBox="0 0 24 24" width="20" height="20" fill="${isFav ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="1.4">
-                      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-                    </svg>
-                  </div>
+                    return `
+                      <div class="discover-card-row ${isCurPlaying ? 'playing' : ''}" onclick="playDiscoverTrack(${globalIdx})">
+                        <div class="discover-card-cover-wrap">
+                          ${coverUrl ? `
+                            <img src="${coverUrl}" class="discover-card-cover" alt="cover" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                          ` : ''}
+                          <div style="display:${coverUrl ? 'none' : 'flex'}; width:100%; height:100%; align-items:center; justify-content:center; color:var(--ink-light); background:var(--claude-pill-bg);">
+                            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+                          </div>
+                          ${isCurPlaying ? `
+                            <div class="playing-bars" style="z-index:4;"><div class="bar"></div><div class="bar"></div><div class="bar"></div></div>
+                          ` : ''}
+                        </div>
+                        <div class="discover-card-info">
+                          <div class="discover-card-title">${escapeHtml(song.name)}</div>
+                          <div class="discover-card-artist">${escapeHtml(song.artist)}${song.album ? ' · ' + escapeHtml(song.album) : ''}</div>
+                          <div class="discover-card-reason">${escapeHtml(song.reason || '灵犀精选 · 值得一听')}</div>
+                        </div>
+                        <div class="discover-card-fav ${isFav ? 'active' : ''}" onclick="event.stopPropagation(); toggleDiscoverSongFav(${globalIdx})" title="收藏">
+                          <svg viewBox="0 0 24 24" width="20" height="20" fill="${isFav ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="1.4">
+                            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                          </svg>
+                        </div>
+                      </div>
+                    `;
+                  }).join('')}
                 </div>
-              `;
-            }).join('')}
+              `).join('');
+            })()}
           </div>
         </div>
       `).join('')}
@@ -6064,12 +6123,46 @@ function updateFixedRadioCardUI() {
     const isThisAlbumPlaying = isPlaying && (currentPlayingAlbumIndex === activeRadioIndex);
     radioPlayBtn.innerHTML = isThisAlbumPlaying ? pauseSvg : playSvg;
   }
+
+  const coverUrl = getAlbumCover(target) || (cur ? (cur.cover || cur.pic) : '');
+  extractCardGlowColor(coverUrl);
+}
+
+function extractCardGlowColor(imgUrl) {
+  const card = document.querySelector('.fixed-radio-card');
+  if (!card) return;
+  if (!imgUrl) {
+    card.style.setProperty('--card-glow-color', 'rgba(195, 215, 226, 0.52)');
+    card.style.setProperty('--card-glow-color-2', 'rgba(228, 218, 204, 0.42)');
+    return;
+  }
+  const img = new Image();
+  img.crossOrigin = 'Anonymous';
+  img.onload = function() {
+    try {
+      const cvs = document.createElement('canvas');
+      cvs.width = 16; cvs.height = 16;
+      const ctx = cvs.getContext('2d');
+      ctx.drawImage(img, 0, 0, 16, 16);
+      const data = ctx.getImageData(0, 0, 16, 16).data;
+      let r = 0, g = 0, b = 0, count = 0;
+      for (let i = 0; i < data.length; i += 16) {
+        r += data[i]; g += data[i+1]; b += data[i+2]; count++;
+      }
+      r = Math.round(r / count);
+      g = Math.round(g / count);
+      b = Math.round(b / count);
+      card.style.setProperty('--card-glow-color', `rgba(${r}, ${g}, ${b}, 0.52)`);
+      card.style.setProperty('--card-glow-color-2', `rgba(${Math.min(255, r + 20)}, ${Math.min(255, g + 15)}, ${Math.max(0, b - 15)}, 0.42)`);
+    } catch(e) {}
+  };
+  img.src = imgUrl;
 }
 
 function scrollVinylToAlbum(idx, smooth = true) {
   const channel = document.getElementById('vinylScrollChannel');
   if (!channel) return;
-  const targetLeft = idx * 124;
+  const targetLeft = idx * 106;
   channel.scrollTo({
     left: targetLeft,
     behavior: smooth ? 'smooth' : 'auto'
@@ -6091,7 +6184,7 @@ function handleStreamCardClick(idx) {
 }
 
 function handleVinylScroll(el) {
-  const step = 124;
+  const step = 106;
   const newIdx = Math.min(VINYL_ALBUMS.length - 1, Math.max(0, Math.round(el.scrollLeft / step)));
   if (newIdx !== activeRadioIndex) {
     exitHomeMultiSelectMode();
