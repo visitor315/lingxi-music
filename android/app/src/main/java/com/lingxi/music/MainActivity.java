@@ -2103,9 +2103,9 @@ public class MainActivity extends Activity {
         public String getAppVersion() {
             try {
                 PackageInfo pInfo = getPackageManager().getPackageInfo(getPackageName(), 0);
-                return "2.3.8";
+                return "2.3.9";
             } catch (Exception e) {
-                return "2.3.8";
+                return "2.3.9";
             }
         }
 
@@ -2119,7 +2119,7 @@ public class MainActivity extends Activity {
                     return pInfo.versionCode;
                 }
             } catch (Exception e) {
-                return 71;
+                return 72;
             }
         }
 
