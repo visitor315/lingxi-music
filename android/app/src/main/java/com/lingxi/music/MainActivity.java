@@ -2085,7 +2085,7 @@ public class MainActivity extends Activity {
                 PackageInfo pInfo = getPackageManager().getPackageInfo(getPackageName(), 0);
                 return pInfo.versionName;
             } catch (Exception e) {
-                return "2.2.9";
+                return "2.3.0";
             }
         }
 
@@ -2099,7 +2099,7 @@ public class MainActivity extends Activity {
                     return pInfo.versionCode;
                 }
             } catch (Exception e) {
-                return 62;
+                return 63;
             }
         }
 

@@ -390,6 +390,7 @@ body.night .discover-section-play-btn {
   padding-bottom: 6px;
   -webkit-overflow-scrolling: touch;
   scroll-snap-type: x mandatory;
+  touch-action: pan-x pan-y;
 }
 .discover-columns-scroll::-webkit-scrollbar { display: none; }
 .discover-column {
@@ -604,14 +605,18 @@ body.night .radio-play-btn-circle { background: #E8E7E3; color: #171715; }
 
 .vinyl-scroll-channel {
   position: absolute; top: 0; left: 0; right: -16px; bottom: 0;
-  display: flex; align-items: center; overflow-x: auto; padding-right: 240px; z-index: 2;
-  -webkit-overflow-scrolling: touch; clip-path: inset(-10px -40px -10px 1px);
-  touch-action: pan-y pinch-zoom;
+  display: flex; align-items: center; overflow-x: auto !important; padding-right: 240px; z-index: 2;
+  -webkit-overflow-scrolling: touch !important; clip-path: inset(-10px -40px -10px 1px);
+  scroll-snap-type: x mandatory;
+  touch-action: pan-x pan-y !important;
 }
 .vinyl-scroll-channel::-webkit-scrollbar { display: none; }
 .vinyl-initial-offset { width: 62px; flex-shrink: 0; }
 .vinyl-disc-stream { display: flex; align-items: center; gap: 8px; }
-.vinyl-stream-card { width: 98px; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
+.vinyl-stream-card {
+  width: 98px; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0;
+  scroll-snap-align: start;
+}
 .vinyl-stream-card:active { transform: scale(0.96); }
 
 .stream-disc {
@@ -753,7 +758,7 @@ body.night .library-album-pill.active {
 .more-dots-btn svg { width: 18px; height: 18px; stroke-width: 1.8; stroke: currentColor; fill: none; }
 
 /* ================== 6. 设置页面 ================== */
-.view-settings-page { display: none; flex-direction: column; padding: 10px 16px 84px; gap: 16px; }
+.view-settings-page { display: none; flex-direction: column; padding: 14px 14px 84px; gap: 13px; }
 .view-settings-page.active { display: flex; }
 .settings-group-header, .sub-group-header {
   font-size: 13px;
@@ -767,7 +772,7 @@ body.night .library-album-pill.active {
 .settings-item-row {
   display: flex; align-items: center; justify-content: space-between; padding: 13px 16px; min-height: 52px;
   cursor: pointer; -webkit-tap-highlight-color: transparent; position: relative; overflow: hidden;
-  border-radius: 0 !important; user-select: none; gap: 14px;
+  border-radius: 0 !important; user-select: none;
 }
 .settings-item-row:active { opacity: 1 !important; }
 .group-menu-divider { height: 1px; width: 100%; background: var(--inner-divider); flex-shrink: 0; }
@@ -779,7 +784,7 @@ body.night .library-album-pill.active {
 .settings-sub-desc { font-size: 12px; color: var(--ink-gray); }
 
 .blue-toggle-switch {
-  width: 44px; height: 26px; border-radius: 13px; background: #D1D1CF; position: relative; transition: background 0.2s ease; flex-shrink: 0; cursor: pointer; margin-left: 12px;
+  width: 44px; height: 26px; border-radius: 13px; background: #D1D1CF; position: relative; transition: background 0.2s ease; flex-shrink: 0; cursor: pointer;
 }
 .blue-toggle-switch::after {
   content: ''; position: absolute; top: 2px; left: 2px; width: 22px; height: 22px; border-radius: 50%; background: #FFFFFF; transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -1125,8 +1130,8 @@ body.night .popup-menu-item:active { background: rgba(255, 255, 255, 0.05); }
 .view-theme-subpage.active { transform: translateX(0); pointer-events: auto; }
 
 .settings-subview-scroll {
-  flex: 1; overflow-y: auto; padding: 12px 16px max(32px, env(safe-area-inset-bottom, 24px));
-  display: flex; flex-direction: column; gap: 14px;
+  flex: 1; overflow-y: auto; padding: 14px 14px max(32px, env(safe-area-inset-bottom, 24px));
+  display: flex; flex-direction: column; gap: 13px;
 }
 
 .modal-overlay {
@@ -2252,7 +2257,7 @@ body.night {
   gap: 2px !important;
   box-shadow: none !important;
   flex-shrink: 0;
-  margin-bottom: 13px !important;
+  margin: 0 !important;
 }
 .group-menu-divider {
   display: none !important;
@@ -2274,7 +2279,6 @@ body.night {
   border-radius: 2px;
   box-shadow: none !important;
   border: none !important;
-  gap: 14px;
   transition: border-radius 0.22s cubic-bezier(0.2, 0.8, 0.2, 1), background-color 0.15s ease;
 }
 body.night .group-menu-card > div:not(.group-menu-divider),
@@ -2561,18 +2565,7 @@ body.night .add-clean-row:active {
         <span class="nav-tag-btn active" id="tabNavDiscover" onclick="switchHomeNavTab('discover')">发现</span>
         <span class="nav-tag-btn" id="tabNavLibrary" onclick="switchHomeNavTab('library')">乐库</span>
       </div>
-      <div class="settings-nav-header-box" id="settingsNavTitles" style="display:none; align-items:center; gap:8px;">
-        <button class="nav-btn fine-back ripple-btn" onclick="switchBottomTab('listen')" title="返回主界面" style="width:34px; height:34px; margin:0;">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="width:19px; height:19px;">
-            <line x1="19" y1="12" x2="5" y2="12"></line>
-            <polyline points="12 19 5 12 12 5"></polyline>
-          </svg>
-        </button>
-        <div style="display:flex; flex-direction:column; gap:0.5px;">
-          <span style="font-size:18.5px; font-weight:700; color:var(--ink-black); letter-spacing:-0.2px; line-height:1.2;">设置</span>
-          <span style="font-size:10.5px; color:var(--ink-light); letter-spacing:0.2px; line-height:1.2;">偏好配置与个性定制</span>
-        </div>
-      </div>
+      <div class="listen-nav-titles" id="settingsNavTitles" style="display:none;"><span class="nav-tag-btn active" style="cursor:default;">设置</span></div>
       <div class="listen-header-actions">
         <button class="icon-btn" onclick="openBeginnerGuideModal()" title="新手引导">
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -3714,7 +3707,7 @@ const OTHER_AVATAR_SVG = `<svg width="14" height="14" viewBox="0 0 24 24" fill="
 
 const APP_CONFIG = {
   name: '灵犀音乐',
-  version: '2.2.9',
+  version: '2.3.0',
   build: '2026.10.09',
   codename: 'Pure Sound'
 };
@@ -11429,34 +11422,24 @@ function toggleDefaultHomeTabSetting() {
 }
 
 
-/* ================== 顶部唱片左右滑动手势切换上下曲 (替换原生自由乱滚) ================== */
+/* ================== 顶部唱片滑动切歌 (卡片与轨道手势联动) ================== */
 (function initVinylSwipeGesture() {
   function bindGesture() {
-    const stage = document.querySelector('.radio-stage-viewport') || document.querySelector('.radio-stage-inner');
-    if (!stage) return;
+    const card = document.querySelector('.fixed-radio-card');
+    if (!card) return;
     let startX = 0, startY = 0;
-    let lastX = 0, lastY = 0;
-    let isSwiping = false;
 
-    const onStart = (clientX, clientY) => {
-      startX = clientX;
-      startY = clientY;
-      lastX = clientX;
-      lastY = clientY;
-      isSwiping = true;
-    };
+    card.addEventListener('touchstart', (e) => {
+      if (e.touches && e.touches.length > 0) {
+        startX = e.touches[0].clientX;
+        startY = e.touches[0].clientY;
+      }
+    }, { passive: true });
 
-    const onMove = (clientX, clientY) => {
-      if (!isSwiping) return;
-      lastX = clientX;
-      lastY = clientY;
-    };
-
-    const onEnd = () => {
-      if (!isSwiping) return;
-      isSwiping = false;
-      const deltaX = lastX - startX;
-      const deltaY = lastY - startY;
+    card.addEventListener('touchend', (e) => {
+      if (!e.changedTouches || e.changedTouches.length === 0) return;
+      const deltaX = e.changedTouches[0].clientX - startX;
+      const deltaY = e.changedTouches[0].clientY - startY;
 
       if (Math.abs(deltaX) > 25 && Math.abs(deltaX) > Math.abs(deltaY) * 0.7) {
         const total = topRecommendedTracks ? topRecommendedTracks.length : 0;
@@ -11472,30 +11455,6 @@ function toggleDefaultHomeTabSetting() {
           }
         }
       }
-    };
-
-    stage.addEventListener('touchstart', (e) => {
-      if (e.touches && e.touches.length > 0) {
-        onStart(e.touches[0].clientX, e.touches[0].clientY);
-      }
-    }, { passive: true });
-
-    stage.addEventListener('touchmove', (e) => {
-      if (e.touches && e.touches.length > 0) {
-        onMove(e.touches[0].clientX, e.touches[0].clientY);
-      }
-    }, { passive: true });
-
-    stage.addEventListener('touchend', (e) => {
-      if (e.changedTouches && e.changedTouches.length > 0) {
-        lastX = e.changedTouches[0].clientX;
-        lastY = e.changedTouches[0].clientY;
-      }
-      onEnd();
-    }, { passive: true });
-
-    stage.addEventListener('touchcancel', () => {
-      onEnd();
     }, { passive: true });
   }
 
@@ -11506,36 +11465,36 @@ function toggleDefaultHomeTabSetting() {
   }
 })();
 
-/* ================== 发现页上滑手势触发刷新推荐 (可靠立即生效版) ================== */
+/* ================== 发现页上滑手势触发刷新推荐 ================== */
 (function initDiscoverPullupRefresh() {
   function bindPullup() {
     const scrollEl = document.querySelector('.xianyin-content-scroll');
     if (!scrollEl) return;
     let touchStartY = 0;
-    let isPullingUp = false;
 
     scrollEl.addEventListener('touchstart', (e) => {
       if (currentHomeTab !== 'discover') return;
       if (e.touches && e.touches.length === 1) {
         touchStartY = e.touches[0].clientY;
-        const atBottom = (scrollEl.scrollHeight - scrollEl.scrollTop - scrollEl.clientHeight) <= 30;
-        isPullingUp = atBottom;
       }
     }, { passive: true });
 
     scrollEl.addEventListener('touchend', (e) => {
-      if (!isPullingUp || currentHomeTab !== 'discover') return;
-      isPullingUp = false;
+      if (currentHomeTab !== 'discover') return;
       if (e.changedTouches && e.changedTouches.length === 1) {
         const touchEndY = e.changedTouches[0].clientY;
         const deltaY = touchStartY - touchEndY;
-        if (deltaY > 35) {
-          const bar = document.getElementById('discoverPullupBar');
-          if (bar) bar.classList.add('loading');
-          refreshRecommendations(true);
-          setTimeout(() => {
-            if (bar) bar.classList.remove('loading');
-          }, 1200);
+        // 用户向上滑动超过 40px，且位于或接近底部时触发刷新
+        if (deltaY > 40) {
+          const distFromBottom = scrollEl.scrollHeight - scrollEl.scrollTop - scrollEl.clientHeight;
+          if (distFromBottom <= 120) {
+            const bar = document.getElementById('discoverPullupBar');
+            if (bar) bar.classList.add('loading');
+            refreshRecommendations(true);
+            setTimeout(() => {
+              if (bar) bar.classList.remove('loading');
+            }, 1200);
+          }
         }
       }
     }, { passive: true });
