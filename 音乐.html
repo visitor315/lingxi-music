@@ -603,9 +603,10 @@ body.night .radio-play-btn-circle { background: #E8E7E3; color: #171715; }
 .radio-play-btn-circle svg { width: 10px; height: 10px; fill: currentColor; stroke: none; margin-left: 1px; }
 
 .vinyl-scroll-channel {
-  flex: 1; min-width: 0; display: flex; align-items: center;
-  overflow-x: hidden !important; overflow-y: hidden !important;
-  position: relative; touch-action: pan-y !important;
+  position: absolute; top: 0; left: 0; right: -16px; bottom: 0;
+  display: flex; align-items: center; overflow-x: auto; padding-right: 240px; z-index: 2;
+  -webkit-overflow-scrolling: touch; clip-path: inset(-10px -40px -10px 1px);
+  touch-action: pan-y !important;
 }
 .vinyl-scroll-channel::-webkit-scrollbar { display: none; }
 .vinyl-initial-offset { width: 62px; flex-shrink: 0; }
@@ -11416,7 +11417,7 @@ function toggleDefaultHomeTabSetting() {
 /* ================== 顶部唱片左右滑动手势切换上下曲 (替换原生自由乱滚) ================== */
 (function initVinylSwipeGesture() {
   function bindGesture() {
-    const channel = document.getElementById('vinylScrollChannel') || document.querySelector('.fixed-radio-card-wrap');
+    const channel = document.querySelector('.radio-stage-inner') || document.getElementById('vinylScrollChannel');
     if (!channel) return;
     let startX = 0, startY = 0;
     let isSwiping = false;
