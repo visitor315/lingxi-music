@@ -2234,11 +2234,11 @@ body.night .choose-capsule-btn {
   position: relative !important;
 }
 .search-back-btn {
-  width: 32px !important;
-  height: 32px !important;
-  border-radius: 9px !important;
+  width: 34px !important;
+  height: 34px !important;
+  border-radius: 50% !important;
   background: var(--card-bg) !important;
-  border: 1px solid var(--card-border) !important;
+  border: none !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
@@ -2250,22 +2250,22 @@ body.night .choose-capsule-btn {
   -webkit-tap-highlight-color: transparent !important;
 }
 .search-back-btn svg {
-  width: 17px !important;
-  height: 17px !important;
+  width: 18px !important;
+  height: 18px !important;
   stroke: var(--ink-dark) !important;
   stroke-width: 1.5 !important;
 }
 body.night .search-back-btn {
   background: var(--card-bg) !important;
-  border-color: var(--card-border) !important;
+  border: none !important;
 }
 body.night .search-back-btn svg {
   stroke: #EDEDED !important;
 }
 .search-input-pill {
-  flex: 1; height: 32px; border-radius: 9px; background: var(--card-bg);
+  flex: 1; height: 34px; border-radius: 17px; background: var(--card-bg);
   border: none !important; display: flex; align-items: center;
-  padding: 0 10px; gap: 7px; box-shadow: none !important;
+  padding: 0 12px; gap: 7px; box-shadow: none !important;
 }
 .search-input-pill svg { width: 15px; height: 15px; stroke: var(--ink-light); fill: none; stroke-width: 1.6; flex-shrink: 0; }
 .search-real-input {
@@ -2819,9 +2819,6 @@ body.night .fine-back svg {
   position: relative;
   -webkit-tap-highlight-color: transparent !important;
 }
-.search-back-btn {
-  border-radius: 9px !important;
-}
 .fav-btn, .more-dots-btn, .song-action-btn {
   width: 36px; height: 36px; display: inline-flex;
   align-items: center; justify-content: center;
@@ -3289,7 +3286,7 @@ body.night .voice-modal-btn.voice-modal-btn-primary {
               </div>
               <div class="item-content">
                 <span class="item-main-title">检查版本更新</span>
-                <span class="item-subtitle-tight" id="aboutAppVersionDesc">v2.3.9</span>
+                <span class="item-subtitle-tight" id="aboutAppVersionDesc">v2.4.0</span>
               </div>
             </div>
             <svg class="item-arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
@@ -4358,7 +4355,7 @@ const OTHER_AVATAR_SVG = `<svg width="14" height="14" viewBox="0 0 24 24" fill="
 
 const APP_CONFIG = {
   name: '灵犀音乐',
-  version: '2.3.9',
+  version: '2.4.0',
   build: '2026.10.09',
   codename: 'Pure Sound'
 };
@@ -12712,10 +12709,11 @@ window.addEventListener('load', () => {
   document.addEventListener('pointerdown', (e) => {
     if (e.target.closest('input, textarea, select')) return;
     if (e.target.closest('.multi-select-check-box')) return;
+    if (e.target.closest('.fav-btn, .discover-card-fav')) return;
 
     const btn = e.target.closest(RIPPLE_SELECTOR);
     if (!btn) return;
-    if (btn.classList.contains('no-ripple')) return;
+    if (btn.classList.contains('no-ripple') || btn.classList.contains('fav-btn') || btn.classList.contains('discover-card-fav')) return;
     if (window.getComputedStyle(btn).pointerEvents === 'none') return;
 
     cancelPending();
