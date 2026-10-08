@@ -1066,14 +1066,14 @@ body.night .blue-toggle-switch { background: #383834; }
   background: var(--bg-page) !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
-  border-top: none !important;
+  border-top: 1px solid var(--border-line) !important;
   box-shadow: none !important;
   display: flex; align-items: center; justify-content: space-around;
   padding: 0 24px; z-index: 60;
 }
 body.night .xianyin-bottom-nav {
   background: var(--bg-page) !important;
-  border-top: none !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
   box-shadow: none !important;
 }
 .bottom-tab-item {
@@ -2650,8 +2650,9 @@ body.apk-mode .view-desktop {
 body.apk-mode .phone-viewport {
   width: 100vw !important;
   max-width: 100vw !important;
-  height: 100vh !important;
-  height: 100dvh !important;
+  height: 100% !important;
+  position: fixed !important;
+  inset: 0 !important;
   margin: 0 !important;
   border: none !important;
   border-radius: 0 !important;
@@ -2693,8 +2694,12 @@ body.apk-mode .xianyin-bottom-nav {
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
   border: none !important;
+  border-top: 1px solid var(--border-line) !important;
   box-shadow: none !important;
   box-sizing: border-box !important;
+}
+body.night .xianyin-bottom-nav {
+  border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
 }
 
 body.apk-mode .xianyin-content-scroll {
@@ -2711,8 +2716,9 @@ body.apk-mode .xianyin-content-scroll {
   .phone-viewport {
     width: 100vw !important;
     max-width: 100vw !important;
-    height: 100vh !important;
-    height: 100dvh !important;
+    height: 100% !important;
+    position: fixed !important;
+    inset: 0 !important;
     margin: 0 !important;
     border: none !important;
     border-radius: 0 !important;
@@ -2751,6 +2757,7 @@ body.apk-mode .xianyin-content-scroll {
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
     border: none !important;
+    border-top: 1px solid var(--border-line) !important;
     box-shadow: none !important;
     box-sizing: border-box !important;
   }
@@ -3479,7 +3486,7 @@ body.night .create-playlist-sheet-confirm {
               </div>
               <div class="item-content">
                 <span class="item-main-title">检查版本更新</span>
-                <span class="item-subtitle-tight" id="aboutAppVersionDesc">v2.4.5</span>
+                <span class="item-subtitle-tight" id="aboutAppVersionDesc">v2.4.6</span>
               </div>
             </div>
             <svg class="item-arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
@@ -4553,7 +4560,7 @@ const OTHER_AVATAR_SVG = `<svg width="14" height="14" viewBox="0 0 24 24" fill="
 
 const APP_CONFIG = {
   name: '灵犀音乐',
-  version: '2.4.5',
+  version: '2.4.6',
   build: '2026.10.09',
   codename: 'Pure Sound'
 };
@@ -6411,8 +6418,13 @@ function selectLibraryAlbum(idx) {
   renderSongList();
 }
 
-function switchHomeNavTab(tab) {
+let isHomeTabAnimating = false;
+
+function switchHomeNavTab(tab, immediate = false) {
   if (tab === currentHomeTab) return;
+  if (isHomeTabAnimating) return;
+
+  const previousTab = currentHomeTab;
   currentHomeTab = tab;
   const tabNavLibrary = document.getElementById('tabNavLibrary');
   const tabNavDiscover = document.getElementById('tabNavDiscover');
@@ -6423,17 +6435,42 @@ function switchHomeNavTab(tab) {
     exitHomeMultiSelectMode();
     if (tabNavLibrary) tabNavLibrary.classList.add('active');
     if (tabNavDiscover) tabNavDiscover.classList.remove('active');
-    if (paneListen) paneListen.style.display = 'block';
-    if (paneDiscover) paneDiscover.style.display = 'none';
-    renderLibraryAlbumPills();
-    renderSongList();
-    renderDrawerList();
-  } else if (tab === 'discover') {
+  } else {
     exitHomeMultiSelectMode();
     if (tabNavLibrary) tabNavLibrary.classList.remove('active');
     if (tabNavDiscover) tabNavDiscover.classList.add('active');
-    if (paneListen) paneListen.style.display = 'none';
-    if (paneDiscover) paneDiscover.style.display = 'block';
+  }
+
+  if (immediate || !paneListen || !paneDiscover) {
+    if (tab === 'library') {
+      if (paneListen) paneListen.style.display = 'block';
+      if (paneDiscover) paneDiscover.style.display = 'none';
+      renderLibraryAlbumPills();
+      renderSongList();
+      renderDrawerList();
+    } else {
+      if (paneListen) paneListen.style.display = 'none';
+      if (paneDiscover) paneDiscover.style.display = 'block';
+      renderVinylDiscs();
+      if (currentDiscoverSections.length === 0 || currentDiscoverSongs.length === 0) {
+        refreshRecommendations(false);
+      } else {
+        renderDiscoverPane();
+      }
+    }
+    return;
+  }
+
+  isHomeTabAnimating = true;
+  const isMovingForward = (tab === 'library');
+  const outgoingPane = isMovingForward ? paneDiscover : paneListen;
+  const incomingPane = isMovingForward ? paneListen : paneDiscover;
+
+  if (tab === 'library') {
+    renderLibraryAlbumPills();
+    renderSongList();
+    renderDrawerList();
+  } else {
     renderVinylDiscs();
     if (currentDiscoverSections.length === 0 || currentDiscoverSongs.length === 0) {
       refreshRecommendations(false);
@@ -6441,6 +6478,42 @@ function switchHomeNavTab(tab) {
       renderDiscoverPane();
     }
   }
+
+  const offset = isMovingForward ? 30 : -30;
+  incomingPane.style.display = 'block';
+  incomingPane.style.transition = 'none';
+  incomingPane.style.transform = `translate3d(${offset}px, 0, 0)`;
+  incomingPane.style.opacity = '0';
+
+  outgoingPane.style.transition = 'none';
+  outgoingPane.style.transform = 'translate3d(0, 0, 0)';
+  outgoingPane.style.opacity = '1';
+
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      const animCurve = 'cubic-bezier(0.2, 0.9, 0.3, 1)';
+      incomingPane.style.transition = `transform 0.22s ${animCurve}, opacity 0.22s ${animCurve}`;
+      outgoingPane.style.transition = `transform 0.22s ${animCurve}, opacity 0.22s ${animCurve}`;
+
+      incomingPane.style.transform = 'translate3d(0, 0, 0)';
+      incomingPane.style.opacity = '1';
+
+      outgoingPane.style.transform = `translate3d(${-offset}px, 0, 0)`;
+      outgoingPane.style.opacity = '0';
+
+      setTimeout(() => {
+        outgoingPane.style.display = 'none';
+        outgoingPane.style.transform = '';
+        outgoingPane.style.opacity = '';
+        outgoingPane.style.transition = '';
+
+        incomingPane.style.transform = '';
+        incomingPane.style.opacity = '';
+        incomingPane.style.transition = '';
+        isHomeTabAnimating = false;
+      }, 230);
+    });
+  });
 }
 
 function formatCleanTitle(title) {
@@ -7138,16 +7211,30 @@ function toggleDiscoverSongFav(idx) {
   const item = currentDiscoverSongs[idx];
   if (!item) return;
 
-  const matchInLib = ALL_LIBRARY_SONGS.find(s => 
+  let targetInLib = ALL_LIBRARY_SONGS.find(s => 
     s.id === 'online_' + item.id || 
     s.onlineId === (item.url_id || item.id) || 
     (s.title === item.name && s.artist === item.artist)
   );
 
-  if (matchInLib) {
-    toggleSongFav(matchInLib.id);
+  let isNowFav = false;
+
+  if (targetInLib) {
+    targetInLib.isFav = !targetInLib.isFav;
+    isNowFav = targetInLib.isFav;
+    const favAlb = VINYL_ALBUMS.find(a => a.id === 'alb_fav') || VINYL_ALBUMS[1];
+    if (favAlb && favAlb.songs) {
+      if (isNowFav) {
+        if (!favAlb.songs.some(s => s.id === targetInLib.id)) {
+          favAlb.songs.unshift(targetInLib);
+        }
+      } else {
+        favAlb.songs = favAlb.songs.filter(s => s.id !== targetInLib.id);
+      }
+    }
   } else {
-    const favSong = {
+    isNowFav = true;
+    targetInLib = {
       id: 'online_' + item.id,
       onlineId: item.url_id || item.id,
       source: item.source || 'netease',
@@ -7162,17 +7249,40 @@ function toggleDiscoverSongFav(idx) {
       lyric_id: item.lyric_id || item.url_id || item.id,
       isFav: true
     };
-    ALL_LIBRARY_SONGS.unshift(favSong);
+    ALL_LIBRARY_SONGS.unshift(targetInLib);
     const favAlb = VINYL_ALBUMS.find(a => a.id === 'alb_fav') || VINYL_ALBUMS[1];
-    if (favAlb && !favAlb.songs.some(s => s.id === favSong.id)) {
-      favAlb.songs.unshift(favSong);
+    if (favAlb && !favAlb.songs.some(s => s.id === targetInLib.id)) {
+      favAlb.songs.unshift(targetInLib);
     }
-    ensureSongCover(favSong);
-    persistData();
-    updateUI();
-    toast(`已收藏《${favSong.title}》`);
+    ensureSongCover(targetInLib);
   }
-  renderDiscoverPane();
+
+  // 同步当前播放队列状态
+  const qSong = currentPlaybackQueue.find(s => s.id === targetInLib.id || (s.title === targetInLib.title && s.artist === targetInLib.artist));
+  if (qSong) qSong.isFav = isNowFav;
+
+  persistData();
+
+  // 100% 精准局部更新发现页爱心图标，绝不重绘发现页，绝不刷新正方形卡片
+  const cardRow = document.querySelector(`.discover-card-row[data-song-id="${item.id}"]`);
+  if (cardRow) {
+    const favBtn = cardRow.querySelector('.discover-card-fav');
+    if (favBtn) {
+      favBtn.classList.toggle('active', isNowFav);
+      const svg = favBtn.querySelector('svg');
+      if (svg) svg.setAttribute('fill', isNowFav ? 'currentColor' : 'none');
+    }
+  }
+
+  // 同步曲库列表（如果存在）
+  const libFavBtns = document.querySelectorAll(`.fav-btn[data-song-id="${targetInLib.id}"]`);
+  libFavBtns.forEach(btn => {
+    btn.classList.toggle('active', isNowFav);
+    const svg = btn.querySelector('svg');
+    if (svg) svg.setAttribute('fill', isNowFav ? 'currentColor' : 'none');
+  });
+
+  toast(isNowFav ? `已收藏《${item.name}》` : `已取消收藏《${item.name}》`);
 }
 
 function openDiscoverSongMenu(e, idx) {
