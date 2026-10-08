@@ -305,7 +305,7 @@ public class MainActivity extends Activity {
             // 核心解决切应用“抢不过人家”：严禁在离开前台时向系统弃权降级，强制让 WebView 渲染进程在后台维持与前台相同的最高优先级！
             webView.setRendererPriorityPolicy(WebView.RENDERER_PRIORITY_IMPORTANT, false);
         }
-        webView.setBackgroundColor(Color.parseColor("#FAF9F6"));
+        webView.setBackgroundColor(Color.parseColor("#F7F7F5"));
         setContentView(webView);
 
         notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
@@ -2103,9 +2103,9 @@ public class MainActivity extends Activity {
         public String getAppVersion() {
             try {
                 PackageInfo pInfo = getPackageManager().getPackageInfo(getPackageName(), 0);
-                return "2.3.3";
+                return "2.3.4";
             } catch (Exception e) {
-                return "2.3.3";
+                return "2.3.4";
             }
         }
 
@@ -2119,7 +2119,7 @@ public class MainActivity extends Activity {
                     return pInfo.versionCode;
                 }
             } catch (Exception e) {
-                return 66;
+                return 67;
             }
         }
 
