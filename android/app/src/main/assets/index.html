@@ -393,22 +393,22 @@ body.night .discover-section-play-btn {
 }
 .discover-columns-scroll::-webkit-scrollbar { display: none; }
 .discover-column {
-  width: calc(78vw - 18px);
-  min-width: 240px;
-  max-width: 285px;
+  width: calc(78vw - 14px);
+  min-width: 250px;
+  max-width: 295px;
   flex-shrink: 0;
   scroll-snap-align: start;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
 }
 
 /* 推荐歌曲项（精巧素雅排版） */
 .discover-card-row {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 4.5px 0;
+  gap: 12px;
+  padding: 6px 0;
   cursor: pointer;
   transition: opacity 0.15s ease;
 }
@@ -416,9 +416,9 @@ body.night .discover-section-play-btn {
   opacity: 0.72;
 }
 .discover-card-cover-wrap {
-  width: 42px;
-  height: 54px;
-  border-radius: 6px;
+  width: 48px;
+  height: 62px;
+  border-radius: 7px;
   overflow: hidden;
   position: relative;
   flex-shrink: 0;
@@ -430,7 +430,7 @@ body.night .discover-section-play-btn {
   height: 100%;
   object-fit: cover;
   display: block;
-  border-radius: 6px;
+  border-radius: 7px;
 }
 .discover-card-info {
   flex: 1;
@@ -438,13 +438,14 @@ body.night .discover-section-play-btn {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 2px;
+  gap: 3.5px;
 }
 .discover-card-title {
   font-size: 13.5px;
   font-weight: 500;
   color: var(--ink-black);
-  line-height: 1.25;
+  letter-spacing: 0.25px;
+  line-height: 1.35;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -454,25 +455,26 @@ body.night .discover-section-play-btn {
   font-weight: 600;
 }
 .discover-card-artist {
-  font-size: 11px;
+  font-size: 11.5px;
   color: var(--ink-gray);
-  line-height: 1.2;
+  letter-spacing: 0.2px;
+  line-height: 1.3;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .discover-card-reason {
-  font-size: 10px;
+  font-size: 10.5px;
   color: var(--ink-light);
-  line-height: 1.2;
+  letter-spacing: 0.2px;
+  line-height: 1.25;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  margin-top: 1px;
 }
 .discover-card-fav {
-  width: 28px;
-  height: 28px;
+  width: 30px;
+  height: 30px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -481,8 +483,8 @@ body.night .discover-section-play-btn {
   flex-shrink: 0;
 }
 .discover-card-fav svg {
-  width: 16px;
-  height: 16px;
+  width: 17px;
+  height: 17px;
 }
 .discover-card-fav.active {
   color: var(--brand-red);
@@ -563,6 +565,7 @@ body.night .fixed-radio-card {
 .radio-card-header {
   display: flex; align-items: center; gap: 5px;
   font-size: 14px; font-weight: 600; color: var(--ink-black);
+  letter-spacing: 0.25px;
 }
 
 .radio-header-rose-icon {
@@ -571,9 +574,14 @@ body.night .fixed-radio-card {
 }
 .radio-header-rose-icon.hide { display: none !important; }
 
+#dynamicCardTitle {
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 92px; display: inline-block;
+}
+
 .radio-card-sub {
-  font-size: 10.5px; color: var(--ink-gray);
-  margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  font-size: 11px; color: var(--ink-gray);
+  letter-spacing: 0.2px;
+  margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 
 .radio-card-bottom { display: flex; align-items: flex-end; justify-content: space-between; }
@@ -2273,7 +2281,7 @@ body.in-pip-mode .view-player-full {
           <div class="list-panel-header">
             <!-- 正常状态标头 -->
             <div id="homeNormalHeader" style="display:flex; align-items:center; justify-content:space-between; width:100%;">
-              <div class="discover-section-title-wrap" onclick="togglePlayCurrentRadioAlbum()" style="display:flex; align-items:center; gap:8px; cursor:pointer;" title="播放全部歌曲">
+              <div class="discover-section-title-wrap" onclick="togglePlayCurrentLibraryAlbum()" style="display:flex; align-items:center; gap:8px; cursor:pointer;" title="播放当前歌单">
                 <span id="songListPanelTitle" style="font-size:16px; font-weight:600; color:var(--ink-black);">我的曲库</span>
                 <div class="discover-section-play-btn" style="width:20px; height:20px; border-radius:50%; background:var(--ink-black); color:#FFFFFF; display:inline-flex; align-items:center; justify-content:center; flex-shrink:0;">
                   <svg viewBox="0 0 24 24" style="width:10px; height:10px; fill:#FFFFFF; stroke:none; margin-left:1px;"><polygon points="7 4 19 12 7 20 7 4"/></svg>
@@ -5130,38 +5138,66 @@ function switchHomeNavTab(tab) {
   }
 }
 
+function formatCleanTitle(title) {
+  if (!title) return '';
+  return String(title)
+    .replace(/\s*[\(\[（【](?:Live|现场|伴奏|Inst|Instrumental|Remix|重制版|重置版|重录版|新版|原声|纯享版|纯音乐|DJ版|高品质|正式版|20\d\d|19\d\d).*?[\)\]）】]/gi, '')
+    .trim();
+}
+
+function formatCleanArtist(artist) {
+  if (!artist) return '未知歌手';
+  return String(artist)
+    .replace(/\s*[\(\[（【].*?[\)\]）】]/g, '')
+    .trim() || '未知歌手';
+}
+
+let topRecommendedTracks = [];
+let activeTopTrackIndex = 0;
+
+function initTopRecommendedTracks() {
+  if (topRecommendedTracks && topRecommendedTracks.length > 0) return;
+  const allInitSongs = [];
+  INITIAL_DISCOVER_SECTIONS.forEach(sec => {
+    (sec.songs || []).forEach(s => allInitSongs.push(s));
+  });
+  const shuffled = [...allInitSongs].sort(() => 0.5 - Math.random());
+  topRecommendedTracks = shuffled.slice(0, 10);
+  activeTopTrackIndex = 0;
+}
+
 const INITIAL_DISCOVER_SECTIONS = [
   {
     title: '灵犀新推 - 今日佳作',
     songs: [
-      { id: 'init_1', name: '愿我', artist: '伦桑', album: '愿我', source: 'netease', duration: 252, url_id: '1815967406', pic_id: '109951165671182684', reason: '伦桑 推荐 - 浅雪点点 推荐 - 很好听，一听就喜欢的歌' },
-      { id: 'init_2', name: '断桥残雪', artist: '许嵩', album: '断桥残雪', source: 'netease', duration: 226, url_id: '167827', pic_id: '109951165671182684', reason: '直视 推荐 - 经典永流传' },
-      { id: 'init_3', name: '云与海', artist: '胡夏', album: '云与海', source: 'netease', duration: 241, url_id: '1492323898', pic_id: '109951165671182684', reason: 'Spring 推荐 - 昨天考的数学试卷发下来了，早上...' },
-      { id: 'init_4', name: '山有木兮', artist: '伦桑', album: '橙光《人鱼传说》', source: 'netease', duration: 260, url_id: '426804563', pic_id: '109951165671182684', reason: '古风雅韵 - 山有木兮木有枝，温润抚慰人心' },
-      { id: 'init_5', name: '故梦', artist: '双笙', album: '故梦', source: 'netease', duration: 288, url_id: '436514315', pic_id: '109951165671182684', reason: '灵犀专属心选 - 前奏一响，便已落入水墨诗画之中' },
-      { id: 'init_6', name: '红马', artist: '王琪', album: '红马', source: 'netease', duration: 245, url_id: '1475330366', pic_id: '109951165671182684', reason: '纯正国风 - 弦音清亮入耳，适合静心聆听' }
+      { id: 'init_1', name: '愿我', artist: '伦桑', album: '愿我', source: 'netease', duration: 252, url_id: '1815967406', pic_id: '109951165671182684', reason: '伦桑心选' },
+      { id: 'init_2', name: '断桥残雪', artist: '许嵩', album: '断桥残雪', source: 'netease', duration: 226, url_id: '167827', pic_id: '109951165671182684', reason: '经典流传' },
+      { id: 'init_3', name: '云与海', artist: '胡夏', album: '云与海', source: 'netease', duration: 241, url_id: '1492323898', pic_id: '109951165671182684', reason: '温润治愈' },
+      { id: 'init_4', name: '山有木兮', artist: '伦桑', album: '橙光《人鱼传说》', source: 'netease', duration: 260, url_id: '426804563', pic_id: '109951165671182684', reason: '古风雅韵' },
+      { id: 'init_5', name: '故梦', artist: '双笙', album: '故梦', source: 'netease', duration: 288, url_id: '436514315', pic_id: '109951165671182684', reason: '水墨诗画' },
+      { id: 'init_6', name: '红马', artist: '王琪', album: '红马', source: 'netease', duration: 245, url_id: '1475330366', pic_id: '109951165671182684', reason: '清亮静听' }
     ]
   },
   {
     title: '私人专属好歌',
     songs: [
-      { id: 'init_7', name: '冬天的秘密', artist: '张仲谋', album: '冬天的秘密', source: 'netease', duration: 265, url_id: '1859245776', pic_id: '109951165671182684', reason: '7月的极光 推荐 - 哪怕热恋的人跟我唱过这首歌' },
-      { id: 'init_8', name: '花季', artist: '鱼儿七', album: '花季', source: 'netease', duration: 218, url_id: '1888497678', pic_id: '109951165671182684', reason: '吃柴 推荐 - 这个人的声音跟一只白羊的声音好像' },
-      { id: 'init_9', name: '消失的黎明', artist: 'Babystop_山竹 / 糯米Nomi', album: '消失的黎明', source: 'netease', duration: 232, url_id: '1878345712', pic_id: '109951165671182684', reason: '蝉 推荐 - 好好听，纯圈外人喜欢' },
-      { id: 'init_10', name: '起风了', artist: '买辣椒也用券', album: '起风了', source: 'netease', duration: 325, url_id: '1330348068', pic_id: '109951165671182684', reason: '心选推荐 - 旋律如空谷幽兰，每次听心都很平静' },
-      { id: 'init_11', name: '晴天', artist: '周杰伦', album: '叶惠美', source: 'netease', duration: 269, url_id: '186016', pic_id: '109951165671182684', reason: '青春记忆 - 词曲入木三分，曲终人亦不散' },
-      { id: 'init_12', name: '像风一样', artist: '薛之谦', album: '渡', source: 'netease', duration: 255, url_id: '516657051', pic_id: '109951165671182684', reason: '薛之谦 推荐 - 清雅恬淡，适合伴茶细酌' }
+      { id: 'init_7', name: '冬天的秘密', artist: '张仲谋', album: '冬天的秘密', source: 'netease', duration: 265, url_id: '1859245776', pic_id: '109951165671182684', reason: '深情低语' },
+      { id: 'init_8', name: '花季', artist: '鱼儿七', album: '花季', source: 'netease', duration: 218, url_id: '1888497678', pic_id: '109951165671182684', reason: '空灵清澈' },
+      { id: 'init_9', name: '消失的黎明', artist: 'Babystop_山竹 / 糯米Nomi', album: '消失的黎明', source: 'netease', duration: 232, url_id: '1878345712', pic_id: '109951165671182684', reason: '宝藏小众' },
+      { id: 'init_10', name: '起风了', artist: '买辣椒也用券', album: '起风了', source: 'netease', duration: 325, url_id: '1330348068', pic_id: '109951165671182684', reason: '清雅悠远' },
+      { id: 'init_11', name: '晴天', artist: '周杰伦', album: '叶惠美', source: 'netease', duration: 269, url_id: '186016', pic_id: '109951165671182684', reason: '青春心选' },
+      { id: 'init_12', name: '像风一样', artist: '薛之谦', album: '渡', source: 'netease', duration: 255, url_id: '516657051', pic_id: '109951165671182684', reason: '伴茶细酌' }
     ]
   },
   {
     title: '小众宝藏佳作',
     songs: [
-      { id: 'init_13', name: '空谷幽兰', artist: '阿鲲', album: '新萧十一郎', source: 'netease', duration: 186, url_id: '405485307', pic_id: '109951165671182684', reason: '灵犀原声心选 - 尝试了全新的古典风格，意境悠远' },
-      { id: 'init_14', name: '千度', artist: '许嵩', album: '苏格拉没有底', source: 'netease', duration: 247, url_id: '167876', pic_id: '109951165671182684', reason: '国风经典 - 细腻婉转，意韵百转千回' },
-      { id: 'init_15', name: '青花瓷', artist: '周杰伦', album: '我很忙', source: 'netease', duration: 239, url_id: '185997', pic_id: '109951165671182684', reason: '天青色等烟雨 - 余韵悠长耐品' },
-      { id: 'init_16', name: '水星记', artist: '郭顶', album: '飞行器的执行周期', source: 'netease', duration: 325, url_id: '441491828', pic_id: '109951165671182684', reason: '深情低语 - 适合夜深人静时独享' },
-      { id: 'init_17', name: '借月', artist: '王宇宙 / 乔浚丞', album: '借月', source: 'netease', duration: 220, url_id: '1969248538', pic_id: '109951165671182684', reason: '借一缕月色 - 温润抚慰风尘' },
-      { id: 'init_18', name: '琵琶行', artist: '奇然 / 沈谧仁', album: '高考背诵曲目', source: 'netease', duration: 312, url_id: '504262174', pic_id: '109951165671182684', reason: '转轴拨弦三两声 - 寻声暗问弹者谁' }
+      { id: 'init_13', name: '空谷幽兰', artist: '阿鲲', album: '新萧十一郎', source: 'netease', duration: 186, url_id: '405485307', pic_id: '109951165671182684', reason: '古典意境' },
+      { id: 'init_14', name: '千度', artist: '许嵩', album: '苏格拉没有底', source: 'netease', duration: 247, url_id: '167876', pic_id: '109951165671182684', reason: '细腻婉转' },
+      { id: 'init_15', name: '青花瓷', artist: '周杰伦', album: '我很忙', source: 'netease', duration: 239, url_id: '185997', pic_id: '109951165671182684', reason: '余韵悠长' },
+      { id: 'init_16', name: '水星记', artist: '郭顶', album: '飞行器的执行周期', source: 'netease', duration: 325, url_id: '441491828', pic_id: '109951165671182684', reason: '深夜独享' },
+      { id: 'init_17', name: '借月', artist: '王宇宙 / 乔浚丞', album: '借月', source: 'netease', duration: 220, url_id: '1969248538', pic_id: '109951165671182684', reason: '月色温柔' },
+      { id: 'init_18', name: '琵琶行', artist: '奇然 / 沈谧仁', album: '高考背诵曲目', source: 'netease', duration: 312, url_id: '504262174', pic_id: '109951165671182684', reason: '弦音如诉' }
     ]
   }
 ];
@@ -5177,15 +5213,16 @@ currentDiscoverSections.forEach((sec, secIdx) => {
 });
 
 const DISCOVER_NOTE_TEMPLATES = [
-  '尝试了全新的古典风格，意境悠远',
-  '旋律如空谷幽兰，每次听心都很平静',
-  '词曲入木三分，曲终人亦不散',
-  '弦音清亮入耳，适合静心聆听',
-  '山有木兮木有枝，温润抚慰人心',
-  '前奏一响，便已落入水墨诗画之中',
-  '细腻婉转，意韵百转千回',
-  '灵犀专属心选，余韵悠长耐品',
-  '清雅恬淡，适合伴茶细酌'
+  '古典意境',
+  '空谷幽兰',
+  '余韵悠长',
+  '弦音入耳',
+  '温润人心',
+  '水墨诗画',
+  '百转千回',
+  '灵犀心选',
+  '清欢静听',
+  '深情治愈'
 ];
 
 async function refreshRecommendations(showToast = false) {
@@ -5256,7 +5293,7 @@ async function refreshRecommendations(showToast = false) {
           if (!localSongSet.has(lowTitle) && !seenOnlineIds.has(songKey)) {
             seenOnlineIds.add(songKey);
             const template = DISCOVER_NOTE_TEMPLATES[(merged.length) % DISCOVER_NOTE_TEMPLATES.length];
-            song.reason = `${selectedSeeds[sIdx]} 推荐 - ${template}`;
+            song.reason = `${selectedSeeds[sIdx]}心选`;
             merged.push(song);
           }
         }
@@ -5274,7 +5311,7 @@ async function refreshRecommendations(showToast = false) {
           if (!localSongSet.has(lowTitle) && !seenOnlineIds.has(songKey)) {
             seenOnlineIds.add(songKey);
             const template = DISCOVER_NOTE_TEMPLATES[(merged.length) % DISCOVER_NOTE_TEMPLATES.length];
-            fbSong.reason = `精选热播 推荐 - ${template}`;
+            fbSong.reason = template;
             merged.push(fbSong);
           }
           if (merged.length >= 24) break;
@@ -5319,10 +5356,17 @@ async function refreshRecommendations(showToast = false) {
       });
     });
 
+    // 5. 同时更新顶部黑胶唱片的随机推荐曲目流
+    const freshTop = [...currentDiscoverSongs].sort(() => 0.5 - Math.random()).slice(0, 10);
+    topRecommendedTracks = freshTop;
+    activeTopTrackIndex = 0;
+    renderVinylDiscs();
+    updateFixedRadioCardUI();
+
     renderDiscoverPane();
     if (showToast) toast('已更新推荐曲目');
 
-    // 异步拉取真实封面，使长方形卡片展示精美专辑画报
+    // 异步拉取真实封面，使长方形卡片与唱片展示精美专辑画报
     const needPicSongs = currentDiscoverSongs.filter(s => !s.cover && (s.pic_id || s.url_id));
     if (needPicSongs.length > 0) {
       Promise.all(needPicSongs.slice(0, 18).map(async song => {
@@ -5338,6 +5382,8 @@ async function refreshRecommendations(showToast = false) {
         } catch(e) {}
       })).then(() => {
         renderDiscoverPane();
+        renderVinylDiscs();
+        updateFixedRadioCardUI();
       });
     }
   } catch (err) {
@@ -5420,9 +5466,9 @@ function renderDiscoverPane() {
                           ` : ''}
                         </div>
                         <div class="discover-card-info">
-                          <div class="discover-card-title">${escapeHtml(song.name)}</div>
-                          <div class="discover-card-artist">${escapeHtml(song.artist)}${song.album ? ' - ' + escapeHtml(song.album) : ''}</div>
-                          <div class="discover-card-reason">${escapeHtml(song.reason || '灵犀精选 - 值得一听')}</div>
+                          <div class="discover-card-title">${escapeHtml(formatCleanTitle(song.name || song.title))}</div>
+                          <div class="discover-card-artist">${escapeHtml(formatCleanArtist(song.artist))}</div>
+                          <div class="discover-card-reason">${escapeHtml(song.reason || '灵犀心选')}</div>
                         </div>
                         <div class="discover-card-fav ${isFav ? 'active' : ''}" onclick="event.stopPropagation(); toggleDiscoverSongFav(${globalIdx})" title="收藏">
                           <svg viewBox="0 0 24 24" width="20" height="20" fill="${isFav ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="1.4">
@@ -6128,9 +6174,14 @@ function updateUI() {
     updateFixedRadioCardUI();
   }
 
-  for (let i = 0; i < VINYL_ALBUMS.length; i++) {
+  for (let i = 0; i < (topRecommendedTracks || []).length; i++) {
     const d = document.getElementById('streamDisc' + i);
-    if (d) d.classList.toggle('playing', isPlaying && currentPlayingAlbumIndex === i);
+    const track = topRecommendedTracks[i];
+    const isThisPlaying = track && isPlaying && song && (
+      song.id === 'online_' + track.id || 
+      (song.title === (track.name || track.title) && song.artist === track.artist)
+    );
+    if (d) d.classList.toggle('playing', !!isThisPlaying);
   }
 
   const radioCard = document.querySelector('.fixed-radio-card');
@@ -6168,28 +6219,28 @@ function getAlbumCover(alb) {
 function renderVinylDiscs() {
   const container = document.getElementById('vinylDiscStream');
   if (!container) return;
-  container.innerHTML = VINYL_ALBUMS.map((alb, idx) => {
-    let iconSvg = '';
-    const isRose = alb.hasRose || alb.id === 'alb_fav';
-    if (isRose) {
-      iconSvg = `<svg viewBox="0 0 512 512"><path d="${ROSE_SVG_PATH}"/></svg>`;
-    } else if (alb.id === 'alb_local') {
-      iconSvg = `<svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>`;
-    } else {
-      iconSvg = `<svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>`;
-    }
-    const isThisPlaying = isPlaying && currentPlayingAlbumIndex === idx;
-    const albumCover = getAlbumCover(alb);
-    const hasCover = !!albumCover;
+  if (!topRecommendedTracks || topRecommendedTracks.length === 0) {
+    initTopRecommendedTracks();
+  }
+
+  const curPlayingSong = currentPlaybackQueue[currentIndex];
+
+  container.innerHTML = topRecommendedTracks.map((song, idx) => {
+    const isThisPlaying = isPlaying && curPlayingSong && (
+      curPlayingSong.id === 'online_' + song.id || 
+      (curPlayingSong.title === (song.name || song.title) && curPlayingSong.artist === song.artist)
+    );
+    const coverUrl = song.cover || song.pic || '';
+    const hasCover = !!coverUrl;
     const discOuterStyle = hasCover
-      ? `background: url('${albumCover}') center/cover no-repeat; border: none !important;`
+      ? `background: url('${coverUrl}') center/cover no-repeat; border: none !important;`
       : '';
     return `
       <div class="vinyl-stream-card" onclick="handleStreamCardClick(${idx})">
         <div class="stream-disc ${isThisPlaying ? 'playing' : ''}" id="streamDisc${idx}" style="${discOuterStyle}">
           ${hasCover ? '' : `
-            <div class="stream-disc-core ${isRose ? 'rose-core' : ''}">
-              ${iconSvg}
+            <div class="stream-disc-core">
+              <svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
             </div>
           `}
         </div>
@@ -6199,27 +6250,34 @@ function renderVinylDiscs() {
 }
 
 function updateFixedRadioCardUI() {
-  const target = VINYL_ALBUMS[activeRadioIndex];
+  if (!topRecommendedTracks || topRecommendedTracks.length === 0) {
+    initTopRecommendedTracks();
+  }
+  const target = topRecommendedTracks[activeTopTrackIndex];
   if (!target) return;
-  const isFav = (target.hasRose || target.id === 'alb_fav');
-  const titleText = isFav ? '我喜欢' : (target.title || '全部歌曲');
-  const titleEl = document.getElementById('dynamicCardTitle');
-  if (titleEl) titleEl.textContent = titleText;
 
-  const cur = currentPlaybackQueue[currentIndex];
+  const curPlayingSong = currentPlaybackQueue[currentIndex];
+  const isTargetPlaying = isPlaying && curPlayingSong && (
+    curPlayingSong.id === 'online_' + target.id ||
+    (curPlayingSong.title === (target.name || target.title) && curPlayingSong.artist === target.artist)
+  );
+
+  const titleEl = document.getElementById('dynamicCardTitle');
+  if (titleEl) {
+    titleEl.textContent = formatCleanTitle(target.name || target.title || '灵犀推荐');
+  }
+
   const subEl = document.getElementById('dynamicCardSub');
   if (subEl) {
-    if (cur && isPlaying) {
-      subEl.textContent = `${cur.title} - ${cur.artist}`;
-    } else if (target.songs && target.songs.length > 0) {
-      subEl.textContent = `${target.songs[0].title} - ${target.songs[0].artist}`;
-    } else {
-      subEl.textContent = target.desc || target.sub || '灵犀漫步 - 遇见知音';
-    }
+    const cleanArt = formatCleanArtist(target.artist);
+    subEl.textContent = `${cleanArt} - 灵犀心选`;
   }
 
   const roseIcon = document.getElementById('radioHeaderRoseIcon');
   if (roseIcon) {
+    const isFav = ALL_LIBRARY_SONGS.some(s => 
+      (s.id === 'online_' + target.id || (s.title === (target.name || target.title) && s.artist === target.artist)) && s.isFav
+    );
     roseIcon.classList.toggle('hide', !isFav);
   }
 
@@ -6227,11 +6285,15 @@ function updateFixedRadioCardUI() {
   if (radioPlayBtn) {
     const pauseSvg = '<svg viewBox="0 0 24 24"><rect x="6" y="4" width="3.5" height="16" fill="currentColor"/><rect x="14.5" y="4" width="3.5" height="16" fill="currentColor"/></svg>';
     const playSvg = '<svg viewBox="0 0 24 24"><polygon points="7 4 20 12 7 20 7 4"/></svg>';
-    const isThisAlbumPlaying = isPlaying && (currentPlayingAlbumIndex === activeRadioIndex);
-    radioPlayBtn.innerHTML = isThisAlbumPlaying ? pauseSvg : playSvg;
+    radioPlayBtn.innerHTML = isTargetPlaying ? pauseSvg : playSvg;
   }
 
-  const coverUrl = getAlbumCover(target) || (cur ? (cur.cover || cur.pic) : '');
+  const card = document.querySelector('.fixed-radio-card');
+  if (card) {
+    card.classList.toggle('playing', isPlaying);
+  }
+
+  const coverUrl = target.cover || target.pic || '';
   extractCardGlowColor(coverUrl);
 }
 
@@ -6299,7 +6361,7 @@ function extractCardGlowColor(imgUrl) {
   img.src = imgUrl;
 }
 
-function scrollVinylToAlbum(idx, smooth = true) {
+function scrollVinylToTrack(idx, smooth = true) {
   const channel = document.getElementById('vinylScrollChannel');
   if (!channel) return;
   const targetLeft = idx * 106;
@@ -6307,74 +6369,115 @@ function scrollVinylToAlbum(idx, smooth = true) {
     left: targetLeft,
     behavior: smooth ? 'smooth' : 'auto'
   });
-  if (activeRadioIndex !== idx) {
-    exitHomeMultiSelectMode();
-  }
-  activeRadioIndex = Math.min(VINYL_ALBUMS.length - 1, Math.max(0, idx));
+  const count = topRecommendedTracks ? topRecommendedTracks.length : 1;
+  activeTopTrackIndex = Math.min(count - 1, Math.max(0, idx));
   updateFixedRadioCardUI();
-  renderSongList();
 }
 
 function handleStreamCardClick(idx) {
-  if (activeRadioIndex !== idx) {
-    scrollVinylToAlbum(idx, true);
+  if (activeTopTrackIndex !== idx) {
+    scrollVinylToTrack(idx, true);
   } else {
-    openPlaylistDetail(idx);
+    playTopRecommendedTrack(idx);
   }
 }
 
 function handleVinylScroll(el) {
   const step = 106;
-  const newIdx = Math.min(VINYL_ALBUMS.length - 1, Math.max(0, Math.round(el.scrollLeft / step)));
-  if (newIdx !== activeRadioIndex) {
-    exitHomeMultiSelectMode();
-    activeRadioIndex = newIdx;
+  const count = topRecommendedTracks ? topRecommendedTracks.length : 1;
+  const newIdx = Math.min(count - 1, Math.max(0, Math.round(el.scrollLeft / step)));
+  if (newIdx !== activeTopTrackIndex) {
+    activeTopTrackIndex = newIdx;
     updateFixedRadioCardUI();
-    renderSongList();
   }
 }
 
-function openCurrentRadioAlbum() { openPlaylistDetail(activeRadioIndex); }
+function openCurrentRadioAlbum() {
+  playTopRecommendedTrack(activeTopTrackIndex);
+}
 
 function togglePlayCurrentRadioAlbum() {
-  scrollVinylToAlbum(activeRadioIndex, true);
-  if (currentPlayingAlbumIndex === activeRadioIndex) {
+  const target = topRecommendedTracks[activeTopTrackIndex];
+  if (!target) return;
+  const curPlayingSong = currentPlaybackQueue[currentIndex];
+  const isTargetPlaying = isPlaying && curPlayingSong && (
+    curPlayingSong.id === 'online_' + target.id ||
+    (curPlayingSong.title === (target.name || target.title) && curPlayingSong.artist === target.artist)
+  );
+
+  if (isTargetPlaying) {
     togglePlayState();
   } else {
-    playCurrentRadioAlbum();
+    playTopRecommendedTrack(activeTopTrackIndex);
+  }
+}
+
+function playTopRecommendedTrack(idx) {
+  if (!topRecommendedTracks || !topRecommendedTracks[idx]) return;
+  scrollVinylToTrack(idx, true);
+  const song = topRecommendedTracks[idx];
+
+  const trackObj = {
+    id: 'online_' + song.id,
+    onlineId: song.url_id || song.id,
+    source: song.source || 'netease',
+    title: song.name || song.title,
+    artist: song.artist,
+    album: song.album || '',
+    duration: song.duration || 240,
+    fileUrl: '',
+    urlFetchedAt: 0,
+    cover: song.cover || song.pic || '',
+    pic_id: song.pic_id || song.url_id || song.id,
+    lyric_id: song.lyric_id || song.url_id || song.id,
+    isFav: false
+  };
+
+  const existingIdx = currentPlaybackQueue.findIndex(s => 
+    s.id === trackObj.id || (s.title === trackObj.title && s.artist === trackObj.artist)
+  );
+
+  if (existingIdx !== -1) {
+    currentIndex = existingIdx;
+  } else {
+    currentPlaybackQueue.splice(currentIndex + 1, 0, trackObj);
+    currentIndex = currentIndex + 1;
+  }
+
+  openPlayerFull();
+  playSongAtQueue(currentIndex);
+}
+
+/* ================== 乐库歌单切换与播放（第二页：我的曲库） ================== */
+function scrollVinylToAlbum(idx, smooth = true) {
+  activeRadioIndex = Math.min(VINYL_ALBUMS.length - 1, Math.max(0, idx));
+  renderLibraryAlbumPills();
+  renderSongList();
+}
+
+function togglePlayCurrentLibraryAlbum() {
+  const alb = VINYL_ALBUMS[activeRadioIndex];
+  if (!alb || !alb.songs || alb.songs.length === 0) {
+    toast('当前歌单暂无歌曲');
+    return;
+  }
+  if (currentPlayingAlbumIndex === activeRadioIndex && isPlaying) {
+    togglePlayState();
+  } else {
+    currentPlayingAlbumIndex = activeRadioIndex;
+    currentPlaybackQueue = [...alb.songs];
+    openPlayerFull();
+    playSongAtQueue(0);
+    toast(`开始播放「${alb.title}」`);
   }
 }
 
 function playCurrentRadioAlbum() {
-  scrollVinylToAlbum(activeRadioIndex, true);
-  currentPlayingAlbumIndex = activeRadioIndex;
-  const alb = VINYL_ALBUMS[activeRadioIndex];
-  if (!alb) return;
-  currentPlaybackQueue = [...alb.songs];
-  if (currentPlaybackQueue.length === 0) {
-    toast(`「${alb.title}」暂无歌曲`);
-    renderSongList();
-    updateUI();
-    return;
-  }
-  playSongAtQueue(0);
-  renderSongList();
+  togglePlayCurrentLibraryAlbum();
 }
 
 function playCuratedPlaylist() {
-  scrollVinylToAlbum(activeRadioIndex, true);
-  currentPlayingAlbumIndex = activeRadioIndex;
-  const alb = VINYL_ALBUMS[activeRadioIndex];
-  if (!alb) return;
-  currentPlaybackQueue = [...alb.songs];
-  if (currentPlaybackQueue.length === 0) {
-    toast(`「${alb.title}」暂无歌曲`);
-    renderSongList();
-    updateUI();
-    return;
-  }
-  playSongAtQueue(0);
-  renderSongList();
+  togglePlayCurrentLibraryAlbum();
 }
 
 /* ================== 歌单多选管理系统（方框复选，绝无圆形选中效果） ================== */
