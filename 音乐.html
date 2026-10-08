@@ -1122,13 +1122,14 @@ body.night .popup-menu-item:active { background: rgba(255, 255, 255, 0.05); }
   position: absolute; inset: 0; background: rgba(0, 0, 0, 0.46); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
   z-index: 2200; display: none; align-items: center; justify-content: center; padding: 24px;
 }
-.modal-overlay.active { display: flex; animation: dialogFadeIn 0.2s cubic-bezier(0.2, 0.9, 0.3, 1); }
+.modal-overlay.active { display: flex; animation: overlayFadeIn 0.2s cubic-bezier(0.2, 0, 0, 1); }
 
 .color-modal-card {
   width: 100%; max-width: 310px; background: var(--card-bg); border-radius: 22px;
   padding: 18px 18px 12px; display: flex; flex-direction: column;
   box-shadow: 0 16px 48px rgba(0, 0, 0, 0.2); border: 1px solid rgba(24, 26, 28, 0.06);
   overflow: hidden;
+  animation: dialogCardScaleIn 0.22s cubic-bezier(0.2, 0, 0, 1);
 }
 body.night .color-modal-card {
   background: #1E1E1C; border-color: rgba(255, 255, 255, 0.08); box-shadow: 0 16px 48px rgba(0, 0, 0, 0.6);
@@ -1803,14 +1804,16 @@ body.night .search-chip-tag.hot {
   position: absolute; inset: 0; background: rgba(0, 0, 0, 0.46); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
   z-index: 2200; display: none; align-items: center; justify-content: center; padding: 24px;
 }
-.modern-dialog-backdrop.active, .config-modal-backdrop.active { display: flex; animation: dialogFadeIn 0.2s cubic-bezier(0.2, 0.9, 0.3, 1); }
+.modern-dialog-backdrop.active, .config-modal-backdrop.active { display: flex; animation: overlayFadeIn 0.22s cubic-bezier(0.2, 0, 0, 1); }
 #customApiModal { z-index: 2300 !important; }
-@keyframes dialogFadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+@keyframes dialogFadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes dialogCardScaleIn { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
 
 .modern-dialog-card, .config-modal-card {
   width: 100%; max-width: 320px; background: #FFFFFF; border-radius: 22px;
   padding: 20px 20px 17px; display: flex; flex-direction: column; gap: 6px;
   box-shadow: 0 16px 48px rgba(0, 0, 0, 0.2); border: 1px solid rgba(24, 26, 28, 0.06);
+  animation: dialogCardScaleIn 0.22s cubic-bezier(0.2, 0, 0, 1);
 }
 body.night .modern-dialog-card, body.night .config-modal-card {
   background: #1E1E1C; border-color: rgba(255, 255, 255, 0.08); box-shadow: 0 16px 48px rgba(0, 0, 0, 0.6);
@@ -2223,58 +2226,84 @@ body.night {
   transition: opacity 105ms linear;
 }
 
-/* ================== 设置页 Morphing CardGroup (参考 hhznx) ================== */
+
+@keyframes overlayFadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes modalCardPopIn { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
+
+/* ================== 设置页精美水墨圆角卡片架构 ================== */
 .group-menu-card {
-  background: transparent !important;
-  border: none !important;
-  border-radius: 0 !important;
-  overflow: visible !important;
+  background: var(--card-bg, #FFFFFF) !important;
+  border-radius: 18px !important;
+  overflow: hidden !important;
   display: flex;
   flex-direction: column;
-  gap: 2px !important;
-  box-shadow: none !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03) !important;
+  margin-bottom: 14px;
+  border: 1px solid rgba(0, 0, 0, 0.04) !important;
   flex-shrink: 0;
 }
+body.night .group-menu-card {
+  background: var(--card-bg, #1E1E1C) !important;
+  border-color: rgba(255, 255, 255, 0.06) !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25) !important;
+}
 .group-menu-divider {
-  display: none !important;
+  display: block !important;
+  height: 0.5px !important;
+  width: calc(100% - 32px) !important;
+  margin: 0 auto !important;
+  background: var(--divider, rgba(0, 0, 0, 0.06)) !important;
+  flex-shrink: 0;
+}
+body.night .group-menu-divider {
+  background: rgba(255, 255, 255, 0.08) !important;
 }
 .settings-item-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 13px 16px;
+  padding: 14px 16px;
   min-height: 52px;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   position: relative;
   overflow: hidden;
   user-select: none;
-  background: var(--card-bg);
-  border-radius: 2px;
-  transition: border-radius 0.22s cubic-bezier(0.2, 0.8, 0.2, 1), background-color 0.15s ease;
+  background: transparent !important;
+  border-radius: 0 !important;
+  transition: background-color 0.15s ease;
 }
-.group-menu-card > .settings-item-row:first-child {
-  border-radius: 14px 14px 2px 2px;
+.settings-item-row:active {
+  background: rgba(0, 0, 0, 0.03) !important;
 }
-.group-menu-card > .settings-item-row:last-child {
-  border-radius: 2px 2px 14px 14px;
-}
-.group-menu-card > .settings-item-row:first-child:last-child {
-  border-radius: 14px !important;
-}
-.group-menu-card > .settings-item-row:active {
-  border-radius: 14px !important;
+body.night .settings-item-row:active {
+  background: rgba(255, 255, 255, 0.05) !important;
 }
 
-/* 细腻返回键 */
-.nav-btn.fine-back, .icon-btn.fine-back {
-  width: 40px; height: 40px;
-  border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
+.nav-btn.fine-back, .icon-btn.fine-back, .header-btn.fine-back {
+  width: 40px !important;
+  height: 40px !important;
+  border-radius: 50% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: transparent !important;
+  border: none !important;
+  cursor: pointer !important;
+  color: var(--ink-black) !important;
+  flex-shrink: 0 !important;
+  -webkit-tap-highlight-color: transparent !important;
+  transition: background 0.15s ease !important;
 }
 .fine-back svg {
-  width: 20px !important; height: 20px !important;
+  width: 20px !important;
+  height: 20px !important;
+  stroke: var(--ink-black) !important;
   stroke-width: 1.4 !important;
+  flex-shrink: 0 !important;
+}
+body.night .fine-back svg {
+  stroke: #EDEDED !important;
 }
 
 /* ================== 居中弹窗卡片 (1:1 复刻 hhznx voice-central-modal-card) ================== */
@@ -2325,34 +2354,63 @@ body.night .voice-modal-desc { color: var(--ink-gray); }
 }
 .voice-modal-input {
   width: 100%; box-sizing: border-box;
-  background: #F4F3EF; border: 1px solid transparent;
-  border-radius: 10px; padding: 10px 12px;
-  font-size: 14px; color: var(--ink-black);
-  outline: none; transition: border-color 0.15s ease, background 0.15s ease;
+  background: var(--bg-page, #F7F6F3);
+  border: 1px solid var(--border-input, rgba(0, 0, 0, 0.12));
+  border-radius: 12px;
+  padding: 12px 14px;
+  font-size: 15px;
+  color: var(--ink-black);
+  outline: none;
+  transition: box-shadow 0.15s ease, border-color 0.15s ease, background 0.15s ease;
   font-family: inherit;
 }
 .voice-modal-input:focus {
-  background: #FFFFFF; border-color: #1D1D1F;
+  background: var(--card-bg, #FFFFFF);
+  border-color: var(--ink-black, #1D1D1F) !important;
+  box-shadow: 0 0 0 1px var(--ink-black, #1D1D1F);
 }
 body.night .voice-modal-input {
-  background: rgba(255, 255, 255, 0.06); color: #EDEDED;
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #EDEDED;
 }
 body.night .voice-modal-input:focus {
-  background: rgba(255, 255, 255, 0.1); border-color: #EDEDED;
+  background: rgba(255, 255, 255, 0.1);
+  border-color: #EDEDED !important;
+  box-shadow: 0 0 0 1px #EDEDED;
 }
 .voice-modal-actions {
-  display: flex; border-top: 0.5px solid var(--divider, rgba(0, 0, 0, 0.08));
+  display: flex;
+  border-top: 0.5px solid var(--divider, rgba(0, 0, 0, 0.08));
   width: 100%;
 }
-body.night .voice-modal-actions { border-top-color: rgba(255, 255, 255, 0.1); }
+body.night .voice-modal-actions {
+  border-top-color: rgba(255, 255, 255, 0.1);
+}
 .voice-modal-btn {
-  flex: 1; height: 48px; border: none; background: transparent;
-  font-size: 15px; font-weight: 400; color: var(--ink-gray, #6E6D66);
-  cursor: pointer; display: flex; align-items: center; justify-content: center;
-  position: relative; overflow: hidden;
+  flex: 1;
+  height: 48px;
+  border: none;
+  background: transparent;
+  font-size: 15px;
+  font-weight: 400;
+  color: var(--ink-gray, #6E6D66);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+.voice-modal-btn + .voice-modal-btn {
+  border-left: 0.5px solid var(--divider, rgba(0, 0, 0, 0.08));
+}
+body.night .voice-modal-btn + .voice-modal-btn {
+  border-left-color: rgba(255, 255, 255, 0.1);
 }
 .voice-modal-btn.voice-modal-btn-primary {
-  color: var(--ink-black); font-weight: 600;
+  color: var(--ink-black);
+  font-weight: 600;
 }
 body.night .voice-modal-btn.voice-modal-btn-primary {
   color: #FFFFFF;
@@ -2383,8 +2441,45 @@ body.night .voice-modal-btn.voice-modal-btn-primary {
 }
 .discover-pullup-bar.loading .discover-pullup-spinner { display: inline-block; }
 
-/* 保证所有弹窗容器均为 18px 圆角 */
-.choose-playlist-modal, .menu-modal, .confirm-modal-card {
+/* ================== 底部滑出弹窗规范升级 (对齐 hhznx 36px 优雅大圆角与柔和阴影) ================== */
+.add-sheet-card, .choose-playlist-card, .playlist-drawer {
+  border-radius: 36px 36px 0 0 !important;
+  box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.14) !important;
+  background: var(--card-bg, #FFFFFF) !important;
+}
+body.night .add-sheet-card, body.night .choose-playlist-card, body.night .playlist-drawer {
+  background: #181817 !important;
+  box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.6) !important;
+}
+.add-sheet-drag-handle, .choose-drag-handle {
+  width: 36px !important;
+  height: 4px !important;
+  border-radius: 2px !important;
+  background: rgba(0, 0, 0, 0.16) !important;
+  margin: 0 auto 12px !important;
+}
+body.night .add-sheet-drag-handle, body.night .choose-drag-handle {
+  background: rgba(255, 255, 255, 0.2) !important;
+}
+.add-clean-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 13px 14px;
+  cursor: pointer;
+  border-radius: 12px;
+  transition: background 0.15s ease;
+  position: relative;
+  overflow: hidden;
+}
+.add-clean-row:active {
+  background: rgba(0, 0, 0, 0.04);
+}
+body.night .add-clean-row:active {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.confirm-modal-card {
   border-radius: 18px !important;
 }
 
@@ -2412,9 +2507,7 @@ body.night .voice-modal-btn.voice-modal-btn-primary {
         <span class="nav-tag-btn active" id="tabNavDiscover" onclick="switchHomeNavTab('discover')">发现</span>
         <span class="nav-tag-btn" id="tabNavLibrary" onclick="switchHomeNavTab('library')">乐库</span>
       </div>
-      <div class="listen-nav-titles" id="settingsNavTitles" style="display:none;">
-        <span class="nav-tag-btn active" style="cursor:default;">设置</span>
-      </div>
+      <div class="listen-nav-titles" id="settingsNavTitles" style="display:none;"></div>
       <div class="listen-header-actions">
         <button class="icon-btn" onclick="openBeginnerGuideModal()" title="新手引导">
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -2521,7 +2614,6 @@ body.night .voice-modal-btn.voice-modal-btn-primary {
 
 <!-- 设置页 -->
       <div class="view-settings-page" id="paneSettings">
-        <span class="settings-group-header">个性化</span>
         <div class="group-menu-card">
           <div class="settings-item-row ripple-btn" onclick="toggleDefaultHomeTabSetting()">
             <div class="settings-item-col">
@@ -2643,7 +2735,12 @@ body.night .voice-modal-btn.voice-modal-btn-primary {
   <!-- 4. 歌单详情页（红心歌单展示玫瑰花，纯文本无 SVG 下拉菜单） -->
   <div class="view-playlist-detail" id="viewPlaylistDetail">
     <div class="playlist-header-nav">
-      <button class="icon-btn" onclick="closePlaylistDetail()"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
+      <button class="nav-btn fine-back ripple-btn" onclick="closePlaylistDetail()" title="返回">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="19" y1="12" x2="5" y2="12"/>
+          <polyline points="12 19 5 12 12 5"/>
+        </svg>
+      </button>
       <div class="playlist-nav-title">歌单</div>
       <button class="icon-btn" onclick="togglePlaylistMenu(event)" title="更多选项">
         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8">
@@ -2766,8 +2863,11 @@ body.night .voice-modal-btn.voice-modal-btn-primary {
   <input type="file" id="playlistJsonFileInput" accept=".json,application/json" style="display:none;" onchange="handlePlaylistJsonImport(event)">
   <div class="view-edit-playlist" id="viewEditPlaylist">
     <div class="edit-page-header">
-      <button class="icon-btn" onclick="closeEditPlaylistPage()">
-        <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+      <button class="nav-btn fine-back ripple-btn" onclick="closeEditPlaylistPage()" title="返回">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="19" y1="12" x2="5" y2="12"/>
+          <polyline points="12 19 5 12 12 5"/>
+        </svg>
       </button>
       <div class="edit-page-title">编辑歌单</div>
       <button class="edit-save-capsule-btn" onclick="saveEditedPlaylist()">保存</button>
@@ -2803,8 +2903,11 @@ body.night .voice-modal-btn.voice-modal-btn-primary {
   <!-- 4.6 外观与个性化子页（纯净卡片架构，无浮夸微缩光盘） -->
   <div class="view-theme-subpage" id="viewThemeSettings">
     <div class="playlist-header-nav" style="height:76px; padding:38px 14px 0;">
-      <button class="icon-btn" onclick="closeThemeSettingsSubpage()" title="返回设置">
-        <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+      <button class="nav-btn fine-back ripple-btn" onclick="closeThemeSettingsSubpage()" title="返回设置">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="19" y1="12" x2="5" y2="12"/>
+          <polyline points="12 19 5 12 12 5"/>
+        </svg>
       </button>
       <div class="playlist-nav-title">外观与个性化</div>
       <div style="width:36px;"></div>
@@ -2855,8 +2958,11 @@ body.night .voice-modal-btn.voice-modal-btn-primary {
   <!-- 5. 全屏搜索页面（搜索视图） -->
   <div class="view-search-full" id="viewSearchFull">
     <header class="search-header-nav">
-      <button class="icon-btn" onclick="closeSearchView()" title="返回">
-        <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+      <button class="nav-btn fine-back ripple-btn" onclick="closeSearchView()" title="返回">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="19" y1="12" x2="5" y2="12"/>
+          <polyline points="12 19 5 12 12 5"/>
+        </svg>
       </button>
       <div class="search-input-pill">
         <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7.5"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg>
@@ -4356,6 +4462,20 @@ function playSongAtQueue(idx) {
   const song = currentPlaybackQueue[currentIndex];
   if (!song) return;
   currentSec = 0;
+
+  // 发现页顶部推荐曲目联动：当前歌曲若为推荐曲目，唱片自动平滑滚入正方形卡片
+  if (topRecommendedTracks && topRecommendedTracks.length > 0) {
+    const curOnlineId = song.onlineId || (song.id ? String(song.id).replace('online_', '') : '');
+    const matchIdx = topRecommendedTracks.findIndex(t => 
+      ('online_' + t.id === song.id) || 
+      (String(t.id) === curOnlineId) ||
+      (t.url_id && String(t.url_id) === curOnlineId) ||
+      (t.name === song.title && t.artist === song.artist)
+    );
+    if (matchIdx !== -1) {
+      scrollVinylToTrack(matchIdx, true);
+    }
+  }
 
   // 每次触发点播，重置错误重试计数器，杜绝因偶发网络波动被永久锁定
   if (song.id) songRetryCounts[song.id] = 0;
@@ -6470,10 +6590,28 @@ function updateFixedRadioCardUI() {
   if (!topRecommendedTracks || topRecommendedTracks.length === 0) {
     initTopRecommendedTracks();
   }
+
+  const curPlayingSong = currentPlaybackQueue[currentIndex];
+  if (isPlaying && curPlayingSong && topRecommendedTracks && topRecommendedTracks.length > 0) {
+    const curOnlineId = curPlayingSong.onlineId || (curPlayingSong.id ? String(curPlayingSong.id).replace('online_', '') : '');
+    const matchIdx = topRecommendedTracks.findIndex(t => 
+      ('online_' + t.id === curPlayingSong.id) || 
+      (String(t.id) === curOnlineId) ||
+      (t.url_id && String(t.url_id) === curOnlineId) ||
+      (t.name === curPlayingSong.title && t.artist === curPlayingSong.artist)
+    );
+    if (matchIdx !== -1 && matchIdx !== activeTopTrackIndex) {
+      activeTopTrackIndex = matchIdx;
+      const channel = document.getElementById('vinylScrollChannel');
+      if (channel) {
+        channel.scrollTo({ left: matchIdx * 106, behavior: 'smooth' });
+      }
+    }
+  }
+
   const target = topRecommendedTracks[activeTopTrackIndex];
   if (!target) return;
 
-  const curPlayingSong = currentPlaybackQueue[currentIndex];
   const isTargetPlaying = isPlaying && curPlayingSong && (
     curPlayingSong.id === 'online_' + target.id ||
     (curPlayingSong.title === (target.name || target.title) && curPlayingSong.artist === target.artist)
