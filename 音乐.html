@@ -750,9 +750,15 @@ body.night .library-album-pill.active {
 .island-ctrl-btn.fav.active { color: var(--heart-red) !important; }
 
 .more-dots-btn {
-  color: var(--ink-light); cursor: pointer; padding: 6px 4px;
-  display: flex; align-items: center; justify-content: center;
+  color: var(--ink-light); cursor: pointer; padding: 0;
+  width: 36px; height: 36px;
+  border-radius: 50% !important;
+  overflow: hidden !important;
+  position: relative;
+  display: inline-flex; align-items: center; justify-content: center;
   transition: transform 0.12s, color 0.12s;
+  flex-shrink: 0;
+  -webkit-tap-highlight-color: transparent !important;
 }
 .more-dots-btn:active { transform: scale(0.85); color: var(--ink-dark); }
 .more-dots-btn svg { width: 18px; height: 18px; stroke-width: 1.8; stroke: currentColor; fill: none; }
@@ -1898,20 +1904,21 @@ body.night .edit-cover-thumbnail {
   bottom: 0;
   width: 100%;
   max-width: 100%;
+  max-height: 72vh !important;
   background: var(--settings-bg, #F8F8F6) !important;
   border-radius: 46px 46px 0 0 !important;
-  padding: 0 0 calc(28px + var(--safe-bottom, 14px)) !important;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
-  box-sizing: border-box;
+  padding: 0 0 calc(20px + var(--safe-bottom, 14px)) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: flex-start !important;
+  box-sizing: border-box !important;
   transform: translate3d(0, 100%, 0);
   will-change: transform;
   transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
   box-shadow: none !important;
   border: none !important;
   touch-action: pan-down;
-  overflow-y: auto;
+  overflow: hidden !important;
   overscroll-behavior: none;
   z-index: 2100;
   pointer-events: none;
@@ -1937,61 +1944,16 @@ body.night .add-sheet-drag-handle, body.night .choose-drag-handle {
   background: #2D2D2C !important;
 }
 
-.playlist-header {
-  display: flex !important;
-  align-items: center !important;
-  justify-content: space-between !important;
-  padding: 14px 20px 8px !important;
-  flex-shrink: 0;
-  box-sizing: border-box;
-  width: 100%;
-}
-.playlist-header-left {
-  display: flex !important;
-  align-items: center !important;
-  gap: 10px !important;
-  flex: 1;
-  min-width: 0;
-}
-.playlist-title {
-  font-size: 16px !important;
-  font-weight: 600 !important;
-  color: var(--ink-black) !important;
-  letter-spacing: -0.2px !important;
-  white-space: nowrap !important;
-}
-.drawer-mode-btn {
-  display: inline-flex !important;
-  align-items: center !important;
-  gap: 4px !important;
-  font-size: 12px !important;
-  padding: 4px 10px !important;
-  border-radius: 12px !important;
-  background: var(--card-bg, #FFFFFF) !important;
-  border: 1px solid rgba(0, 0, 0, 0.08) !important;
-  color: var(--ink-dark) !important;
-  cursor: pointer !important;
-  flex-shrink: 0 !important;
-  white-space: nowrap !important;
-  transition: transform 0.12s ease;
-}
-.drawer-mode-btn:active { transform: scale(0.95); }
-body.night .drawer-mode-btn {
-  background: #1E1E1C !important;
-  border-color: rgba(255, 255, 255, 0.12) !important;
-  color: #FAF9F5 !important;
-}
-
-.add-sheet-header, .choose-sheet-header {
+.playlist-header, .add-sheet-header, .choose-sheet-header {
   display: grid !important;
   grid-template-columns: 36px 1fr 36px !important;
   align-items: center !important;
-  padding: 16px 20px 8px !important;
-  flex-shrink: 0;
-  box-sizing: border-box;
-  width: 100%;
+  padding: 14px 20px 8px !important;
+  flex-shrink: 0 !important;
+  box-sizing: border-box !important;
+  width: 100% !important;
 }
-.add-sheet-title, .choose-sheet-title {
+.playlist-title, .add-sheet-title, .choose-sheet-title {
   text-align: center !important;
   font-size: 16.5px !important;
   font-weight: 600 !important;
@@ -2002,18 +1964,7 @@ body.night .drawer-mode-btn {
   white-space: nowrap !important;
   overflow: hidden !important;
   text-overflow: ellipsis !important;
-  line-height: 1.25;
-}
-
-/* 爱心点击动效：自然轻快放大弹性动画 */
-@keyframes heartPulse {
-  0% { transform: scale(1); }
-  40% { transform: scale(1.36); }
-  70% { transform: scale(0.94); }
-  100% { transform: scale(1); }
-}
-.fav-btn.pulse-heart svg {
-  animation: heartPulse 0.35s cubic-bezier(0.18, 0.89, 0.32, 1.28) !important;
+  line-height: 1.25 !important;
 }
 .add-sheet-close-btn, .choose-sheet-close-btn {
   width: 32px !important;
@@ -2055,12 +2006,14 @@ body.night .drawer-mode-btn {
   margin: 0 !important;
   width: 100% !important;
   box-sizing: border-box !important;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
 }
 
 /* 列表项：彻底通栏满幅 edge-to-edge，无圆角、无多余左边距，完全复用物理水波纹 */
-.add-clean-row, .choose-item-row, .playlist-items .song-row {
+.add-clean-row, .choose-item-row {
   display: flex !important;
   align-items: center !important;
   gap: 12px !important;
@@ -2080,6 +2033,52 @@ body.night .drawer-mode-btn {
   position: relative !important;
   overflow: hidden !important;
   transition: none !important;
+}
+.playlist-items .song-row {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  padding: 8px 18px !important;
+  min-height: 44px !important;
+  border-radius: 0 !important;
+  margin: 0 !important;
+  cursor: pointer !important;
+  background: transparent !important;
+  border: none !important;
+  border-bottom: none !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  text-align: left !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  -webkit-tap-highlight-color: transparent !important;
+  position: relative !important;
+  overflow: hidden !important;
+  transition: none !important;
+}
+.playlist-items .song-row .song-info {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 2px !important;
+  flex: 1 !important;
+  min-width: 0 !important;
+}
+.playlist-items .song-row .song-title {
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  color: var(--ink-black) !important;
+  line-height: 1.25 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+.playlist-items .song-row .song-artist {
+  font-size: 11.5px !important;
+  color: var(--ink-light) !important;
+  line-height: 1.2 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
 }
 .add-clean-row:active, .choose-item-row:active, .playlist-items .song-row:active {
   background: transparent !important;
@@ -2804,13 +2803,13 @@ body.night .fine-back svg {
 }
 
 
-.icon-btn, .nav-btn, .fine-back, .fav-btn, .song-action-btn, .circle-btn, .discover-section-play-btn, .drawer-multi-btn {
+.icon-btn, .nav-btn, .fine-back, .fav-btn, .more-dots-btn, .song-action-btn, .circle-btn, .discover-section-play-btn, .drawer-multi-btn {
   border-radius: 50% !important;
   overflow: hidden !important;
   position: relative;
   -webkit-tap-highlight-color: transparent !important;
 }
-.fav-btn, .song-action-btn {
+.fav-btn, .more-dots-btn, .song-action-btn {
   width: 36px; height: 36px; display: inline-flex;
   align-items: center; justify-content: center;
   border-radius: 50% !important; overflow: hidden !important;
@@ -3271,7 +3270,7 @@ body.night .voice-modal-btn.voice-modal-btn-primary {
               </div>
               <div class="item-content">
                 <span class="item-main-title">检查版本更新</span>
-                <span class="item-subtitle-tight" id="aboutAppVersionDesc">v2.3.6</span>
+                <span class="item-subtitle-tight" id="aboutAppVersionDesc">v2.3.7</span>
               </div>
             </div>
             <svg class="item-arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
@@ -3794,16 +3793,11 @@ body.night .voice-modal-btn.voice-modal-btn-primary {
   <div class="playlist-drawer" id="playlistDrawer">
     <div class="add-sheet-drag-handle"></div>
     <div class="playlist-header">
-      <div class="playlist-header-left">
-        <div class="playlist-title">当前播放列表 (<span id="drawerCountText">6</span>)</div>
-        <button class="drawer-mode-btn" id="drawerPlayModeBtn" onclick="togglePlayMode()" title="切换播放模式">
-          <span id="drawerPlayModeIcon" style="display:inline-flex; align-items:center;"></span>
-          <span id="drawerPlayModeText">列表循环</span>
-        </button>
-      </div>
       <button class="add-sheet-close-btn" onclick="closePlaylistDrawer()" title="关闭">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
+      <div class="playlist-title">当前播放列表 (<span id="drawerCountText">0</span>)</div>
+      <div style="width:32px;"></div>
     </div>
     <div class="playlist-items" id="drawerItemsList"></div>
   </div>
@@ -4345,7 +4339,7 @@ const OTHER_AVATAR_SVG = `<svg width="14" height="14" viewBox="0 0 24 24" fill="
 
 const APP_CONFIG = {
   name: '灵犀音乐',
-  version: '2.3.6',
+  version: '2.3.7',
   build: '2026.10.09',
   codename: 'Pure Sound'
 };
@@ -9383,16 +9377,6 @@ function toggleSongFav(id, triggerBtn, event) {
 
   persistData();
 
-  // 动效：如果传入了触发按钮，为其触发心跳放大弹性动效
-  if (triggerBtn) {
-    triggerBtn.classList.remove('pulse-heart');
-    void triggerBtn.offsetWidth;
-    triggerBtn.classList.add('pulse-heart');
-    setTimeout(() => {
-      triggerBtn.classList.remove('pulse-heart');
-    }, 400);
-  }
-
   // 精准局部 DOM 更新：找到所有匹配 data-song-id 的爱心按钮，直接切换状态，绝不重构列表 DOM，彻底根除封面闪烁
   const matchingFavBtns = document.querySelectorAll(`.fav-btn[data-song-id="${id}"]`);
   matchingFavBtns.forEach(btn => {
@@ -12488,11 +12472,11 @@ function toggleDefaultHomeTabSetting() {
     pendingPoint = null;
   };
 
-  const RIPPLE_SELECTOR = '.ripple-btn, .group-menu-item, .cap-switch-row, .settings-item-row, .song-row, .discover-card-row, .library-album-pill, .voice-modal-btn, .modern-pill-btn, .icon-btn, .nav-btn, .fav-btn, .song-action-btn, .circle-btn, .color-option-row, .popup-menu-item, .modal-action-btn, .drawer-row, .add-clean-row, .choose-item-row, .choose-capsule-btn';
+  const RIPPLE_SELECTOR = '.ripple-btn, .group-menu-item, .cap-switch-row, .settings-item-row, .song-row, .discover-card-row, .library-album-pill, .voice-modal-btn, .modern-pill-btn, .icon-btn, .nav-btn, .fav-btn, .more-dots-btn, .song-action-btn, .circle-btn, .color-option-row, .popup-menu-item, .modal-action-btn, .drawer-row, .add-clean-row, .choose-item-row, .choose-capsule-btn';
 
   document.addEventListener('pointerdown', (e) => {
     if (e.target.closest('input, textarea, select')) return;
-    if (e.target.closest('.more-dots-btn, .multi-select-check-box')) return;
+    if (e.target.closest('.multi-select-check-box')) return;
 
     const btn = e.target.closest(RIPPLE_SELECTOR);
     if (!btn) return;
