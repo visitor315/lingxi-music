@@ -1,6 +1,6 @@
 {
-  "versionCode": 45,
-  "versionName": "2.1.4",
-  "changelog": "1. 修复偶发音乐播放中途因网络抖动中断导致系统误判放完而错误切歌的问题\n2. 增加断点重连续播机制：流中断时自动原地断点恢复播放\n3. 优化底层音频重定向与流连接超时参数，增强移动网络高可用性",
+  "versionCode": 46,
+  "versionName": "2.1.5",
+  "changelog": "1. 重塑灵犀漫步推荐卡片为古典水墨宣纸风，彻底剔除现代橙色按键与描边\n2. 歌单封面光盘补齐真实黑胶同心微槽与反射高光，与播放详情页质感完全统一\n3. 听歌导航新增即时灵动点击弹性触感反馈",
   "downloadUrl": "https://ghfast.top/https://github.com/visitor315/lingxi-music/releases/download/v1.4.0/LingXiMusic.apk"
 }

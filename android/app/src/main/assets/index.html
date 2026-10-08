@@ -311,100 +311,168 @@ html, body {
 .nav-tag-btn:active { opacity: 0.75; }
 .nav-tag-btn.active { font-size: 19px; font-weight: 600; color: var(--ink-black); }
 
-/* ================== 灵犀推荐模块样式（古典文人纸质风） ================== */
-.discover-header-section {
-  padding: 8px 16px 12px;
+/* ================== 灵犀推荐模块样式（古典文人水墨纸质风，绝无半透明橙色与橙色描边） ================== */
+.discover-banner-card {
+  margin: 6px 16px 14px;
+  padding: 16px 18px 14px;
+  background: var(--card-bg);
+  border-radius: 18px;
+  border: 1px solid var(--card-border);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
+  position: relative;
+  overflow: hidden;
 }
-.discover-meta-row {
+body.night .discover-banner-card {
+  background: #1C1B19;
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.22);
+}
+.discover-banner-header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
 }
+.discover-title-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.discover-main-title-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
 .discover-classic-title {
-  font-size: 17px;
+  font-size: 18px;
   font-weight: 600;
   color: var(--ink-black);
   letter-spacing: 0.5px;
 }
+.discover-seal-tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  line-height: 1;
+  padding: 2px 4px;
+  border-radius: 3px;
+  color: var(--brand-red, #B24036);
+  border: 1px solid var(--brand-red, #B24036);
+  font-weight: normal;
+  letter-spacing: 0.5px;
+  user-select: none;
+}
 .discover-classic-sub {
-  font-size: 11.5px;
+  font-size: 12px;
   color: var(--ink-gray);
-  margin-top: 3px;
-  max-width: 200px;
+  letter-spacing: 0.3px;
+  max-width: 260px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+.discover-banner-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--divider, rgba(0, 0, 0, 0.05));
+}
+.discover-clue-text {
+  font-size: 11.5px;
+  color: var(--ink-light);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+.discover-clue-text span:last-child {
+  color: var(--ink-gray);
 }
 .discover-actions-cluster {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-shrink: 0;
 }
-.discover-action-ghost-btn {
+/* 换一批：素雅宣纸墨韵按键，微墨线边框，绝无橙色 */
+.discover-btn-refresh {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 4px 10px;
-  border-radius: 12px;
-  background: transparent;
+  gap: 5px;
+  height: 30px;
+  padding: 0 11px;
+  border-radius: 15px;
+  background: var(--bg-page);
   color: var(--ink-dark);
   border: 1px solid var(--border-input);
-  font-size: 11.5px;
+  font-size: 12px;
+  font-weight: 500;
   cursor: pointer;
   transition: all 0.18s ease;
   user-select: none;
 }
-.discover-action-ghost-btn:active {
-  transform: scale(0.94);
+.discover-btn-refresh:active {
+  transform: scale(0.95);
   background: var(--pinned-bg);
 }
-.discover-action-ghost-btn.play-all {
-  color: var(--brand-terracotta);
-  border-color: rgba(217, 119, 87, 0.35);
-  background: rgba(217, 119, 87, 0.06);
-}
-.discover-action-ghost-btn.play-all:active {
-  background: rgba(217, 119, 87, 0.15);
-}
-.discover-action-ghost-btn svg.spin {
+.discover-btn-refresh svg.spin {
   animation: iconSpin 0.7s linear infinite;
 }
 @keyframes iconSpin { 100% { transform: rotate(360deg); } }
-.discover-seeds-flow {
-  display: flex;
+
+/* 播放全部：典雅深墨主按键，白字与墨黑呼应，庄重大气，绝无橙色 */
+.discover-btn-playall {
+  display: inline-flex;
   align-items: center;
-  gap: 6px;
-  overflow-x: auto;
-  scrollbar-width: none;
+  gap: 5px;
+  height: 30px;
+  padding: 0 13px;
+  border-radius: 15px;
+  background: var(--ink-black);
+  color: #FFFFFF;
+  border: 1px solid var(--ink-black);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  transition: all 0.18s ease;
+  user-select: none;
 }
-.discover-seeds-flow::-webkit-scrollbar { display: none; }
-.discover-seed-chip {
-  font-size: 10.5px;
-  padding: 2px 8px;
-  border-radius: 4px;
+.discover-btn-playall:active {
+  transform: scale(0.95);
+  opacity: 0.9;
+}
+body.night .discover-btn-playall {
+  background: #ECE9E2;
+  color: #1C1B19;
+  border-color: #ECE9E2;
+}
+
+/* 推荐理由素雅墨韵标签，去除半透明橙色与橙色描边 */
+.recommend-reason-tag {
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 3px;
   background: var(--pinned-bg);
   color: var(--ink-gray);
   border: 0.5px solid var(--card-border);
-  white-space: nowrap;
-}
-body.night .discover-seed-chip {
-  background: #222220;
-  border-color: rgba(255, 255, 255, 0.08);
-  color: var(--ink-light);
-}
-.recommend-reason-tag {
-  font-size: 9.5px;
-  padding: 1px 5px;
-  border-radius: 4px;
-  background: rgba(217, 119, 87, 0.12);
-  color: var(--brand-terracotta);
   margin-left: 6px;
-  font-weight: 500;
+  font-weight: normal;
   display: inline-block;
   vertical-align: middle;
+}
+body.night .recommend-reason-tag {
+  background: #242320;
+  border-color: rgba(255, 255, 255, 0.08);
+  color: var(--ink-light);
 }
 
 .listen-header-actions { display: flex; align-items: center; gap: 6px; }
@@ -487,19 +555,42 @@ body.night .radio-play-btn-circle { color: #141413; }
   width: 114px; height: 114px; border-radius: 50%;
   background: radial-gradient(circle at 50% 50%, #292825 0%, #151413 72%, #262420 100%);
   border: 4px solid #ECE9E2; display: flex; align-items: center; justify-content: center;
+  position: relative; overflow: hidden;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12), 0 1px 4px rgba(0, 0, 0, 0.08);
   animation: discSpinSlow 18s linear infinite; animation-play-state: paused;
 }
-body.night .stream-disc { border-color: #2D2C28; }
+body.night .stream-disc { border-color: #2D2C28; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4); }
 .stream-disc.playing { animation-play-state: running; }
 
-/* 新建歌单留白光盘 */
+/* 真实黑胶唱片同心微槽沟纹（与歌曲详情页完全看齐） */
+.stream-disc::before {
+  content: ''; position: absolute; inset: 6px; border-radius: 50%;
+  border: 1px dashed rgba(255, 255, 255, 0.14);
+  box-shadow: inset 0 0 0 9px rgba(0, 0, 0, 0.45), inset 0 0 0 10px rgba(255, 255, 255, 0.05);
+  pointer-events: none; z-index: 3;
+}
+
+/* 真实黑胶反光扇形双翼高光（与歌曲详情页完全看齐） */
+.stream-disc::after {
+  content: ''; position: absolute; inset: 0; border-radius: 50%;
+  background: conic-gradient(from 35deg, rgba(255,255,255,0) 0deg, rgba(255,255,255,0.11) 32deg, rgba(255,255,255,0.22) 48deg, rgba(255,255,255,0.08) 64deg, rgba(255,255,255,0) 90deg, rgba(255,255,255,0) 180deg, rgba(255,255,255,0.11) 212deg, rgba(255,255,255,0.22) 228deg, rgba(255,255,255,0.08) 244deg, rgba(255,255,255,0) 270deg);
+  pointer-events: none; z-index: 4; mix-blend-mode: screen;
+}
+
+/* 新建歌单留白光盘排除伪元素 */
+.stream-disc.stream-disc-add::before,
+.stream-disc.stream-disc-add::after {
+  display: none;
+}
 .stream-disc.stream-disc-add {
   background: transparent; border: 2px dashed #D1D1CF;
+  box-shadow: none;
   animation: none !important;
 }
 body.night .stream-disc.stream-disc-add { border-color: #444; }
 
 .stream-disc-core {
+  position: relative; z-index: 5;
   width: 42px; height: 42px; border-radius: 50%; background: var(--card-bg);
   border: 1.5px solid var(--ink-black); display: flex; align-items: center; justify-content: center; color: var(--ink-dark);
 }
@@ -621,6 +712,8 @@ body.night .xianyin-bottom-nav { background: rgba(20, 20, 19, 0.96); }
   gap: 2.2px;
   padding-bottom: 2px;
   color: inherit;
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transform-origin: center bottom;
 }
 .nav-wave-bar {
   width: 2.2px;
@@ -633,23 +726,47 @@ body.night .xianyin-bottom-nav { background: rgba(20, 20, 19, 0.96); }
 .nav-wave-bar:nth-child(3) { height: 9px; }
 .nav-wave-bar:nth-child(4) { height: 5px; }
 
+/* 无论是否在播放，点击听歌时触发的灵动弹性敲击反馈 */
+.nav-wave-bars.anim-wave-tap {
+  animation: waveTapFeedback 0.42s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.nav-wave-bars.anim-wave-tap .nav-wave-bar {
+  animation: waveBarPop 0.42s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+}
+.nav-wave-bars.anim-wave-tap .nav-wave-bar:nth-child(1) { animation-delay: 0s !important; }
+.nav-wave-bars.anim-wave-tap .nav-wave-bar:nth-child(2) { animation-delay: 0.04s !important; }
+.nav-wave-bars.anim-wave-tap .nav-wave-bar:nth-child(3) { animation-delay: 0.08s !important; }
+.nav-wave-bars.anim-wave-tap .nav-wave-bar:nth-child(4) { animation-delay: 0.12s !important; }
+
+@keyframes waveTapFeedback {
+  0% { transform: scale(0.85); }
+  45% { transform: scale(1.22) translateY(-2px); }
+  100% { transform: scale(1) translateY(0); }
+}
+
+@keyframes waveBarPop {
+  0% { height: 4px; }
+  50% { height: 19px; }
+  100% { height: 8px; }
+}
+
 /* 播放时的灵动音波起伏跳跃动画 */
-.nav-wave-bars.playing .nav-wave-bar {
+.nav-wave-bars.playing:not(.anim-wave-tap) .nav-wave-bar {
   animation: navWaveDance 0.8s ease-in-out infinite alternate;
 }
-.nav-wave-bars.playing .nav-wave-bar:nth-child(1) {
+.nav-wave-bars.playing:not(.anim-wave-tap) .nav-wave-bar:nth-child(1) {
   animation-delay: 0.08s;
   animation-duration: 0.72s;
 }
-.nav-wave-bars.playing .nav-wave-bar:nth-child(2) {
+.nav-wave-bars.playing:not(.anim-wave-tap) .nav-wave-bar:nth-child(2) {
   animation-delay: 0.3s;
   animation-duration: 0.88s;
 }
-.nav-wave-bars.playing .nav-wave-bar:nth-child(3) {
+.nav-wave-bars.playing:not(.anim-wave-tap) .nav-wave-bar:nth-child(3) {
   animation-delay: 0.18s;
   animation-duration: 0.78s;
 }
-.nav-wave-bars.playing .nav-wave-bar:nth-child(4) {
+.nav-wave-bars.playing:not(.anim-wave-tap) .nav-wave-bar:nth-child(4) {
   animation-delay: 0.42s;
   animation-duration: 0.92s;
 }
@@ -2114,27 +2231,38 @@ body.in-pip-mode .view-player-full {
 
       <!-- 灵犀推荐页面 -->
       <div id="paneDiscover" style="display:none; padding-bottom:20px;">
-        <div class="discover-header-section">
-          <div class="discover-meta-row">
-            <div>
-              <div class="discover-classic-title">灵犀漫步</div>
-              <div class="discover-classic-sub" id="discoverHeroSubtitle">智能探索专属好歌</div>
+        <div class="discover-banner-card">
+          <div class="discover-banner-header">
+            <div class="discover-title-wrap">
+              <div class="discover-main-title-row">
+                <span class="discover-classic-title">灵犀漫步</span>
+                <span class="discover-seal-tag">心选</span>
+              </div>
+              <div class="discover-classic-sub" id="discoverHeroSubtitle">以乐为引 · 偶得佳音</div>
+            </div>
+            <div style="opacity:0.22; color:var(--ink-black);">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="9"/>
+                <path d="M12 7v5l3 2"/>
+              </svg>
+            </div>
+          </div>
+          <div class="discover-banner-footer">
+            <div class="discover-clue-text">
+              <span>寻声：</span><span id="discoverHeroSeeds">灵犀私人精选</span>
             </div>
             <div class="discover-actions-cluster">
-              <button class="discover-action-ghost-btn" id="discoverRefreshBtn" onclick="refreshRecommendations(true)" title="换一批推荐">
-                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" id="discoverRefreshIcon">
+              <button class="discover-btn-refresh" id="discoverRefreshBtn" onclick="refreshRecommendations(true)" title="换一批推荐">
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" id="discoverRefreshIcon">
                   <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
                 </svg>
                 <span>换一批</span>
               </button>
-              <button class="discover-action-ghost-btn play-all" onclick="playAllDiscoverTracks()" title="播放当前推荐">
-                <svg viewBox="0 0 24 24" width="11" height="11" fill="currentColor"><polygon points="6 3 20 12 6 21 6 3"/></svg>
+              <button class="discover-btn-playall" onclick="playAllDiscoverTracks()" title="播放当前推荐">
+                <svg viewBox="0 0 24 24" width="10" height="10" fill="currentColor"><polygon points="6 3 20 12 6 21 6 3"/></svg>
                 <span>播放全部</span>
               </button>
             </div>
-          </div>
-          <div class="discover-seeds-flow" id="discoverHeroTags">
-            <span class="discover-seed-chip">灵犀精选</span>
           </div>
         </div>
 
@@ -2208,7 +2336,7 @@ body.in-pip-mode .view-player-full {
         <span class="settings-group-header">关于与更新</span>
         <div class="group-menu-card">
           <div class="settings-item-row" onclick="checkAppUpdate(true)">
-            <div class="settings-item-col"><span class="settings-title-line">检查版本更新</span><span class="settings-sub-desc" id="aboutAppVersionDesc">自用无损音乐播放器 · v2.1.4</span></div>
+            <div class="settings-item-col"><span class="settings-title-line">检查版本更新</span><span class="settings-sub-desc" id="aboutAppVersionDesc">自用无损音乐播放器 · v2.1.5</span></div>
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" style="color:var(--ink-light); margin-left:auto;"><polyline points="9 18 15 12 9 6"/></svg>
           </div>
         </div>
@@ -2223,7 +2351,7 @@ body.in-pip-mode .view-player-full {
 
     <!-- 底部常驻栏（修正并对齐设置 SVG） -->
     <nav class="xianyin-bottom-nav">
-      <div class="bottom-tab-item active" id="tabBtnListen" onclick="switchBottomTab('listen')">
+      <div class="bottom-tab-item active" id="tabBtnListen" onclick="switchBottomTab('listen'); triggerListenWaveTap();">
         <div class="nav-wave-bars" id="navWaveBars">
           <span class="nav-wave-bar"></span>
           <span class="nav-wave-bar"></span>
@@ -3180,7 +3308,7 @@ const OTHER_AVATAR_SVG = `<svg width="14" height="14" viewBox="0 0 24 24" fill="
 
 const APP_CONFIG = {
   name: '灵犀音乐',
-  version: '2.1.4',
+  version: '2.1.5',
   build: '2026.09.23',
   codename: 'Pure Sound'
 };
@@ -5042,18 +5170,16 @@ async function refreshRecommendations(showToast = false) {
 function renderDiscoverPane() {
   const container = document.getElementById('discoverSongsContainer');
   const subtitleEl = document.getElementById('discoverHeroSubtitle');
-  const tagsEl = document.getElementById('discoverHeroTags');
+  const clueSeedsEl = document.getElementById('discoverHeroSeeds');
   const titleCountEl = document.getElementById('discoverListPanelTitle');
   if (!container) return;
 
   if (currentDiscoverSeeds && currentDiscoverSeeds.length > 0) {
-    if (subtitleEl) subtitleEl.textContent = `基于你常听的 ${currentDiscoverSeeds.join('、')} 智能推荐`;
-    if (tagsEl) {
-      tagsEl.innerHTML = currentDiscoverSeeds.map(s => `<span class="discover-seed-chip">${escapeHtml(s)}</span>`).join('');
-    }
+    if (subtitleEl) subtitleEl.textContent = '循你所爱 · 寻觅知音';
+    if (clueSeedsEl) clueSeedsEl.textContent = currentDiscoverSeeds.join('、');
   } else {
-    if (subtitleEl) subtitleEl.textContent = '根据你的音乐偏好探索精选好歌';
-    if (tagsEl) tagsEl.innerHTML = '<span class="discover-seed-chip">灵犀精选</span>';
+    if (subtitleEl) subtitleEl.textContent = '以乐为引 · 偶得佳音';
+    if (clueSeedsEl) clueSeedsEl.textContent = '灵犀私人精选';
   }
 
   if (titleCountEl) {
@@ -5415,7 +5541,7 @@ function updateDynamicAppVersion(ver) {
       ver = window.AndroidBridge.getAppVersion();
     } catch(e) {}
   }
-  if (!ver) ver = '2.1.4';
+  if (!ver) ver = '2.1.5';
   APP_CONFIG.version = ver;
   const descEl = document.getElementById('aboutAppVersionDesc');
   if (descEl) {
@@ -5834,10 +5960,10 @@ function renderVinylDiscs() {
     const albumCover = getAlbumCover(alb);
     const hasCover = !!albumCover;
     const discOuterStyle = hasCover
-      ? `background: radial-gradient(circle at 50% 50%, rgba(20,20,20,0.52) 0%, #151413 75%), url('${albumCover}') center/cover no-repeat;`
+      ? `background: radial-gradient(circle at 50% 50%, rgba(20,20,20,0.5) 0%, #151413 75%), url('${albumCover}') center/cover no-repeat;`
       : '';
     const coreCoverStyle = hasCover
-      ? `background-image: url('${albumCover}'); background-size: cover; background-position: center; border-color: rgba(255,255,255,0.7);`
+      ? `background-image: url('${albumCover}'); background-size: cover; background-position: center; border: 2px solid rgba(255,255,255,0.9); box-shadow: 0 0 0 1px rgba(0,0,0,0.3);`
       : '';
     return `
       <div class="vinyl-stream-card" onclick="handleStreamCardClick(${idx})">
@@ -9978,6 +10104,7 @@ function switchBottomTab(tab) {
     paneSettings.classList.remove('active');
     btnListen.classList.add('active');
     btnSettings.classList.remove('active');
+    triggerListenWaveTap();
 
     if (currentHomeTab === 'discover') {
       if (paneListen) paneListen.style.display = 'none';
@@ -10007,6 +10134,20 @@ function switchBottomTab(tab) {
     if (typeof updateSleepTimerUI === 'function') updateSleepTimerUI();
     if (typeof updateAudioFocusUI === 'function') updateAudioFocusUI();
   }
+}
+
+function triggerListenWaveTap() {
+  const bars = document.getElementById('navWaveBars');
+  if (!bars) return;
+  bars.classList.remove('anim-wave-tap');
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      bars.classList.add('anim-wave-tap');
+      bars.addEventListener('animationend', () => {
+        bars.classList.remove('anim-wave-tap');
+      }, { once: true });
+    });
+  });
 }
 
 function triggerSettingsGearSpin() {
