@@ -209,17 +209,24 @@ public class MainActivity extends Activity {
             window.setNavigationBarColor(Color.TRANSPARENT);
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                 window.setDecorFitsSystemWindows(false);
-                android.view.WindowInsetsController controller = window.getInsetsController();
-                if (controller != null) {
-                    controller.setSystemBarsAppearance(
-                        android.view.WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS | android.view.WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS,
-                        android.view.WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS | android.view.WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS
-                    );
-                }
+                try {
+                    View decor = window.getDecorView();
+                    if (decor != null) {
+                        android.view.WindowInsetsController controller = decor.getWindowInsetsController();
+                        if (controller != null) {
+                            controller.setSystemBarsAppearance(
+                                android.view.WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS | android.view.WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS,
+                                android.view.WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS | android.view.WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS
+                            );
+                        }
+                    }
+                } catch (Exception ignored) {}
             }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                window.setNavigationBarContrastEnforced(false);
-                window.setStatusBarContrastEnforced(false);
+                try {
+                    window.setNavigationBarContrastEnforced(false);
+                    window.setStatusBarContrastEnforced(false);
+                } catch (Exception ignored) {}
             }
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
@@ -2096,9 +2103,9 @@ public class MainActivity extends Activity {
         public String getAppVersion() {
             try {
                 PackageInfo pInfo = getPackageManager().getPackageInfo(getPackageName(), 0);
-                return "2.3.1";
+                return "2.3.2";
             } catch (Exception e) {
-                return "2.3.1";
+                return "2.3.2";
             }
         }
 
@@ -2112,7 +2119,7 @@ public class MainActivity extends Activity {
                     return pInfo.versionCode;
                 }
             } catch (Exception e) {
-                return 64;
+                return 65;
             }
         }
 
