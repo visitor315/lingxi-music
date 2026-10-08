@@ -787,7 +787,7 @@ body.night .view-settings-page {
   font-weight: 500;
   color: var(--ink-gray, #8E8D88);
   letter-spacing: 0.3px;
-  margin: 6px 4px 0px;
+  margin: 14px 4px 6px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1393,15 +1393,23 @@ body.night .popup-menu-item:active { background: rgba(255, 255, 255, 0.05); }
 /* ================== 8.6 外观与主题子页及弹窗 ================== */
 .view-theme-subpage {
   position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-  background: var(--bg-page); z-index: 80; display: flex; flex-direction: column;
+  background: var(--settings-bg, #F8F8F6) !important;
+  z-index: 80; display: flex; flex-direction: column;
   transform: translateX(100%); transition: transform 0.28s cubic-bezier(0.2, 0.9, 0.3, 1); overflow: hidden;
   pointer-events: none;
 }
 .view-theme-subpage.active { transform: translateX(0); pointer-events: auto; }
+body.night .view-theme-subpage {
+  background: var(--settings-bg, #131312) !important;
+}
 
 .settings-subview-scroll {
   flex: 1; overflow-y: auto; padding: 14px 14px max(32px, env(safe-area-inset-bottom, 24px));
-  display: flex; flex-direction: column; gap: 13px;
+  display: flex; flex-direction: column; gap: 14px;
+  background: var(--settings-bg, #F8F8F6) !important;
+}
+body.night .settings-subview-scroll {
+  background: var(--settings-bg, #131312) !important;
 }
 
 .modal-overlay {
@@ -1428,7 +1436,7 @@ body.night .popup-menu-item:active { background: rgba(255, 255, 255, 0.05); }
 .color-modal-card {
   width: 100%;
   max-width: 320px;
-  background: var(--settings-bg, var(--card-bg, #F8F8F6));
+  background: var(--settings-bg, #F8F8F6);
   border-radius: 16px;
   padding: 16px 0 12px;
   transform: scale(0.88);
@@ -1444,7 +1452,7 @@ body.night .popup-menu-item:active { background: rgba(255, 255, 255, 0.05); }
   opacity: 1;
 }
 body.night .color-modal-card {
-  background: var(--card-bg, #1E1E1C);
+  background: var(--settings-bg, #131312);
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
 }
 
@@ -1882,27 +1890,24 @@ body.night .edit-cover-thumbnail {
 .play-pause-big { width: 46px !important; height: 46px !important; }
 .play-pause-big svg { width: 34px !important; height: 34px !important; fill: var(--ink-black) !important; stroke: none !important; }
 
-/* ================== 11. 弹窗与抽屉（1:1 严格复刻自 hhznx 46px 规范与通栏水波纹） ================== */
-.playlist-drawer-backdrop, .add-sheet-overlay, .choose-playlist-modal {
+/* ================== 11. 弹窗与抽屉（严格分层体系：操作菜单置于抽屉之上，避免层级遮挡） ================== */
+.playlist-drawer-backdrop {
   position: absolute;
   inset: 0;
   background: rgba(20, 20, 19, 0.45);
   backdrop-filter: blur(2px);
   -webkit-backdrop-filter: blur(2px);
-  z-index: 2050;
+  z-index: 2000;
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.24s cubic-bezier(0.2, 0.8, 0.2, 1);
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
 }
-.playlist-drawer-backdrop.open, .add-sheet-overlay.active, .choose-playlist-modal.active {
+.playlist-drawer-backdrop.open {
   opacity: 1;
   pointer-events: auto;
 }
 
-.playlist-drawer, .add-sheet-card, .choose-playlist-card {
+.playlist-drawer {
   position: absolute;
   left: 0;
   right: 0;
@@ -1925,16 +1930,118 @@ body.night .edit-cover-thumbnail {
   touch-action: pan-down;
   overflow: hidden !important;
   overscroll-behavior: none;
-  z-index: 2100;
+  z-index: 2050;
   pointer-events: none;
 }
-body.night .playlist-drawer, body.night .add-sheet-card, body.night .choose-playlist-card {
-  background: var(--settings-bg, #131312) !important;
-}
-
-.playlist-drawer.open, .add-sheet-overlay.active .add-sheet-card, .choose-playlist-modal.active .choose-playlist-card {
+.playlist-drawer.open {
   transform: translate3d(0, 0, 0) !important;
   pointer-events: auto;
+}
+
+/* 歌曲操作菜单弹窗：层级严格高于播放队列抽屉，彻底解决抽屉内点击操作菜单被遮挡的Bug */
+.add-sheet-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(20, 20, 19, 0.45);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  z-index: 2200;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.24s cubic-bezier(0.2, 0.8, 0.2, 1);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+.add-sheet-overlay.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.add-sheet-card {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  max-width: 100%;
+  max-height: 72vh !important;
+  background: var(--settings-bg, #F8F8F6) !important;
+  border-radius: 46px 46px 0 0 !important;
+  padding: 0 0 calc(20px + var(--safe-bottom, 14px)) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: flex-start !important;
+  box-sizing: border-box !important;
+  transform: translate3d(0, 100%, 0);
+  will-change: transform;
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: none !important;
+  border: none !important;
+  touch-action: pan-down;
+  overflow: hidden !important;
+  overscroll-behavior: none;
+  z-index: 2250;
+  pointer-events: none;
+}
+.add-sheet-overlay.active .add-sheet-card {
+  transform: translate3d(0, 0, 0) !important;
+  pointer-events: auto;
+}
+
+/* 选择歌单弹窗：层级最高，确保从歌曲菜单进入时无阻展示 */
+.choose-playlist-modal {
+  position: absolute;
+  inset: 0;
+  background: rgba(20, 20, 19, 0.45);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  z-index: 2300;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.24s cubic-bezier(0.2, 0.8, 0.2, 1);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+.choose-playlist-modal.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.choose-playlist-card {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  max-width: 100%;
+  max-height: 72vh !important;
+  background: var(--settings-bg, #F8F8F6) !important;
+  border-radius: 46px 46px 0 0 !important;
+  padding: 0 0 calc(20px + var(--safe-bottom, 14px)) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: flex-start !important;
+  box-sizing: border-box !important;
+  transform: translate3d(0, 100%, 0);
+  will-change: transform;
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: none !important;
+  border: none !important;
+  touch-action: pan-down;
+  overflow: hidden !important;
+  overscroll-behavior: none;
+  z-index: 2350;
+  pointer-events: none;
+}
+.choose-playlist-modal.active .choose-playlist-card {
+  transform: translate3d(0, 0, 0) !important;
+  pointer-events: auto;
+}
+
+body.night .playlist-drawer, body.night .add-sheet-card, body.night .choose-playlist-card {
+  background: var(--settings-bg, #131312) !important;
 }
 
 .add-sheet-drag-handle, .choose-drag-handle {
@@ -3291,7 +3398,7 @@ body.night .voice-modal-btn.voice-modal-btn-primary {
               </div>
               <div class="item-content">
                 <span class="item-main-title">检查版本更新</span>
-                <span class="item-subtitle-tight" id="aboutAppVersionDesc">v2.4.1</span>
+                <span class="item-subtitle-tight" id="aboutAppVersionDesc">v2.4.2</span>
               </div>
             </div>
             <svg class="item-arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
@@ -4360,7 +4467,7 @@ const OTHER_AVATAR_SVG = `<svg width="14" height="14" viewBox="0 0 24 24" fill="
 
 const APP_CONFIG = {
   name: '灵犀音乐',
-  version: '2.4.1',
+  version: '2.4.2',
   build: '2026.10.09',
   codename: 'Pure Sound'
 };
