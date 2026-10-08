@@ -256,6 +256,22 @@ public class MediaPlaybackService extends Service {
             mediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
                 @Override
                 public void onCompletion(MediaPlayer mp) {
+                    int curPos = 0;
+                    int dur = 0;
+                    try {
+                        curPos = mp.getCurrentPosition();
+                        dur = mp.getDuration();
+                    } catch (Exception ignored) {}
+
+                    // 核心防御：防止偶发网络流中断/提前EOF导致系统误报播放完毕而错误切歌
+                    // 若音频总时长超过 20 秒，且中断发生时离实际结尾还有 8 秒以上，判定为偶发网络流早退中断
+                    if (dur > 20000 && curPos >= 0 && curPos < (dur - 8000)) {
+                        android.util.Log.w("LingXiAudio", "Premature completion detected: curPos=" + curPos + ", dur=" + dur + ". Re-connecting stream...");
+                        final double resumeSec = curPos / 1000.0;
+                        MainActivity.dispatchWebAction("if (window.onNativeStreamInterrupted) window.onNativeStreamInterrupted(" + resumeSec + "); else if (window.onNativeCompletion) window.onNativeCompletion();");
+                        return;
+                    }
+
                     resumeOnFocusGain = false;
                     abandonAudioFocusInternal();
                     isPlaying = false;
@@ -498,8 +514,8 @@ public class MediaPlaybackService extends Service {
                     try {
                         java.net.URL u = new java.net.URL(url);
                         java.net.HttpURLConnection conn = (java.net.HttpURLConnection) u.openConnection();
-                        conn.setConnectTimeout(6000);
-                        conn.setReadTimeout(8000);
+                        conn.setConnectTimeout(10000);
+                        conn.setReadTimeout(15000);
                         conn.setInstanceFollowRedirects(false);
                         conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36");
                         conn.setRequestProperty("Referer", "https://music.163.com/");
@@ -512,8 +528,8 @@ public class MediaPlaybackService extends Service {
                             targetStreamUrl = loc;
                             u = new java.net.URL(targetStreamUrl);
                             conn = (java.net.HttpURLConnection) u.openConnection();
-                            conn.setConnectTimeout(6000);
-                            conn.setReadTimeout(8000);
+                            conn.setConnectTimeout(10000);
+                            conn.setReadTimeout(15000);
                             conn.setInstanceFollowRedirects(false);
                             conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36");
                             conn.setRequestProperty("Referer", "https://music.163.com/");

@@ -11,7 +11,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-screen-webfont@1.1.0/style.css" media="print" onload="this.media='all'"/>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-screen-webfont@1.1.0/style.css">
 <style>
 /* 本地内置加载霞鹜文楷字体，100% 离线生效，杜绝 Google Fonts 阻塞 */
 @font-face {
@@ -307,8 +307,105 @@ html, body {
   z-index: 10;
 }
 .listen-nav-titles { display: flex; align-items: center; gap: 16px; }
-.nav-tag-btn { font-size: 16px; color: var(--ink-light); cursor: pointer; transition: all 0.15s; }
+.nav-tag-btn { font-size: 16px; color: var(--ink-light); cursor: pointer; transition: all 0.18s ease; user-select: none; }
+.nav-tag-btn:active { opacity: 0.75; }
 .nav-tag-btn.active { font-size: 19px; font-weight: 600; color: var(--ink-black); }
+
+/* ================== 灵犀推荐模块样式（古典文人纸质风） ================== */
+.discover-header-section {
+  padding: 8px 16px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.discover-meta-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+.discover-classic-title {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--ink-black);
+  letter-spacing: 0.5px;
+}
+.discover-classic-sub {
+  font-size: 11.5px;
+  color: var(--ink-gray);
+  margin-top: 3px;
+  max-width: 200px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.discover-actions-cluster {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.discover-action-ghost-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--ink-dark);
+  border: 1px solid var(--border-input);
+  font-size: 11.5px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  user-select: none;
+}
+.discover-action-ghost-btn:active {
+  transform: scale(0.94);
+  background: var(--pinned-bg);
+}
+.discover-action-ghost-btn.play-all {
+  color: var(--brand-terracotta);
+  border-color: rgba(217, 119, 87, 0.35);
+  background: rgba(217, 119, 87, 0.06);
+}
+.discover-action-ghost-btn.play-all:active {
+  background: rgba(217, 119, 87, 0.15);
+}
+.discover-action-ghost-btn svg.spin {
+  animation: iconSpin 0.7s linear infinite;
+}
+@keyframes iconSpin { 100% { transform: rotate(360deg); } }
+.discover-seeds-flow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.discover-seeds-flow::-webkit-scrollbar { display: none; }
+.discover-seed-chip {
+  font-size: 10.5px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: var(--pinned-bg);
+  color: var(--ink-gray);
+  border: 0.5px solid var(--card-border);
+  white-space: nowrap;
+}
+body.night .discover-seed-chip {
+  background: #222220;
+  border-color: rgba(255, 255, 255, 0.08);
+  color: var(--ink-light);
+}
+.recommend-reason-tag {
+  font-size: 9.5px;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: rgba(217, 119, 87, 0.12);
+  color: var(--brand-terracotta);
+  margin-left: 6px;
+  font-weight: 500;
+  display: inline-block;
+  vertical-align: middle;
+}
 
 .listen-header-actions { display: flex; align-items: center; gap: 6px; }
 .icon-btn {
@@ -327,12 +424,17 @@ html, body {
 .fixed-radio-card {
   position: absolute; top: 0; left: 0; z-index: 10;
   width: 136px; height: 142px; border-radius: 20px;
-  background: rgba(255, 255, 255, 0.84);
-  backdrop-filter: blur(24px) saturate(180%); -webkit-backdrop-filter: blur(24px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.9); padding: 14px 12px;
+  background: rgba(255, 255, 255, 0.46);
+  backdrop-filter: blur(12px) saturate(160%); -webkit-backdrop-filter: blur(12px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.75); padding: 14px 12px;
   display: flex; flex-direction: column; justify-content: space-between; cursor: pointer;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
 }
-body.night .fixed-radio-card { background: rgba(30, 30, 28, 0.86); border-color: rgba(255, 255, 255, 0.08); }
+body.night .fixed-radio-card {
+  background: rgba(24, 24, 22, 0.52);
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.22);
+}
 
 .radio-card-header { display: flex; align-items: center; gap: 6px; font-size: 15px; font-weight: 600; color: var(--ink-black); }
 
@@ -343,11 +445,25 @@ body.night .fixed-radio-card { background: rgba(30, 30, 28, 0.86); border-color:
 
 .radio-card-bottom { display: flex; align-items: flex-end; justify-content: space-between; }
 .radio-live-bars { display: flex; align-items: flex-end; gap: 2px; height: 14px; }
-.radio-live-bar { width: 2px; background: var(--ink-gray); border-radius: 1px; }
+.radio-live-bar { width: 2px; background: var(--ink-gray); border-radius: 1px; transition: height 0.2s ease, background 0.3s ease; }
 .radio-live-bar:nth-child(1) { height: 4px; }
 .radio-live-bar:nth-child(2) { height: 12px; }
 .radio-live-bar:nth-child(3) { height: 7px; }
 .radio-live-bar:nth-child(4) { height: 10px; }
+
+/* 卡片内部右下角音波条播放跳动 */
+.fixed-radio-card.playing .radio-live-bar {
+  animation: radioBarBounce 0.9s ease-in-out infinite alternate;
+}
+.fixed-radio-card.playing .radio-live-bar:nth-child(1) { animation-delay: 0.05s; background: var(--brand-terracotta); }
+.fixed-radio-card.playing .radio-live-bar:nth-child(2) { animation-delay: 0.3s; background: var(--brand-blue); }
+.fixed-radio-card.playing .radio-live-bar:nth-child(3) { animation-delay: 0.15s; background: var(--brand-red); }
+.fixed-radio-card.playing .radio-live-bar:nth-child(4) { animation-delay: 0.4s; background: var(--brand-terracotta); }
+
+@keyframes radioBarBounce {
+  0% { height: 3px; }
+  100% { height: 14px; }
+}
 
 .radio-play-btn-circle {
   width: 28px; height: 28px; border-radius: 50%; background: var(--dark-cold-btn);
@@ -490,10 +606,72 @@ body.night .stream-disc.stream-disc-add { border-color: #444; }
   padding: 0 24px; z-index: 60;
 }
 body.night .xianyin-bottom-nav { background: rgba(20, 20, 19, 0.96); }
-.bottom-tab-item { display: flex; flex-direction: column; align-items: center; gap: 3px; cursor: pointer; color: var(--ink-light); width: 60px; }
+.bottom-tab-item { display: flex; flex-direction: column; align-items: center; gap: 3px; cursor: pointer; color: var(--ink-light); width: 60px; user-select: none; }
 .bottom-tab-item.active { color: var(--ink-black); font-weight: 600; }
 .bottom-tab-item svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 1.4; flex-shrink: 0; }
 .bottom-tab-title { font-size: 11.5px; }
+
+/* 底部导航跳频音波 */
+.nav-wave-bars {
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 2.2px;
+  padding-bottom: 2px;
+  color: inherit;
+}
+.nav-wave-bar {
+  width: 2.2px;
+  border-radius: 1.5px;
+  background: currentColor;
+  transition: height 0.25s ease, background 0.25s ease;
+}
+.nav-wave-bar:nth-child(1) { height: 6px; }
+.nav-wave-bar:nth-child(2) { height: 14px; }
+.nav-wave-bar:nth-child(3) { height: 9px; }
+.nav-wave-bar:nth-child(4) { height: 5px; }
+
+/* 播放时的灵动音波起伏跳跃动画 */
+.nav-wave-bars.playing .nav-wave-bar {
+  animation: navWaveDance 0.8s ease-in-out infinite alternate;
+}
+.nav-wave-bars.playing .nav-wave-bar:nth-child(1) {
+  animation-delay: 0.08s;
+  animation-duration: 0.72s;
+}
+.nav-wave-bars.playing .nav-wave-bar:nth-child(2) {
+  animation-delay: 0.3s;
+  animation-duration: 0.88s;
+}
+.nav-wave-bars.playing .nav-wave-bar:nth-child(3) {
+  animation-delay: 0.18s;
+  animation-duration: 0.78s;
+}
+.nav-wave-bars.playing .nav-wave-bar:nth-child(4) {
+  animation-delay: 0.42s;
+  animation-duration: 0.92s;
+}
+
+@keyframes navWaveDance {
+  0% { height: 3.5px; }
+  100% { height: 17.5px; }
+}
+
+/* 底部导航设置 SVG 动态旋转动画 */
+.nav-settings-svg {
+  transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transform-origin: center center;
+}
+.nav-settings-svg.anim-gear-spin {
+  animation: settingsGearSpin 0.65s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes settingsGearSpin {
+  0% { transform: rotate(0deg) scale(0.9); }
+  60% { transform: rotate(180deg) scale(1.15); }
+  100% { transform: rotate(180deg) scale(1); }
+}
 
 .bottom-center-disc-wrap { position: relative; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
 .bottom-center-disc-wrap:active { transform: scale(0.94); }
@@ -1839,8 +2017,12 @@ body.in-pip-mode .view-player-full {
   <!-- 音乐 APP 页面 -->
   <div class="view-xianyin active" id="viewXianyin">
     <header class="listen-header-bar" id="listenHeaderBar">
-      <div class="listen-nav-titles">
-        <span class="nav-tag-btn active" id="tabNavListen" style="cursor:default;">灵犀</span>
+      <div class="listen-nav-titles" id="homeNavTitles">
+        <span class="nav-tag-btn active" id="tabNavLibrary" onclick="switchHomeNavTab('library')">乐库</span>
+        <span class="nav-tag-btn" id="tabNavDiscover" onclick="switchHomeNavTab('discover')">灵犀推荐</span>
+      </div>
+      <div class="listen-nav-titles" id="settingsNavTitles" style="display:none;">
+        <span class="nav-tag-btn active" style="cursor:default;">设置</span>
       </div>
       <div class="listen-header-actions">
         <button class="icon-btn" onclick="openBeginnerGuideModal()" title="新手引导">
@@ -1930,6 +2112,43 @@ body.in-pip-mode .view-player-full {
         </div>
       </div>
 
+      <!-- 灵犀推荐页面 -->
+      <div id="paneDiscover" style="display:none; padding-bottom:20px;">
+        <div class="discover-header-section">
+          <div class="discover-meta-row">
+            <div>
+              <div class="discover-classic-title">灵犀漫步</div>
+              <div class="discover-classic-sub" id="discoverHeroSubtitle">智能探索专属好歌</div>
+            </div>
+            <div class="discover-actions-cluster">
+              <button class="discover-action-ghost-btn" id="discoverRefreshBtn" onclick="refreshRecommendations(true)" title="换一批推荐">
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" id="discoverRefreshIcon">
+                  <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
+                </svg>
+                <span>换一批</span>
+              </button>
+              <button class="discover-action-ghost-btn play-all" onclick="playAllDiscoverTracks()" title="播放当前推荐">
+                <svg viewBox="0 0 24 24" width="11" height="11" fill="currentColor"><polygon points="6 3 20 12 6 21 6 3"/></svg>
+                <span>播放全部</span>
+              </button>
+            </div>
+          </div>
+          <div class="discover-seeds-flow" id="discoverHeroTags">
+            <span class="discover-seed-chip">灵犀精选</span>
+          </div>
+        </div>
+
+        <div class="song-list-panel">
+          <div class="list-panel-header">
+            <div style="display:flex; align-items:center; justify-content:space-between; width:100%;">
+              <span id="discoverListPanelTitle">推荐曲目</span>
+              <span style="font-size:11.5px; color:var(--ink-light);">心选好歌 · 点击即播</span>
+            </div>
+          </div>
+          <div id="discoverSongsContainer"></div>
+        </div>
+      </div>
+
 <!-- 设置页 -->
       <div class="view-settings-page" id="paneSettings">
         <span class="settings-group-header">个性化</span>
@@ -1989,7 +2208,7 @@ body.in-pip-mode .view-player-full {
         <span class="settings-group-header">关于与更新</span>
         <div class="group-menu-card">
           <div class="settings-item-row" onclick="checkAppUpdate(true)">
-            <div class="settings-item-col"><span class="settings-title-line">检查版本更新</span><span class="settings-sub-desc" id="aboutAppVersionDesc">自用无损音乐播放器 · v2.1.3</span></div>
+            <div class="settings-item-col"><span class="settings-title-line">检查版本更新</span><span class="settings-sub-desc" id="aboutAppVersionDesc">自用无损音乐播放器 · v2.1.4</span></div>
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" style="color:var(--ink-light); margin-left:auto;"><polyline points="9 18 15 12 9 6"/></svg>
           </div>
         </div>
@@ -2005,15 +2224,20 @@ body.in-pip-mode .view-player-full {
     <!-- 底部常驻栏（修正并对齐设置 SVG） -->
     <nav class="xianyin-bottom-nav">
       <div class="bottom-tab-item active" id="tabBtnListen" onclick="switchBottomTab('listen')">
-        <svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+        <div class="nav-wave-bars" id="navWaveBars">
+          <span class="nav-wave-bar"></span>
+          <span class="nav-wave-bar"></span>
+          <span class="nav-wave-bar"></span>
+          <span class="nav-wave-bar"></span>
+        </div>
         <span class="bottom-tab-title">听歌</span>
       </div>
       <div class="bottom-center-disc-wrap" onclick="openPlayerFull()" title="打开全屏播放">
         <svg class="disc-progress-svg" viewBox="0 0 48 48"><circle class="progress-ring-fill" id="bottomDiscRing" cx="24" cy="24" r="22.5"></circle></svg>
         <div class="bottom-center-disc" id="bottomDisc"><div class="disc-center-dot"></div></div>
       </div>
-      <div class="bottom-tab-item" id="tabBtnSettings" onclick="switchBottomTab('settings')">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <div class="bottom-tab-item" id="tabBtnSettings" onclick="switchBottomTab('settings'); triggerSettingsGearSpin();">
+        <svg class="nav-settings-svg" id="navSettingsSvg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="12" cy="12" r="3"/>
           <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
         </svg>
@@ -2956,7 +3180,7 @@ const OTHER_AVATAR_SVG = `<svg width="14" height="14" viewBox="0 0 24 24" fill="
 
 const APP_CONFIG = {
   name: '灵犀音乐',
-  version: '2.1.3',
+  version: '2.1.4',
   build: '2026.09.23',
   codename: 'Pure Sound'
 };
@@ -3518,7 +3742,33 @@ window.onNativePrepared = function(durationSec) {
   startLyricSmoothSync();
 };
 
+window.onNativeStreamInterrupted = function(resumeSec) {
+  console.warn("Native stream unexpectedly interrupted at", resumeSec);
+  const song = currentPlaybackQueue[currentIndex];
+  if (!song) return;
+  const isOnline = !!(song.onlineId || (song.fileUrl && song.fileUrl.startsWith('http')));
+  if (isOnline) {
+    const curResume = typeof resumeSec === 'number' && resumeSec > 0 ? resumeSec : (currentSec > 0 ? currentSec : 0);
+    toast(`网络流波动中断，正在从第 ${Math.floor(curResume)} 秒自动断点续播...`);
+    delete song.fileUrl;
+    delete song.urlFetchedAt;
+    persistData();
+    resolveAndPlayOnlineSong(song, true, curResume);
+  } else {
+    handleTrackEnd();
+  }
+};
+
 window.onNativeCompletion = function() {
+  const song = currentPlaybackQueue[currentIndex];
+  // 核心防御：防止偶发网络抖动导致系统提前触发完成而误切歌
+  if (song && song.duration > 20 && currentSec > 0 && currentSec < (song.duration - 8)) {
+    console.warn("Front-end caught premature completion at", currentSec, "of", song.duration);
+    if (window.onNativeStreamInterrupted) {
+      window.onNativeStreamInterrupted(currentSec);
+      return;
+    }
+  }
   stopLyricSmoothSync();
   handleTrackEnd();
 };
@@ -3535,20 +3785,27 @@ window.onNativeError = function(what, extra) {
   if (!song) return;
   const isOnline = !!(song.onlineId || (song.fileUrl && song.fileUrl.startsWith('http')));
   const retries = songRetryCounts[song.id] || 0;
-  if (isOnline && retries < 2) {
+  if (isOnline && retries < 3) {
     songRetryCounts[song.id] = retries + 1;
-    toast(`《${song.title}》正在自动切换高可用音源通道...`);
+    const resume = (currentSec > 0 && song.duration && currentSec < song.duration - 5) ? currentSec : 0;
+    if (resume > 0) {
+      toast(`《${song.title}》网络抖动，正在第 ${Math.floor(resume)} 秒断点重连...`);
+    } else {
+      toast(`《${song.title}》正在自动切换高可用音源通道...`);
+    }
     delete song.fileUrl;
     delete song.urlFetchedAt;
     persistData();
-    resolveAndPlayOnlineSong(song, true);
+    setTimeout(() => {
+      resolveAndPlayOnlineSong(song, true, resume);
+    }, 600);
   } else {
     songRetryCounts[song.id] = 0;
     if (currentPlaybackQueue.length > 1) {
       toast(`《${song.title}》音源暂不可达，自动播放下一首...`);
       setTimeout(() => {
         playNext();
-      }, 1200);
+      }, 1500);
     } else {
       toast(`《${song.title}》音源加载异常，点击可重试`);
       isPlaying = false;
@@ -4637,6 +4894,386 @@ function openSearchResultMenu(e, idx) {
   document.getElementById('songMenuOverlay').classList.add('active');
 }
 
+/* ================== 灵犀推荐引擎与交互 ================== */
+let currentHomeTab = 'library';
+let currentDiscoverSongs = [];
+let currentDiscoverSeeds = [];
+let isDiscoverLoading = false;
+
+function switchHomeNavTab(tab) {
+  if (tab === currentHomeTab) return;
+  currentHomeTab = tab;
+  const tabNavLibrary = document.getElementById('tabNavLibrary');
+  const tabNavDiscover = document.getElementById('tabNavDiscover');
+  const paneListen = document.getElementById('paneListen');
+  const paneDiscover = document.getElementById('paneDiscover');
+
+  if (tab === 'library') {
+    if (tabNavLibrary) tabNavLibrary.classList.add('active');
+    if (tabNavDiscover) tabNavDiscover.classList.remove('active');
+    if (paneListen) paneListen.style.display = 'block';
+    if (paneDiscover) paneDiscover.style.display = 'none';
+    renderSongList();
+    renderVinylDiscs();
+    renderDrawerList();
+  } else if (tab === 'discover') {
+    exitHomeMultiSelectMode();
+    if (tabNavLibrary) tabNavLibrary.classList.remove('active');
+    if (tabNavDiscover) tabNavDiscover.classList.add('active');
+    if (paneListen) paneListen.style.display = 'none';
+    if (paneDiscover) paneDiscover.style.display = 'block';
+    if (currentDiscoverSongs.length === 0) {
+      refreshRecommendations(false);
+    } else {
+      renderDiscoverPane();
+    }
+  }
+}
+
+async function refreshRecommendations(showToast = false) {
+  if (isDiscoverLoading) return;
+  isDiscoverLoading = true;
+  const icon = document.getElementById('discoverRefreshIcon');
+  if (icon) icon.classList.add('spin');
+  const subtitleEl = document.getElementById('discoverHeroSubtitle');
+  if (subtitleEl) subtitleEl.textContent = '灵犀正在为你探索推荐曲目...';
+
+  const container = document.getElementById('discoverSongsContainer');
+  if (container && currentDiscoverSongs.length === 0) {
+    container.innerHTML = `
+      <div style="padding:48px 20px; text-align:center; color:var(--ink-light); font-size:13px; display:flex; flex-direction:column; align-items:center; gap:10px;">
+        <div style="width:26px; height:26px; border:2.5px solid var(--border-input); border-top-color:var(--brand-terracotta); border-radius:50%; animation:iconSpin 0.8s linear infinite;"></div>
+        <span>正在推算常听喜好与相似好歌...</span>
+      </div>
+    `;
+  }
+
+  try {
+    // 1. 构建歌手画像与常听权重
+    const artistScores = {};
+    (ALL_LIBRARY_SONGS || []).forEach(s => {
+      if (s.artist && s.artist !== '未知歌手') {
+        const parts = s.artist.split(/[\/,、&]/).map(a => a.trim()).filter(Boolean);
+        parts.forEach(a => {
+          const weight = s.isFav ? 3 : 1;
+          artistScores[a] = (artistScores[a] || 0) + weight;
+        });
+      }
+    });
+
+    const sortedArtists = Object.keys(artistScores).sort((a, b) => artistScores[b] - artistScores[a]);
+    let selectedSeeds = [];
+    if (sortedArtists.length > 0) {
+      const pool = sortedArtists.slice(0, 8);
+      const shuffled = [...pool].sort(() => 0.5 - Math.random());
+      selectedSeeds = shuffled.slice(0, 2);
+    }
+
+    const defaultSeeds = ['阿鲲', '周杰伦', '毛不易', '陈奕迅', '许嵩', '纯音乐', '国风流行'];
+    const shuffledDefault = [...defaultSeeds].sort(() => 0.5 - Math.random());
+    while (selectedSeeds.length < 2) {
+      const candidate = shuffledDefault.pop();
+      if (!selectedSeeds.includes(candidate)) {
+        selectedSeeds.push(candidate);
+      }
+    }
+
+    currentDiscoverSeeds = selectedSeeds;
+
+    // 2. 并行拉取线上优质曲目
+    const searchPromises = selectedSeeds.map(seed => requestOnlineSearch(seed, 16));
+    const resultsLists = await Promise.all(searchPromises);
+
+    // 3. 构建本地已知歌曲排重集
+    const localSongSet = new Set(
+      (ALL_LIBRARY_SONGS || []).map(s => (s.title || '').trim().toLowerCase())
+    );
+
+    const merged = [];
+    const seenOnlineIds = new Set();
+    const maxLen = Math.max(...resultsLists.map(list => (Array.isArray(list) ? list.length : 0)));
+
+    for (let i = 0; i < maxLen; i++) {
+      for (let sIdx = 0; sIdx < selectedSeeds.length; sIdx++) {
+        const list = resultsLists[sIdx];
+        if (list && list[i]) {
+          const song = list[i];
+          const lowTitle = (song.name || '').trim().toLowerCase();
+          const songKey = `${song.source || ''}_${song.url_id || song.id}`;
+          if (!localSongSet.has(lowTitle) && !seenOnlineIds.has(songKey)) {
+            seenOnlineIds.add(songKey);
+            song.reason = `常听 ${selectedSeeds[sIdx]}`;
+            merged.push(song);
+          }
+        }
+      }
+      if (merged.length >= 18) break;
+    }
+
+    // 4. 若候选较少则补充热歌榜
+    if (merged.length < 10) {
+      const fallbackList = await requestOnlineSearch('热歌榜', 15);
+      if (Array.isArray(fallbackList)) {
+        for (const fbSong of fallbackList) {
+          const lowTitle = (fbSong.name || '').trim().toLowerCase();
+          const songKey = `${fbSong.source || ''}_${fbSong.url_id || fbSong.id}`;
+          if (!localSongSet.has(lowTitle) && !seenOnlineIds.has(songKey)) {
+            seenOnlineIds.add(songKey);
+            fbSong.reason = '精选推荐';
+            merged.push(fbSong);
+          }
+          if (merged.length >= 15) break;
+        }
+      }
+    }
+
+    currentDiscoverSongs = merged.slice(0, 18);
+    renderDiscoverPane();
+    if (showToast) toast('已更新推荐曲目');
+  } catch (err) {
+    console.warn('推荐生成异常:', err);
+    if (showToast) toast('网络连接较慢，推荐获取失败');
+  } finally {
+    isDiscoverLoading = false;
+    if (icon) icon.classList.remove('spin');
+  }
+}
+
+function renderDiscoverPane() {
+  const container = document.getElementById('discoverSongsContainer');
+  const subtitleEl = document.getElementById('discoverHeroSubtitle');
+  const tagsEl = document.getElementById('discoverHeroTags');
+  const titleCountEl = document.getElementById('discoverListPanelTitle');
+  if (!container) return;
+
+  if (currentDiscoverSeeds && currentDiscoverSeeds.length > 0) {
+    if (subtitleEl) subtitleEl.textContent = `基于你常听的 ${currentDiscoverSeeds.join('、')} 智能推荐`;
+    if (tagsEl) {
+      tagsEl.innerHTML = currentDiscoverSeeds.map(s => `<span class="discover-seed-chip">${escapeHtml(s)}</span>`).join('');
+    }
+  } else {
+    if (subtitleEl) subtitleEl.textContent = '根据你的音乐偏好探索精选好歌';
+    if (tagsEl) tagsEl.innerHTML = '<span class="discover-seed-chip">灵犀精选</span>';
+  }
+
+  if (titleCountEl) {
+    titleCountEl.textContent = `推荐曲目 · ${currentDiscoverSongs.length}首`;
+  }
+
+  if (currentDiscoverSongs.length === 0) {
+    container.innerHTML = `
+      <div style="padding:40px 20px; text-align:center; color:var(--ink-light); font-size:13px;">
+        暂无推荐歌曲，点击上方「换一批」探索
+      </div>
+    `;
+    return;
+  }
+
+  const curPlayingSong = currentPlaybackQueue[currentIndex];
+
+  container.innerHTML = currentDiscoverSongs.map((song, idx) => {
+    const isCurPlaying = curPlayingSong && 
+      (curPlayingSong.id === 'online_' + song.id || (curPlayingSong.title === song.name && curPlayingSong.artist === song.artist)) && 
+      isPlaying;
+
+    const isFav = ALL_LIBRARY_SONGS.some(item => 
+      (item.id === 'online_' + song.id || 
+       item.onlineId === (song.url_id || song.id) || 
+       (item.title === song.name && item.artist === song.artist)) && 
+      item.isFav
+    );
+
+    return `
+      <div class="song-row ${isCurPlaying ? 'playing' : ''}" onclick="playDiscoverTrack(${idx})">
+        <div class="song-cover-mini" onclick="event.stopPropagation(); playDiscoverTrack(${idx});" title="点击播放">
+          <div class="static-icon">
+            <svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+          </div>
+          ${(useExtractedCover && song.cover) ? `
+            <img src="${song.cover}" class="song-cover-thumb" alt="cover" onerror="this.remove()">
+          ` : ''}
+          <div class="playing-bars"><div class="bar"></div><div class="bar"></div><div class="bar"></div></div>
+        </div>
+        <div class="song-info">
+          <div class="song-title">
+            ${escapeHtml(song.name)}
+            ${song.reason ? `<span class="recommend-reason-tag">${escapeHtml(song.reason)}</span>` : ''}
+          </div>
+          <div class="song-artist">${escapeHtml(song.artist)}${song.album ? ' · ' + escapeHtml(song.album) : ''}</div>
+        </div>
+        <div class="song-actions-cluster">
+          <div class="fav-btn ${isFav ? 'active' : ''}" onclick="event.stopPropagation(); toggleDiscoverSongFav(${idx})" title="收藏">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="${isFav ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="1.4">
+              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+            </svg>
+          </div>
+          <div class="more-dots-btn" onclick="openDiscoverSongMenu(event, ${idx})" title="更多操作">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8">
+              <circle cx="12" cy="7" r="2.2"></circle>
+              <circle cx="12" cy="17" r="2.2"></circle>
+            </svg>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function playDiscoverTrack(idx) {
+  const item = currentDiscoverSongs[idx];
+  if (!item) return;
+
+  const trackObj = {
+    id: 'online_' + item.id,
+    onlineId: item.url_id || item.id,
+    source: item.source || 'netease',
+    title: item.name,
+    artist: item.artist,
+    album: item.album || '',
+    duration: item.duration || 240,
+    fileUrl: '',
+    urlFetchedAt: 0,
+    cover: item.cover || '',
+    pic_id: item.pic_id || item.url_id || item.id,
+    lyric_id: item.lyric_id || item.url_id || item.id,
+    isFav: false
+  };
+
+  const existingIdx = currentPlaybackQueue.findIndex(s => 
+    s.id === trackObj.id || (s.title === trackObj.title && s.artist === trackObj.artist)
+  );
+
+  if (existingIdx !== -1) {
+    currentIndex = existingIdx;
+  } else {
+    currentPlaybackQueue.splice(currentIndex + 1, 0, trackObj);
+    currentIndex = currentIndex + 1;
+  }
+
+  openPlayerFull();
+  playSongAtQueue(currentIndex);
+}
+
+function playAllDiscoverTracks() {
+  if (!currentDiscoverSongs || currentDiscoverSongs.length === 0) {
+    toast('暂无可播放的推荐歌曲');
+    return;
+  }
+
+  const queue = currentDiscoverSongs.map(item => ({
+    id: 'online_' + item.id,
+    onlineId: item.url_id || item.id,
+    source: item.source || 'netease',
+    title: item.name,
+    artist: item.artist,
+    album: item.album || '',
+    duration: item.duration || 240,
+    fileUrl: '',
+    urlFetchedAt: 0,
+    cover: item.cover || '',
+    pic_id: item.pic_id || item.url_id || item.id,
+    lyric_id: item.lyric_id || item.url_id || item.id,
+    isFav: false
+  }));
+
+  currentPlaybackQueue = queue;
+  currentIndex = 0;
+  openPlayerFull();
+  playSongAtQueue(0);
+  toast('开始播放灵犀推荐');
+}
+
+function toggleDiscoverSongFav(idx) {
+  const item = currentDiscoverSongs[idx];
+  if (!item) return;
+
+  const matchInLib = ALL_LIBRARY_SONGS.find(s => 
+    s.id === 'online_' + item.id || 
+    s.onlineId === (item.url_id || item.id) || 
+    (s.title === item.name && s.artist === item.artist)
+  );
+
+  if (matchInLib) {
+    toggleSongFav(matchInLib.id);
+  } else {
+    const favSong = {
+      id: 'online_' + item.id,
+      onlineId: item.url_id || item.id,
+      source: item.source || 'netease',
+      title: item.name,
+      artist: item.artist,
+      album: item.album || '',
+      duration: item.duration || 240,
+      fileUrl: '',
+      urlFetchedAt: 0,
+      cover: item.cover || '',
+      pic_id: item.pic_id || item.url_id || item.id,
+      lyric_id: item.lyric_id || item.url_id || item.id,
+      isFav: true
+    };
+    ALL_LIBRARY_SONGS.unshift(favSong);
+    const favAlb = VINYL_ALBUMS.find(a => a.id === 'alb_fav') || VINYL_ALBUMS[1];
+    if (favAlb && !favAlb.songs.some(s => s.id === favSong.id)) {
+      favAlb.songs.unshift(favSong);
+    }
+    ensureSongCover(favSong);
+    persistData();
+    updateUI();
+    toast(`已收藏《${favSong.title}》`);
+  }
+  renderDiscoverPane();
+}
+
+function openDiscoverSongMenu(e, idx) {
+  if (e && e.stopPropagation) e.stopPropagation();
+  const item = currentDiscoverSongs[idx];
+  if (!item) return;
+
+  window._isSearchResultMenu = true;
+  currentActionSong = {
+    id: 'online_' + item.id,
+    onlineId: item.url_id || item.id,
+    pic_id: item.pic_id || '',
+    source: item.source || 'netease',
+    title: item.name,
+    artist: item.artist,
+    album: item.album || '',
+    duration: 240,
+    fileUrl: '',
+    cover: item.cover || '',
+    isFav: false
+  };
+
+  if (!currentActionSong.cover && (currentActionSong.pic_id || currentActionSong.onlineId)) {
+    ensureSongCover(currentActionSong);
+  }
+
+  const isFav = ALL_LIBRARY_SONGS.some(itemInLib => 
+    (itemInLib.id === currentActionSong.id || 
+     (itemInLib.title === currentActionSong.title && itemInLib.artist === currentActionSong.artist)) && 
+    itemInLib.isFav
+  );
+
+  currentActionSong.isFav = isFav;
+  document.getElementById('sheetSongTitle').textContent = `歌曲：${item.name}`;
+  const favIconEl = document.getElementById('sheetFavIcon');
+  const favTextEl = document.getElementById('sheetFavText');
+  if (isFav) {
+    if (favIconEl) favIconEl.classList.add('is-favorited');
+    if (favTextEl) {
+      favTextEl.classList.add('is-favorited');
+      favTextEl.textContent = '已收藏歌曲';
+    }
+  } else {
+    if (favIconEl) favIconEl.classList.remove('is-favorited');
+    if (favTextEl) {
+      favTextEl.classList.remove('is-favorited');
+      favTextEl.textContent = '收藏歌曲';
+    }
+  }
+  document.getElementById('songMenuOverlay').classList.add('active');
+}
+
 /* 自定义音源弹窗与接口通道选择器管理 */
 const API_CHANNELS = {
   injahow: {
@@ -4778,7 +5415,7 @@ function updateDynamicAppVersion(ver) {
       ver = window.AndroidBridge.getAppVersion();
     } catch(e) {}
   }
-  if (!ver) ver = '2.1.3';
+  if (!ver) ver = '2.1.4';
   APP_CONFIG.version = ver;
   const descEl = document.getElementById('aboutAppVersionDesc');
   if (descEl) {
@@ -5148,9 +5785,21 @@ function updateUI() {
     if (d) d.classList.toggle('playing', isPlaying && currentPlayingAlbumIndex === i);
   }
 
+  const radioCard = document.querySelector('.fixed-radio-card');
+  if (radioCard) {
+    radioCard.classList.toggle('playing', isPlaying);
+  }
+  const waveBars = document.getElementById('navWaveBars');
+  if (waveBars) {
+    waveBars.classList.toggle('playing', isPlaying);
+  }
+
   syncProgress();
   renderSongList();
   renderDrawerList();
+  if (currentHomeTab === 'discover' && currentDiscoverSongs && currentDiscoverSongs.length > 0) {
+    renderDiscoverPane();
+  }
   const detailView = document.getElementById('viewPlaylistDetail');
   if (detailView && detailView.classList.contains('active')) {
     renderPlaylistDetailSongsOnly();
@@ -5158,6 +5807,16 @@ function updateUI() {
 }
 
 /* ================== 光碟与歌单交互 ================== */
+function getAlbumCover(alb) {
+  if (!alb) return '';
+  if (alb.customCover) return alb.customCover;
+  if (alb.songs && alb.songs.length > 0) {
+    const songWithCover = alb.songs.find(s => s && s.cover && typeof s.cover === 'string' && s.cover.startsWith('http'));
+    if (songWithCover) return songWithCover.cover;
+  }
+  return '';
+}
+
 function renderVinylDiscs() {
   const container = document.getElementById('vinylDiscStream');
   if (!container) return;
@@ -5172,12 +5831,19 @@ function renderVinylDiscs() {
       iconSvg = `<svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>`;
     }
     const isThisPlaying = isPlaying && currentPlayingAlbumIndex === idx;
-    const hasCustomCover = !!alb.customCover;
+    const albumCover = getAlbumCover(alb);
+    const hasCover = !!albumCover;
+    const discOuterStyle = hasCover
+      ? `background: radial-gradient(circle at 50% 50%, rgba(20,20,20,0.52) 0%, #151413 75%), url('${albumCover}') center/cover no-repeat;`
+      : '';
+    const coreCoverStyle = hasCover
+      ? `background-image: url('${albumCover}'); background-size: cover; background-position: center; border-color: rgba(255,255,255,0.7);`
+      : '';
     return `
       <div class="vinyl-stream-card" onclick="handleStreamCardClick(${idx})">
-        <div class="stream-disc ${isThisPlaying ? 'playing' : ''}" id="streamDisc${idx}">
-          <div class="stream-disc-core ${isRose ? 'rose-core' : ''}" style="${hasCustomCover ? `background-image:url('${alb.customCover}'); background-size:cover; background-position:center;` : ''}">
-            ${hasCustomCover ? '' : iconSvg}
+        <div class="stream-disc ${isThisPlaying ? 'playing' : ''}" id="streamDisc${idx}" style="${discOuterStyle}">
+          <div class="stream-disc-core ${isRose && !hasCover ? 'rose-core' : ''}" style="${coreCoverStyle}">
+            ${hasCover ? '' : iconSvg}
           </div>
         </div>
       </div>
@@ -5623,8 +6289,11 @@ function openPlaylistDetail(idx) {
   }
 
   const artBox = document.getElementById('heroArtBox');
-  if (alb.customCover) {
-    artBox.style.backgroundImage = `url("${alb.customCover}")`;
+  const albumCover = getAlbumCover(alb);
+  if (albumCover) {
+    artBox.style.backgroundImage = `url("${albumCover}")`;
+    artBox.style.backgroundSize = 'cover';
+    artBox.style.backgroundPosition = 'center';
     artBox.innerHTML = '';
   } else {
     artBox.style.backgroundImage = '';
@@ -7482,7 +8151,7 @@ function executeTextPlaylistImport() {
   openPlaylistDetail(newIndex);
 }
 
-async function resolveAndPlayOnlineSong(song, isRetry = false) {
+async function resolveAndPlayOnlineSong(song, isRetry = false, resumeSec = 0) {
   if (!song) return;
   if (!isRetry) {
     toast(`正在获取《${song.title}》播放源...`);
@@ -7588,22 +8257,33 @@ async function resolveAndPlayOnlineSong(song, isRetry = false) {
     // 5. 播放音频流
     stopPlaybackLoop();
     keepBackgroundAlive();
+    const startSeek = (typeof resumeSec === 'number' && resumeSec > 0) ? resumeSec : 0;
     if (isNativeAudioSupported) {
       if (audioPlayer && !audioPlayer.paused) {
         try { audioPlayer.pause(); } catch(e) {}
       }
-      window.AndroidBridge.playNativeAudio(audioUrl, 0);
+      window.AndroidBridge.playNativeAudio(audioUrl, startSeek);
       isPlaying = true;
+      if (startSeek > 0) {
+        currentSec = startSeek;
+        syncProgress();
+        updateLyricProgressSmooth();
+      }
       songRetryCounts[song.id] = 0;
       updateUI();
     } else {
       audioPlayer.src = audioUrl;
       audioPlayer.load();
-      audioPlayer.currentTime = 0;
+      audioPlayer.currentTime = startSeek;
       const playPromise = audioPlayer.play();
       if (playPromise !== undefined) {
         playPromise.then(() => {
           isPlaying = true;
+          if (startSeek > 0) {
+            currentSec = startSeek;
+            syncProgress();
+            updateLyricProgressSmooth();
+          }
           songRetryCounts[song.id] = 0;
           updateUI();
         }).catch(err => {
@@ -7668,18 +8348,19 @@ async function tryResolveAlternativeFullTrack(song) {
       fetchLyricForSong(altId, song.title, altServer);
 
       const wasPlaying = isPlaying;
+      const curSec = (typeof currentSec === 'number' && currentSec > 0) ? currentSec : 0;
       if (isNativeAudioSupported) {
         if (audioPlayer && !audioPlayer.paused) {
           try { audioPlayer.pause(); } catch(e) {}
         }
         keepBackgroundAlive();
-        window.AndroidBridge.playNativeAudio(altAudioUrl, 0);
+        window.AndroidBridge.playNativeAudio(altAudioUrl, curSec);
         isPlaying = true;
         updateUI();
       } else {
         audioPlayer.src = altAudioUrl;
         audioPlayer.load();
-        audioPlayer.currentTime = 0;
+        audioPlayer.currentTime = curSec;
         if (wasPlaying) {
           audioPlayer.play().catch(e => console.warn("Alt track play failed", e));
         }
@@ -9130,7 +9811,9 @@ function handleSystemBack() {
   else if (searchP && searchP.classList.contains('active')) closeSearchView();
   else if (editP && editP.classList.contains('active')) closeEditPlaylistPage();
   else if (detailP && detailP.classList.contains('active')) closePlaylistDetail();
-  else {
+  else if (currentHomeTab === 'discover') {
+    switchHomeNavTab('library');
+  } else {
     // 已经位于应用主界面，按返回键直接退回手机桌面
     if (window.AndroidBridge && window.AndroidBridge.minimizeApp) {
       window.AndroidBridge.minimizeApp();
@@ -9278,38 +9961,66 @@ function toggleIslandFeature() {
 }
 function switchBottomTab(tab) {
   const paneListen = document.getElementById('paneListen');
+  const paneDiscover = document.getElementById('paneDiscover');
   const paneSettings = document.getElementById('paneSettings');
   const headerBar = document.getElementById('listenHeaderBar');
   const btnListen = document.getElementById('tabBtnListen');
   const btnSettings = document.getElementById('tabBtnSettings');
-  const navTitle = document.getElementById('tabNavListen');
+  const homeNavTitles = document.getElementById('homeNavTitles');
+  const settingsNavTitles = document.getElementById('settingsNavTitles');
   const headerActions = document.querySelector('.listen-header-actions');
 
   if (tab === 'listen') {
-    paneListen.style.display = 'block';
-    headerBar.style.display = 'flex';
-    if (navTitle) navTitle.textContent = '灵犀';
+    if (homeNavTitles) homeNavTitles.style.display = 'flex';
+    if (settingsNavTitles) settingsNavTitles.style.display = 'none';
     if (headerActions) headerActions.style.display = 'flex';
+    headerBar.style.display = 'flex';
     paneSettings.classList.remove('active');
     btnListen.classList.add('active');
     btnSettings.classList.remove('active');
-    renderSongList();
-    renderVinylDiscs();
-    renderDrawerList();
+
+    if (currentHomeTab === 'discover') {
+      if (paneListen) paneListen.style.display = 'none';
+      if (paneDiscover) paneDiscover.style.display = 'block';
+      renderDiscoverPane();
+    } else {
+      if (paneListen) paneListen.style.display = 'block';
+      if (paneDiscover) paneDiscover.style.display = 'none';
+      renderSongList();
+      renderVinylDiscs();
+      renderDrawerList();
+    }
   } else {
     exitHomeMultiSelectMode();
-    paneListen.style.display = 'none';
+    if (paneListen) paneListen.style.display = 'none';
+    if (paneDiscover) paneDiscover.style.display = 'none';
     headerBar.style.display = 'flex';
-    if (navTitle) navTitle.textContent = '设置';
+    if (homeNavTitles) homeNavTitles.style.display = 'none';
+    if (settingsNavTitles) settingsNavTitles.style.display = 'flex';
     if (headerActions) headerActions.style.display = 'none';
     paneSettings.classList.add('active');
     btnListen.classList.remove('active');
     btnSettings.classList.add('active');
+    triggerSettingsGearSpin();
     updateCacheStorageDisplay();
     updateDynamicAppVersion();
     if (typeof updateSleepTimerUI === 'function') updateSleepTimerUI();
     if (typeof updateAudioFocusUI === 'function') updateAudioFocusUI();
   }
+}
+
+function triggerSettingsGearSpin() {
+  const settingsSvg = document.getElementById('navSettingsSvg');
+  if (!settingsSvg) return;
+  settingsSvg.classList.remove('anim-gear-spin');
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      settingsSvg.classList.add('anim-gear-spin');
+      settingsSvg.addEventListener('animationend', () => {
+        settingsSvg.classList.remove('anim-gear-spin');
+      }, { once: true });
+    });
+  });
 }
 
 /* ================== 封面提取与预览保存 ================== */
