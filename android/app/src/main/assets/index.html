@@ -503,15 +503,15 @@ body.night .discover-section-play-btn {
   width: 118px; height: 122px; border-radius: 16px;
   background: rgba(255, 255, 255, 0.94);
   backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.85) !important;
+  border: none !important;
   padding: 11px 11px;
   display: flex; flex-direction: column; justify-content: space-between; cursor: pointer;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04) !important;
+  box-shadow: none !important;
   position: relative; overflow: hidden;
 }
 body.night .fixed-radio-card {
   background: rgba(28, 28, 26, 0.92);
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border: none !important;
   box-shadow: none !important;
 }
 
@@ -5088,7 +5088,6 @@ function openSearchResultMenu(e, idx) {
 
 /* ================== 灵犀推荐引擎与交互 ================== */
 let currentHomeTab = 'discover';
-let currentDiscoverSongs = [];
 let currentDiscoverSeeds = [];
 let isDiscoverLoading = false;
 
