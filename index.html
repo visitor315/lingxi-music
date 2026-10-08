@@ -478,62 +478,60 @@ body.night .discover-section-play-btn {
 .fixed-radio-card {
   position: absolute; top: 0; left: 0; z-index: 10;
   width: 136px; height: 142px; border-radius: 20px;
-  background: rgba(255, 255, 255, 0.42);
-  backdrop-filter: blur(14px) saturate(160%); -webkit-backdrop-filter: blur(14px) saturate(160%);
-  border: 1px solid rgba(255, 255, 255, 0.75); padding: 14px 12px;
+  background: linear-gradient(155deg, #E8F9F3 0%, #D2F5E9 50%, #A9EBD9 100%);
+  border: none !important; padding: 14px 12px;
   display: flex; flex-direction: column; justify-content: space-between; cursor: pointer;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
+  box-shadow: 0 8px 22px rgba(46, 175, 137, 0.16);
   position: relative; overflow: hidden;
 }
 body.night .fixed-radio-card {
-  background: rgba(24, 24, 22, 0.52);
-  border-color: rgba(255, 255, 255, 0.08);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.22);
+  background: linear-gradient(155deg, #18332A 0%, #10241E 100%);
+  border: none !important;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.35);
 }
 
-/* 卡片内部像云层般流动舒卷的柔和水墨雾霭浮动效果 */
-.fixed-radio-card::before {
-  content: ''; position: absolute; inset: -45%;
-  background: radial-gradient(circle at 25% 30%, rgba(198, 212, 226, 0.42) 0%, transparent 48%),
-              radial-gradient(circle at 75% 65%, rgba(228, 220, 206, 0.55) 0%, transparent 52%),
-              radial-gradient(circle at 45% 85%, rgba(206, 218, 212, 0.38) 0%, transparent 56%);
-  filter: blur(18px);
-  animation: cloudMistDrift 16s ease-in-out infinite alternate;
-  pointer-events: none; z-index: 0;
+.radio-card-header {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 15px; font-weight: 600; color: #12362C;
 }
-body.night .fixed-radio-card::before {
-  background: radial-gradient(circle at 25% 30%, rgba(50, 62, 74, 0.45) 0%, transparent 48%),
-              radial-gradient(circle at 75% 65%, rgba(68, 60, 48, 0.5) 0%, transparent 52%),
-              radial-gradient(circle at 45% 85%, rgba(45, 58, 52, 0.4) 0%, transparent 56%);
-}
-@keyframes cloudMistDrift {
-  0% { transform: translate(0, 0) scale(1) rotate(0deg); }
-  50% { transform: translate(14%, 9%) scale(1.18) rotate(7deg); }
-  100% { transform: translate(-10%, -12%) scale(1.06) rotate(-6deg); }
-}
-.fixed-radio-card > * { position: relative; z-index: 1; }
+body.night .radio-card-header { color: #E5F4EE; }
 
-.radio-card-header { display: flex; align-items: center; gap: 6px; font-size: 15px; font-weight: 600; color: var(--ink-black); }
-
-/* 原版完整玫瑰花矢量代码 */
-.radio-header-rose-icon { width: 16px; height: 16px; fill: var(--brand-red) !important; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.radio-header-rose-icon {
+  width: 16px; height: 16px; fill: #F87171 !important;
+  display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
 .radio-header-rose-icon.hide { display: none !important; }
-.radio-card-sub { font-size: 11px; color: var(--ink-gray); margin-top: 2px; }
+
+.radio-card-sub {
+  font-size: 11px; color: rgba(18, 54, 44, 0.72);
+  margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+body.night .radio-card-sub { color: rgba(229, 244, 238, 0.65); }
 
 .radio-card-bottom { display: flex; align-items: flex-end; justify-content: space-between; }
 .radio-live-bars { display: flex; align-items: flex-end; gap: 2px; height: 14px; }
-.radio-live-bar { width: 2px; background: var(--ink-light); border-radius: 1px; }
+.radio-live-bar {
+  width: 1.8px; background: rgba(255, 255, 255, 0.9); border-radius: 1px;
+}
+body.night .radio-live-bar { background: rgba(255, 255, 255, 0.65); }
 .radio-live-bar:nth-child(1) { height: 4px; }
 .radio-live-bar:nth-child(2) { height: 12px; }
 .radio-live-bar:nth-child(3) { height: 7px; }
-.radio-live-bar:nth-child(4) { height: 10px; }
+.radio-live-bar:nth-child(4) { height: 14px; }
+.radio-live-bar:nth-child(5) { height: 9px; }
+.radio-live-bar:nth-child(6) { height: 13px; }
+.radio-live-bar:nth-child(7) { height: 5px; }
+.radio-live-bar:nth-child(8) { height: 11px; }
 
 .radio-play-btn-circle {
-  width: 28px; height: 28px; border-radius: 50%; background: var(--dark-cold-btn);
+  width: 30px; height: 30px; border-radius: 50%; background: #05C197;
   color: #FFFFFF; display: flex; align-items: center; justify-content: center;
+  border: none !important; box-shadow: 0 3px 10px rgba(5, 193, 151, 0.35);
+  transition: transform 0.18s ease;
 }
-body.night .radio-play-btn-circle { color: #141413; }
-.radio-play-btn-circle svg { width: 12px; height: 12px; fill: currentColor; stroke: none; margin-left: 1px; }
+.radio-play-btn-circle:active { transform: scale(0.92); }
+body.night .radio-play-btn-circle { background: #05C197; color: #FFFFFF; }
+.radio-play-btn-circle svg { width: 12px; height: 12px; fill: #FFFFFF; stroke: none; margin-left: 2px; }
 
 .vinyl-scroll-channel {
   position: absolute; top: 0; left: 0; right: -16px; bottom: 0;
@@ -548,33 +546,37 @@ body.night .radio-play-btn-circle { color: #141413; }
 
 .stream-disc {
   width: 114px; height: 114px; border-radius: 50%;
-  background: radial-gradient(circle at 50% 50%, #292825 0%, #151413 72%, #262420 100%);
-  border: 4px solid #ECE9E2; display: flex; align-items: center; justify-content: center;
+  background: #F4F1EA;
+  border: none !important; display: flex; align-items: center; justify-content: center;
   position: relative; overflow: hidden;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08), 0 1px 4px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
   animation: discSpinSlow 18s linear infinite; animation-play-state: paused;
 }
-body.night .stream-disc { border-color: #2D2C28; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35); }
+body.night .stream-disc {
+  background: #282826;
+  border: none !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.28);
+}
 .stream-disc.playing { animation-play-state: running; }
 
 /* 留白添加按钮光盘 */
 .stream-disc.stream-disc-add {
-  background: transparent; border: 2px dashed #D1D1CF;
+  background: transparent; border: 2px dashed #D1D1CF !important;
   box-shadow: none;
   animation: none !important;
 }
-body.night .stream-disc.stream-disc-add { border-color: #444; }
+body.night .stream-disc.stream-disc-add { border-color: #444 !important; }
 
 .stream-disc-core {
   position: relative; z-index: 5;
-  width: 42px; height: 42px; border-radius: 50%; background: var(--card-bg);
-  border: 1.5px solid var(--ink-black); display: flex; align-items: center; justify-content: center; color: var(--ink-dark);
+  width: 100%; height: 100%; border-radius: 50%; background: transparent;
+  border: none !important; display: flex; align-items: center; justify-content: center; color: var(--ink-dark);
 }
 .stream-disc-core.has-cover {
   display: none !important;
 }
-.stream-disc-core svg { width: 19px; height: 19px; stroke: currentColor; stroke-width: 1.5; fill: none; }
-.stream-disc-core.rose-core svg { width: 20px; height: 20px; stroke: none; fill: var(--brand-red) !important; }
+.stream-disc-core svg { width: 32px; height: 32px; stroke: var(--ink-gray); stroke-width: 1.5; fill: none; }
+.stream-disc-core.rose-core svg { width: 32px; height: 32px; stroke: none; fill: var(--brand-red) !important; }
 
 @keyframes discSpinSlow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
@@ -697,21 +699,53 @@ body.night .xianyin-bottom-nav { background: rgba(20, 20, 19, 0.96); }
   width: 2.6px;
   border-radius: 2px;
   background: currentColor;
-  transition: transform 0.2s ease;
+  transform-origin: center bottom;
 }
 .nav-wave-bar:nth-child(1) { height: 9px; }
 .nav-wave-bar:nth-child(2) { height: 20px; }
 .nav-wave-bar:nth-child(3) { height: 14px; }
 .nav-wave-bar:nth-child(4) { height: 9px; }
 
-/* 仅在点击时触发灵动弹性反馈，放歌时不跳动 */
+/* 点击时柱子跳跃律动动效，放歌时保持静止雅致 */
 .nav-wave-bars.anim-wave-tap {
-  animation: waveTapFeedback 0.38s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: waveTapFeedback 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 @keyframes waveTapFeedback {
-  0% { transform: scale(0.85); }
-  50% { transform: scale(1.18); }
+  0% { transform: scale(0.92); }
+  45% { transform: scale(1.08); }
   100% { transform: scale(1); }
+}
+.nav-wave-bars.anim-wave-tap .nav-wave-bar:nth-child(1) {
+  animation: waveBarBounce1 0.45s ease-in-out;
+}
+.nav-wave-bars.anim-wave-tap .nav-wave-bar:nth-child(2) {
+  animation: waveBarBounce2 0.45s ease-in-out;
+}
+.nav-wave-bars.anim-wave-tap .nav-wave-bar:nth-child(3) {
+  animation: waveBarBounce3 0.45s ease-in-out;
+}
+.nav-wave-bars.anim-wave-tap .nav-wave-bar:nth-child(4) {
+  animation: waveBarBounce4 0.45s ease-in-out;
+}
+@keyframes waveBarBounce1 {
+  0%, 100% { height: 9px; }
+  35% { height: 19px; }
+  70% { height: 5px; }
+}
+@keyframes waveBarBounce2 {
+  0%, 100% { height: 20px; }
+  30% { height: 7px; }
+  65% { height: 21px; }
+}
+@keyframes waveBarBounce3 {
+  0%, 100% { height: 14px; }
+  40% { height: 22px; }
+  75% { height: 8px; }
+}
+@keyframes waveBarBounce4 {
+  0%, 100% { height: 9px; }
+  25% { height: 18px; }
+  60% { height: 6px; }
 }
 
 /* 底部导航设置 SVG 动态旋转动画 */
@@ -2104,16 +2138,25 @@ body.in-pip-mode .view-player-full {
             <div class="fixed-radio-card" onclick="openCurrentRadioAlbum()">
               <div>
                 <div class="radio-card-header">
-                  <span id="dynamicCardTitle">全部歌曲</span>
-                  <svg id="radioHeaderRoseIcon" class="radio-header-rose-icon hide" viewBox="0 0 512 512">
-                    <path d="M281.31 21.217L239.997 127.13l76.01 103.673 97.135-7.532-3.1-79.284-78.2-12.468-1.61 41.535 29.11 7.568-.766-14.1 18.662-1.012 2.15 39.635-68.41-17.788 3.004-77.61 68.65 10.946-2.456-86.044-98.863-13.43zM243.63 66.39l-73.702 39.917L195.885 243.7l141.306 80.704 154.447-80.037-11.252-142.205-79.617-.988.642 22.512 26.705 4.257 4.403 112.57-125.436 9.727-88.227-120.338 24.774-63.51zm-93.107 88.706c-2.992-.017-6.01.004-9.054.06-9.456.174-19.425.853-29.44 1.594 9.427 13.32 18.694 26.165 30.157 35.938 7.894 6.73 16.835 12.308 28.075 16.056l-10.1-53.453c-3.184-.11-6.396-.176-9.64-.194zm25.57 84.51c-14.278 5.27-27.16 13.25-39.437 23.55-17.875 14.995-34.273 35.22-50.625 58.47 56.9 2.6 100.16-6.41 147.316-35.01l-54.223-30.966-3.03-16.045zm270.854 48.968l-50.64 26.244c27.874 20.83 54.865 27.206 90.162 28.557-8.76-21.213-22.617-39.484-39.523-54.8zm-189.853 4.895c-14.566 9.75-28.84 17.8-43.156 24.342.37 10.843 2.813 19.703 6.968 26.47-29.49 37.69-61.714 72.017-96.78 102.843-17.584-1.215-24.577-19.137-17.845-37.344-22.758 18.074-30.427 42.166-20 68.376-6.832 5.23-13.75 10.354-20.78 15.344h45.344c25.65-20.11 49.915-41.82 72.844-65.094 29.485 9.192 54.05-1.51 69.625-27.97-14.975 8.052-31.217 5.627-37.438-6.686 9.653-11.06 19.037-22.436 28.156-34.125 7.25 1.21 15.586.57 24.72-2.03-8.863-17.974-13.326-39.19-11.656-64.126zm18.133 17.065c1.205 25.213 10.463 44.01 24.648 60.12 17.914 20.346 44.73 35.942 73.625 50.814 7.79-33.575 9.555-62.664-2.05-93.77l-34.692 17.978-61.53-35.143z"/>
+                  <svg id="radioHeaderRoseIcon" class="radio-header-rose-icon" viewBox="0 0 24 24" style="width:16px; height:16px; fill:#F87171; stroke:none; flex-shrink:0;">
+                    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
                   </svg>
+                  <span id="dynamicCardTitle">红心 Radio ⇋</span>
                 </div>
-                <div class="radio-card-sub" id="dynamicCardSub">全部歌曲 · 包含所有听过的歌</div>
+                <div class="radio-card-sub" id="dynamicCardSub">灵犀漫步 · 遇见知音</div>
               </div>
               <div class="radio-card-bottom">
-                <div class="radio-live-bars"><div class="radio-live-bar"></div><div class="radio-live-bar"></div><div class="radio-live-bar"></div><div class="radio-live-bar"></div></div>
-                <div class="radio-play-btn-circle" id="radioPlayBtnCircle" onclick="event.stopPropagation(); togglePlayCurrentRadioAlbum();">
+                <div class="radio-live-bars">
+                  <div class="radio-live-bar"></div>
+                  <div class="radio-live-bar"></div>
+                  <div class="radio-live-bar"></div>
+                  <div class="radio-live-bar"></div>
+                  <div class="radio-live-bar"></div>
+                  <div class="radio-live-bar"></div>
+                  <div class="radio-live-bar"></div>
+                  <div class="radio-live-bar"></div>
+                </div>
+                <div class="radio-play-btn-circle" id="radioPlayBtnCircle" onclick="event.stopPropagation(); togglePlayCurrentRadioAlbum();" title="播放">
                   <svg viewBox="0 0 24 24"><polygon points="7 4 20 12 7 20 7 4"/></svg>
                 </div>
               </div>
@@ -2137,7 +2180,12 @@ body.in-pip-mode .view-player-full {
           <div class="list-panel-header">
             <!-- 正常状态标头 -->
             <div id="homeNormalHeader" style="display:flex; align-items:center; justify-content:space-between; width:100%;">
-              <span id="songListPanelTitle">私人专属曲目 · 全部歌曲</span>
+              <div class="discover-section-title-wrap" onclick="togglePlayCurrentRadioAlbum()" style="display:flex; align-items:center; gap:8px; cursor:pointer;" title="播放全部歌曲">
+                <span id="songListPanelTitle" style="font-size:16px; font-weight:600; color:var(--ink-black);">私人专属好歌</span>
+                <div class="discover-section-play-btn" style="width:20px; height:20px; border-radius:50%; background:var(--ink-black); color:#FFFFFF; display:inline-flex; align-items:center; justify-content:center; flex-shrink:0;">
+                  <svg viewBox="0 0 24 24" style="width:10px; height:10px; fill:#FFFFFF; stroke:none; margin-left:1px;"><polygon points="7 4 19 12 7 20 7 4"/></svg>
+                </div>
+              </div>
               <div style="display:flex; align-items:center; gap:8px;">
                 <button class="icon-btn" style="width:24px; height:24px; display:inline-flex; align-items:center; justify-content:center; color:var(--ink-gray); padding:0; background:none; border:none; cursor:pointer;" onclick="openCreatePlaylistPrompt()" title="新建歌单">
                   <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -2231,7 +2279,7 @@ body.in-pip-mode .view-player-full {
         <span class="settings-group-header">关于与更新</span>
         <div class="group-menu-card">
           <div class="settings-item-row" onclick="checkAppUpdate(true)">
-            <div class="settings-item-col"><span class="settings-title-line">检查版本更新</span><span class="settings-sub-desc" id="aboutAppVersionDesc">自用无损音乐播放器 · v2.1.6</span></div>
+            <div class="settings-item-col"><span class="settings-title-line">检查版本更新</span><span class="settings-sub-desc" id="aboutAppVersionDesc">自用无损音乐播放器 · v2.1.7</span></div>
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" style="color:var(--ink-light); margin-left:auto;"><polyline points="9 18 15 12 9 6"/></svg>
           </div>
         </div>
@@ -2246,7 +2294,7 @@ body.in-pip-mode .view-player-full {
 
     <!-- 底部常驻栏（修正并对齐设置 SVG） -->
     <nav class="xianyin-bottom-nav">
-      <div class="bottom-tab-item active" id="tabBtnListen" onclick="switchBottomTab('listen'); triggerListenWaveTap();">
+      <div class="bottom-tab-item active" id="tabBtnListen" onclick="handleListenNavClick();">
         <div class="nav-wave-bars" id="navWaveBars">
           <span class="nav-wave-bar"></span>
           <span class="nav-wave-bar"></span>
@@ -3203,7 +3251,7 @@ const OTHER_AVATAR_SVG = `<svg width="14" height="14" viewBox="0 0 24 24" fill="
 
 const APP_CONFIG = {
   name: '灵犀音乐',
-  version: '2.1.6',
+  version: '2.1.7',
   build: '2026.09.23',
   codename: 'Pure Sound'
 };
@@ -3627,7 +3675,7 @@ function renderSongList() {
 
   const titleEl = document.getElementById('songListPanelTitle');
   if (titleEl) {
-    titleEl.textContent = `私人专属曲目 · ${activeAlb.title}`;
+    titleEl.textContent = '私人专属好歌';
   }
 
   if (songs.length === 0) {
@@ -5515,7 +5563,7 @@ function updateDynamicAppVersion(ver) {
       ver = window.AndroidBridge.getAppVersion();
     } catch(e) {}
   }
-  if (!ver) ver = '2.1.6';
+  if (!ver) ver = '2.1.7';
   APP_CONFIG.version = ver;
   const descEl = document.getElementById('aboutAppVersionDesc');
   if (descEl) {
@@ -5874,10 +5922,8 @@ function updateUI() {
   const heartBtn = document.getElementById('topHeartBtn') || document.getElementById('bottomHeartBtn');
   if (heartBtn) heartBtn.classList.toggle('unfav', !song.isFav);
 
-  const radioPlayBtn = document.getElementById('radioPlayBtnCircle');
-  if (radioPlayBtn) {
-    const isThisAlbumPlaying = isPlaying && (currentPlayingAlbumIndex === activeRadioIndex);
-    radioPlayBtn.innerHTML = isThisAlbumPlaying ? pauseSvg : playSvg;
+  if (typeof updateFixedRadioCardUI === 'function') {
+    updateFixedRadioCardUI();
   }
 
   for (let i = 0; i < VINYL_ALBUMS.length; i++) {
@@ -5934,7 +5980,7 @@ function renderVinylDiscs() {
     const albumCover = getAlbumCover(alb);
     const hasCover = !!albumCover;
     const discOuterStyle = hasCover
-      ? `background: url('${albumCover}') center/cover no-repeat; border-color: rgba(255, 255, 255, 0.75);`
+      ? `background: url('${albumCover}') center/cover no-repeat; border: none !important;`
       : '';
     return `
       <div class="vinyl-stream-card" onclick="handleStreamCardClick(${idx})">
@@ -5950,6 +5996,40 @@ function renderVinylDiscs() {
   }).join('');
 }
 
+function updateFixedRadioCardUI() {
+  const target = VINYL_ALBUMS[activeRadioIndex];
+  if (!target) return;
+  const isFav = (target.hasRose || target.id === 'alb_fav');
+  const titleText = isFav ? '红心 Radio ⇋' : (target.title + ' Radio ⇋');
+  const titleEl = document.getElementById('dynamicCardTitle');
+  if (titleEl) titleEl.textContent = titleText;
+
+  const cur = currentPlaybackQueue[currentIndex];
+  const subEl = document.getElementById('dynamicCardSub');
+  if (subEl) {
+    if (cur && isPlaying) {
+      subEl.textContent = `${cur.title} - ${cur.artist}`;
+    } else if (target.songs && target.songs.length > 0) {
+      subEl.textContent = `${target.songs[0].title} - ${target.songs[0].artist}`;
+    } else {
+      subEl.textContent = target.desc || target.sub || '灵犀漫步 · 遇见知音';
+    }
+  }
+
+  const roseIcon = document.getElementById('radioHeaderRoseIcon');
+  if (roseIcon) {
+    roseIcon.classList.toggle('hide', !isFav);
+  }
+
+  const radioPlayBtn = document.getElementById('radioPlayBtnCircle');
+  if (radioPlayBtn) {
+    const pauseSvg = '<svg viewBox="0 0 24 24"><rect x="6" y="4" width="3.5" height="16" fill="currentColor"/><rect x="14.5" y="4" width="3.5" height="16" fill="currentColor"/></svg>';
+    const playSvg = '<svg viewBox="0 0 24 24"><polygon points="7 4 20 12 7 20 7 4"/></svg>';
+    const isThisAlbumPlaying = isPlaying && (currentPlayingAlbumIndex === activeRadioIndex);
+    radioPlayBtn.innerHTML = isThisAlbumPlaying ? pauseSvg : playSvg;
+  }
+}
+
 function scrollVinylToAlbum(idx, smooth = true) {
   const channel = document.getElementById('vinylScrollChannel');
   if (!channel) return;
@@ -5962,22 +6042,8 @@ function scrollVinylToAlbum(idx, smooth = true) {
     exitHomeMultiSelectMode();
   }
   activeRadioIndex = Math.min(VINYL_ALBUMS.length - 1, Math.max(0, idx));
-  const target = VINYL_ALBUMS[activeRadioIndex];
-  if (target) {
-    document.getElementById('dynamicCardTitle').textContent = target.title;
-    document.getElementById('dynamicCardSub').textContent = target.desc || target.sub || '自建私享 · 触碰进入';
-    document.getElementById('radioHeaderRoseIcon').classList.toggle('hide', !(target.hasRose || target.id === 'alb_fav'));
-
-    const radioPlayBtn = document.getElementById('radioPlayBtnCircle');
-    if (radioPlayBtn) {
-      const pauseSvg = '<svg viewBox="0 0 24 24"><rect x="6" y="4" width="3.5" height="16" fill="currentColor"/><rect x="14.5" y="4" width="3.5" height="16" fill="currentColor"/></svg>';
-      const playSvg = '<svg viewBox="0 0 24 24"><polygon points="7 4 20 12 7 20 7 4"/></svg>';
-      const isThisAlbumPlaying = isPlaying && (currentPlayingAlbumIndex === activeRadioIndex);
-      radioPlayBtn.innerHTML = isThisAlbumPlaying ? pauseSvg : playSvg;
-    }
-
-    renderSongList();
-  }
+  updateFixedRadioCardUI();
+  renderSongList();
 }
 
 function handleStreamCardClick(idx) {
@@ -5994,22 +6060,8 @@ function handleVinylScroll(el) {
   if (newIdx !== activeRadioIndex) {
     exitHomeMultiSelectMode();
     activeRadioIndex = newIdx;
-    const target = VINYL_ALBUMS[activeRadioIndex];
-    if (target) {
-      document.getElementById('dynamicCardTitle').textContent = target.title;
-      document.getElementById('dynamicCardSub').textContent = target.desc || target.sub || '自建私享 · 触碰进入';
-      document.getElementById('radioHeaderRoseIcon').classList.toggle('hide', !(target.hasRose || target.id === 'alb_fav'));
-
-      const radioPlayBtn = document.getElementById('radioPlayBtnCircle');
-      if (radioPlayBtn) {
-        const pauseSvg = '<svg viewBox="0 0 24 24"><rect x="6" y="4" width="3.5" height="16" fill="currentColor"/><rect x="14.5" y="4" width="3.5" height="16" fill="currentColor"/></svg>';
-        const playSvg = '<svg viewBox="0 0 24 24"><polygon points="7 4 20 12 7 20 7 4"/></svg>';
-        const isThisAlbumPlaying = isPlaying && (currentPlayingAlbumIndex === activeRadioIndex);
-        radioPlayBtn.innerHTML = isThisAlbumPlaying ? pauseSvg : playSvg;
-      }
-
-      renderSongList();
-    }
+    updateFixedRadioCardUI();
+    renderSongList();
   }
 }
 
@@ -10106,6 +10158,30 @@ function switchBottomTab(tab) {
     updateDynamicAppVersion();
     if (typeof updateSleepTimerUI === 'function') updateSleepTimerUI();
     if (typeof updateAudioFocusUI === 'function') updateAudioFocusUI();
+  }
+}
+
+function handleListenNavClick() {
+  triggerListenWaveTap();
+  const btnListen = document.getElementById('tabBtnListen');
+  const isAlreadyActive = btnListen && btnListen.classList.contains('active');
+
+  if (!isAlreadyActive) {
+    switchBottomTab('listen');
+  } else {
+    // 已经处于听歌/发现页，再次点击音波：响应用户“这个功能好像是播放音乐”的操作认知
+    if (!isPlaying) {
+      if (currentPlaybackQueue.length > 0) {
+        togglePlayState();
+      } else {
+        togglePlayCurrentRadioAlbum();
+      }
+    } else {
+      const cur = currentPlaybackQueue[currentIndex];
+      if (cur) {
+        toast(`正在播放：${cur.title}`);
+      }
+    }
   }
 }
 
