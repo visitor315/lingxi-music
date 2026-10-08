@@ -43,6 +43,7 @@
   --nav-bar-height: 0px;
   --safe-bottom: max(var(--nav-bar-height, 0px), env(safe-area-inset-bottom, 0px));
   --bg-page: #F7F7F5;
+  --settings-bg: #F8F8F6;
   --paper-bg: #F7F7F5;
   --card-bg: #FFFFFF;
   --pinned-bg: #EDEDEB;
@@ -76,6 +77,7 @@
 
 body.night {
   --bg-page: #141413;
+  --settings-bg: #131312;
   --paper-bg: #141413;
   --card-bg: #1E1E1C;
   --pinned-bg: #1C1C1A;
@@ -760,11 +762,15 @@ body.night .library-album-pill.active {
   display: none;
   flex-direction: column;
   padding: 14px 14px 84px;
-  gap: 13px;
+  gap: 14px;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+  background: var(--settings-bg, #F8F8F6) !important;
 }
 .view-settings-page.active { display: flex; }
+body.night .view-settings-page {
+  background: var(--settings-bg, #131312) !important;
+}
 .settings-group-header, .sub-group-header, .subpage-group-title-standard {
   font-size: 13px;
   font-weight: 500;
@@ -1865,61 +1871,190 @@ body.night .edit-cover-thumbnail {
 .play-pause-big { width: 46px !important; height: 46px !important; }
 .play-pause-big svg { width: 34px !important; height: 34px !important; fill: var(--ink-black) !important; stroke: none !important; }
 
-/* ================== 11. 弹窗与抽屉（精确居中对齐、无分割线） ================== */
-.playlist-drawer-backdrop, .add-sheet-overlay {
-  position: absolute; inset: 0; background: rgba(0, 0, 0, 0.45); backdrop-filter: blur(2px);
-  -webkit-backdrop-filter: blur(2px); z-index: 1998; opacity: 0; pointer-events: none; transition: opacity 0.25s ease;
+/* ================== 11. 弹窗与抽屉（1:1 严格复刻自 hhznx 46px 规范与通栏水波纹） ================== */
+.playlist-drawer-backdrop, .add-sheet-overlay, .choose-playlist-modal {
+  position: absolute;
+  inset: 0;
+  background: rgba(20, 20, 19, 0.45);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  z-index: 2050;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.24s cubic-bezier(0.2, 0.8, 0.2, 1);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
 }
-.playlist-drawer-backdrop.open, .add-sheet-overlay.active { opacity: 1; pointer-events: auto; }
+.playlist-drawer-backdrop.open, .add-sheet-overlay.active, .choose-playlist-modal.active {
+  opacity: 1;
+  pointer-events: auto;
+}
 
-.playlist-drawer {
-  position: absolute; left: 0; right: 0; bottom: 0; max-height: 75vh;
-  background: var(--card-bg); border-top-left-radius: 28px; border-top-right-radius: 28px;
-  z-index: 1999; display: flex; flex-direction: column;
-  padding-bottom: calc(34px + var(--safe-bottom, 14px));
-  transform: translateY(100%); transition: transform 0.28s cubic-bezier(0.2, 0.85, 0.25, 1);
+.playlist-drawer, .add-sheet-card, .choose-playlist-card {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  max-width: 100%;
+  background: var(--settings-bg, #F8F8F6) !important;
+  border-radius: 46px 46px 0 0 !important;
+  padding: 0 0 calc(28px + var(--safe-bottom, 14px)) !important;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  box-sizing: border-box;
+  transform: translate3d(0, 100%, 0);
+  will-change: transform;
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: none !important;
+  border: none !important;
+  touch-action: pan-down;
+  overflow-y: auto;
+  overscroll-behavior: none;
+  z-index: 2100;
   pointer-events: none;
 }
-.playlist-drawer.open { transform: translateY(0); pointer-events: auto; }
-.playlist-header { padding: 16px 20px 10px; display: flex; align-items: center; justify-content: space-between; }
-.playlist-title { font-size: 16px; font-weight: 600; color: var(--ink-black); }
-.playlist-items { flex: 1; overflow-y: auto; padding: 4px 20px; -webkit-overflow-scrolling: touch; }
-.playlist-items .song-row {
-  display: flex; align-items: center; padding: 11px 16px !important;
-  cursor: pointer; gap: 14px; margin: 0 -16px;
-  width: calc(100% + 32px) !important; box-sizing: border-box !important;
-  position: relative; overflow: hidden !important;
+body.night .playlist-drawer, body.night .add-sheet-card, body.night .choose-playlist-card {
+  background: var(--settings-bg, #131312) !important;
 }
 
-/* 歌曲更多操作弹窗：无分割线、SVG与文字完全居中对齐 */
-.add-sheet-card {
-  position: absolute; left: 0; right: 0; bottom: 0; background: var(--bg-page);
-  border-radius: 28px 28px 0 0; padding: 12px 20px calc(38px + var(--safe-bottom, 16px));
-  display: flex; flex-direction: column; gap: 4px; z-index: 2000; max-height: 80vh; overflow-y: auto;
-  transform: translateY(100%); transition: transform 0.26s cubic-bezier(0.32, 0.72, 0, 1);
-  pointer-events: none;
+.playlist-drawer.open, .add-sheet-overlay.active .add-sheet-card, .choose-playlist-modal.active .choose-playlist-card {
+  transform: translate3d(0, 0, 0) !important;
+  pointer-events: auto;
 }
-.add-sheet-overlay.active .add-sheet-card { transform: translateY(0); pointer-events: auto; }
-.add-sheet-drag-handle { width: 36px; height: 4px; border-radius: 2px; background: #D5D2CB; margin: 0 auto 4px; }
-.add-sheet-header {
-  display: grid; grid-template-columns: 32px 1fr 32px; align-items: center; padding: 2px 2px 8px;
-}
-.add-sheet-close-btn {
-  width: 32px; height: 32px; border: none; background: transparent; display: flex; align-items: center; justify-content: center;
-  color: var(--ink-dark); cursor: pointer;
-}
-.add-sheet-close-btn svg { width: 19px; height: 19px; stroke-width: 1.8; }
-.add-sheet-title { text-align: center; font-size: 16px; font-weight: 600; color: var(--ink-black); }
 
-.add-clean-row {
-  display: flex; align-items: center; gap: 14px; padding: 12px 6px; cursor: pointer; border-bottom: none !important;
+.add-sheet-drag-handle, .choose-drag-handle {
+  width: 36px !important;
+  height: 4px !important;
+  border-radius: 2px !important;
+  background: #E7E6E5 !important;
+  margin: 12px auto 2px !important;
+  flex-shrink: 0;
 }
-.add-clean-row:active { opacity: 0.6; }
+body.night .add-sheet-drag-handle, body.night .choose-drag-handle {
+  background: #2D2D2C !important;
+}
+
+.playlist-header, .add-sheet-header, .choose-sheet-header {
+  display: grid !important;
+  grid-template-columns: 36px 1fr 36px !important;
+  align-items: center !important;
+  padding: 16px 20px 8px !important;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  width: 100%;
+}
+.playlist-title, .add-sheet-title, .choose-sheet-title {
+  text-align: center !important;
+  font-size: 16.5px !important;
+  font-weight: 600 !important;
+  color: var(--ink-black) !important;
+  letter-spacing: -0.2px !important;
+  position: static !important;
+  transform: none !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  line-height: 1.25;
+}
+.add-sheet-close-btn, .choose-sheet-close-btn {
+  width: 32px !important;
+  height: 32px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  color: var(--ink-black) !important;
+  cursor: pointer !important;
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+  border-radius: 50% !important;
+  transition: opacity 0.15s ease;
+  -webkit-tap-highlight-color: transparent !important;
+}
+.add-sheet-close-btn svg, .choose-sheet-close-btn svg {
+  width: 20px !important;
+  height: 20px !important;
+  stroke-width: 1.5 !important;
+}
+.choose-sheet-done-btn {
+  border: none !important;
+  background: transparent !important;
+  color: var(--brand-blue) !important;
+  font-size: 15px !important;
+  font-weight: 600 !important;
+  padding: 6px 8px !important;
+  cursor: pointer !important;
+  border-radius: 8px !important;
+  -webkit-tap-highlight-color: transparent !important;
+}
+
+.playlist-items, .add-clean-list, .choose-playlist-list, #choosePlaylistItems {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* 列表项：彻底通栏满幅 edge-to-edge，无圆角、无多余左边距，完全复用物理水波纹 */
+.add-clean-row, .choose-item-row, .playlist-items .song-row {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  padding: 14px 24px !important;
+  border-radius: 0 !important;
+  margin: 0 !important;
+  cursor: pointer !important;
+  background: transparent !important;
+  border: none !important;
+  border-bottom: none !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  text-align: left !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  -webkit-tap-highlight-color: transparent !important;
+  position: relative !important;
+  overflow: hidden !important;
+  transition: none !important;
+}
+.add-clean-row:active, .choose-item-row:active, .playlist-items .song-row:active {
+  background: transparent !important;
+}
+body.night .add-clean-row:active, body.night .choose-item-row:active, body.night .playlist-items .song-row:active {
+  background: transparent !important;
+}
+
 .add-clean-icon {
-  width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  width: 24px !important;
+  height: 24px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  color: var(--ink-black) !important;
+  flex-shrink: 0 !important;
 }
-.add-clean-icon svg { width: 19px; height: 19px; stroke-width: 1.55; stroke: currentColor; fill: none; }
-.add-clean-label { font-size: 15px; font-weight: 500; color: var(--ink-black); line-height: 22px; display: flex; align-items: center; }
+.add-clean-icon svg {
+  width: 20px !important;
+  height: 20px !important;
+  stroke-width: 1.5 !important;
+  stroke: currentColor;
+  fill: none;
+}
+.add-clean-label {
+  font-size: 15.5px !important;
+  font-weight: 500 !important;
+  color: var(--ink-black) !important;
+  line-height: 1.3 !important;
+  flex: 1;
+}
 .add-clean-icon.is-favorited svg {
   stroke: var(--heart-red) !important;
   fill: var(--heart-red) !important;
@@ -1929,120 +2064,82 @@ body.night .edit-cover-thumbnail {
   font-weight: 600;
 }
 
-/* 底部滑出选择歌单/铃声子弹窗（统一底部滑出、无分割线高级设计规范） */
-.choose-playlist-modal {
-  position: absolute; inset: 0; background: rgba(0, 0, 0, 0.45);
-  backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px);
-  z-index: 2050; opacity: 0; pointer-events: none; transition: opacity 0.25s ease;
-  display: flex; align-items: flex-end; justify-content: center;
-}
-.choose-playlist-modal.active { opacity: 1; pointer-events: auto; }
-.choose-playlist-card {
-  width: 100%; max-width: 100%; background: var(--bg-page);
-  border-radius: 28px 28px 0 0;
-  padding: 12px 20px calc(38px + var(--safe-bottom, 16px));
-  display: flex; flex-direction: column; gap: 4px;
-  max-height: 80vh; overflow-y: auto;
-  transform: translateY(100%);
-  transition: transform 0.26s cubic-bezier(0.32, 0.72, 0, 1);
-  pointer-events: none;
-  box-sizing: border-box;
-}
-.choose-playlist-modal.active .choose-playlist-card {
-  transform: translateY(0);
-  pointer-events: auto;
-}
-/* 顶部操作标头（左侧关闭X，绝对居中标题，右侧完成按键） */
-.choose-sheet-header {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 2px 2px 8px; position: relative; min-height: 40px;
-}
-.choose-sheet-close-btn {
-  width: 32px; height: 32px; border: none; background: transparent;
-  display: flex; align-items: center; justify-content: center;
-  color: var(--ink-dark); cursor: pointer; padding: 0; border-radius: 50%;
-  position: relative; z-index: 2; -webkit-tap-highlight-color: transparent;
-}
-.choose-sheet-close-btn:active { background: var(--divider); }
-.choose-sheet-close-btn svg { width: 19px; height: 19px; stroke-width: 1.8; }
-.choose-sheet-title {
-  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
-  font-size: 16px; font-weight: 600; color: var(--ink-black); text-align: center;
-  white-space: nowrap; pointer-events: none; z-index: 1;
-}
-.choose-sheet-done-btn {
-  border: none; background: transparent; color: var(--brand-blue);
-  font-size: 15px; font-weight: 600; padding: 6px 8px; cursor: pointer;
-  border-radius: 8px; position: relative; z-index: 2; -webkit-tap-highlight-color: transparent;
-}
-.choose-sheet-done-btn:active { opacity: 0.7; }
-
-/* 纯文字宽胶囊新建歌单按钮（位于歌单列表下方，与列表等宽，无任何SVG） */
-.choose-capsule-wrap {
-  width: 100%; box-sizing: border-box; padding: 12px 0 4px;
-}
-.choose-capsule-btn {
-  width: 100%; height: 44px; display: flex; align-items: center; justify-content: center;
-  box-sizing: border-box; border-radius: 999px;
-  background: var(--card-bg); border: 1px solid var(--border-input);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
-  font-size: 14px; font-weight: 500; color: var(--ink-black);
-  cursor: pointer; transition: all 0.15s ease;
-  -webkit-tap-highlight-color: transparent !important;
-}
-.choose-capsule-btn:active {
-  transform: scale(0.98); background: var(--pinned-bg);
-}
-body.night .choose-capsule-btn {
-  background: rgba(255, 255, 255, 0.08); border-color: rgba(255, 255, 255, 0.12); color: #FAF9F5;
-}
-
-.choose-item-row {
-  padding: 12px 10px; border-radius: 14px; background: transparent !important; cursor: pointer;
-  display: flex; align-items: center; justify-content: space-between;
-  border-bottom: none !important; border: none !important;
-  user-select: none; -webkit-user-select: none;
-  -webkit-tap-highlight-color: transparent !important;
-  outline: none !important;
-  transition: none !important;
-}
-.choose-item-row:active {
-  background: transparent !important;
-}
-body.night .choose-item-row:active {
-  background: transparent !important;
-}
 .choose-item-title {
-  font-size: 15px; font-weight: 500; color: var(--ink-black); line-height: 22px;
+  font-size: 15.5px !important;
+  font-weight: 500 !important;
+  color: var(--ink-black) !important;
+  line-height: 1.3 !important;
+  flex: 1;
 }
 .choose-item-sub {
-  font-size: 13px; color: var(--ink-light);
+  font-size: 12.5px !important;
+  color: var(--ink-light) !important;
 }
 
-/* 右侧无“几首”文字，纯净多选勾选框 */
 .choose-checkbox {
-  width: 22px; height: 22px; border-radius: 50%;
-  border: 1.8px solid var(--border-input);
-  display: flex; align-items: center; justify-content: center;
-  box-sizing: border-box; transition: all 0.18s cubic-bezier(0.2, 0.8, 0.2, 1);
-  flex-shrink: 0;
+  width: 22px !important;
+  height: 22px !important;
+  border-radius: 50% !important;
+  border: 1.8px solid var(--border-input) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-sizing: border-box !important;
+  transition: all 0.18s cubic-bezier(0.2, 0.8, 0.2, 1) !important;
+  flex-shrink: 0 !important;
 }
 .choose-checkbox svg {
-  width: 13px; height: 13px; stroke: #FFFFFF;
-  opacity: 0; transform: scale(0.6);
-  transition: all 0.18s cubic-bezier(0.2, 0.8, 0.2, 1);
+  width: 13px !important;
+  height: 13px !important;
+  stroke: #FFFFFF !important;
+  opacity: 0;
+  transform: scale(0.6);
+  transition: all 0.18s cubic-bezier(0.2, 0.8, 0.2, 1) !important;
 }
 .choose-checkbox.checked {
-  background: var(--brand-blue); border-color: var(--brand-blue);
+  background: var(--brand-blue) !important;
+  border-color: var(--brand-blue) !important;
 }
 .choose-checkbox.checked svg {
-  opacity: 1; transform: scale(1);
+  opacity: 1;
+  transform: scale(1);
 }
 body.night .choose-checkbox {
-  border-color: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.3) !important;
 }
 body.night .choose-checkbox.checked {
-  background: var(--brand-blue); border-color: var(--brand-blue);
+  background: var(--brand-blue) !important;
+  border-color: var(--brand-blue) !important;
+}
+
+.choose-capsule-wrap {
+  width: 100% !important;
+  box-sizing: border-box !important;
+  padding: 12px 24px 6px !important;
+}
+.choose-capsule-btn {
+  width: 100% !important;
+  height: 46px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-sizing: border-box !important;
+  border-radius: 999px !important;
+  background: var(--card-bg, #FFFFFF) !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04) !important;
+  font-size: 14.5px !important;
+  font-weight: 500 !important;
+  color: var(--ink-black) !important;
+  cursor: pointer !important;
+  position: relative !important;
+  overflow: hidden !important;
+  -webkit-tap-highlight-color: transparent !important;
+}
+body.night .choose-capsule-btn {
+  background: #1E1E1C !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  color: #FAF9F5 !important;
 }
 
 /* 系统虚拟三键与 Toast */
@@ -2799,44 +2896,6 @@ body.night .voice-modal-btn.voice-modal-btn-primary {
 }
 .discover-pullup-bar.loading .discover-pullup-spinner { display: inline-block; }
 
-/* ================== 底部滑出弹窗规范升级 (对齐 hhznx 36px 优雅大圆角与柔和阴影) ================== */
-.add-sheet-card, .choose-playlist-card, .playlist-drawer {
-  border-radius: 36px 36px 0 0 !important;
-  box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.14) !important;
-  background: var(--card-bg, #FFFFFF) !important;
-}
-body.night .add-sheet-card, body.night .choose-playlist-card, body.night .playlist-drawer {
-  background: #181817 !important;
-  box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.6) !important;
-}
-.add-sheet-drag-handle, .choose-drag-handle {
-  width: 36px !important;
-  height: 4px !important;
-  border-radius: 2px !important;
-  background: rgba(0, 0, 0, 0.16) !important;
-  margin: 0 auto 12px !important;
-}
-body.night .add-sheet-drag-handle, body.night .choose-drag-handle {
-  background: rgba(255, 255, 255, 0.2) !important;
-}
-.add-clean-row {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 13px 14px;
-  cursor: pointer;
-  border-radius: 12px;
-  transition: background 0.15s ease;
-  position: relative;
-  overflow: hidden;
-}
-.add-clean-row:active {
-  background: rgba(0, 0, 0, 0.04);
-}
-body.night .add-clean-row:active {
-  background: rgba(255, 255, 255, 0.06);
-}
-
 .confirm-modal-card {
   border-radius: 18px !important;
 }
@@ -3156,7 +3215,7 @@ body.night .add-clean-row:active {
               </div>
               <div class="item-content">
                 <span class="item-main-title">检查版本更新</span>
-                <span class="item-subtitle-tight" id="aboutAppVersionDesc">v2.3.4</span>
+                <span class="item-subtitle-tight" id="aboutAppVersionDesc">v2.3.5</span>
               </div>
             </div>
             <svg class="item-arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
@@ -3704,35 +3763,35 @@ body.night .add-clean-row:active {
       </div>
 
       <div class="add-clean-list">
-        <div class="add-clean-row" onclick="triggerSheetAction('next')">
+        <div class="add-clean-row ripple-btn" onclick="triggerSheetAction('next')">
           <div class="add-clean-icon"><svg viewBox="0 0 24 24"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19" stroke-width="2"/></svg></div>
           <span class="add-clean-label">下一首播放</span>
         </div>
-        <div class="add-clean-row" onclick="triggerSheetAction('playlist')">
+        <div class="add-clean-row ripple-btn" onclick="triggerSheetAction('playlist')">
           <div class="add-clean-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg></div>
           <span class="add-clean-label">加入歌单</span>
         </div>
-        <div class="add-clean-row" onclick="triggerSheetAction('fav')">
+        <div class="add-clean-row ripple-btn" onclick="triggerSheetAction('fav')">
           <div class="add-clean-icon" id="sheetFavIcon"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></div>
           <span class="add-clean-label" id="sheetFavText">收藏歌曲</span>
         </div>
-        <div class="add-clean-row" onclick="triggerSheetAction('download')">
+        <div class="add-clean-row ripple-btn" onclick="triggerSheetAction('download')">
           <div class="add-clean-icon"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></div>
           <span class="add-clean-label">离线下载</span>
         </div>
-        <div class="add-clean-row" onclick="triggerSheetAction('ringtone')">
+        <div class="add-clean-row ripple-btn" onclick="triggerSheetAction('ringtone')">
           <div class="add-clean-icon"><svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></div>
           <span class="add-clean-label">设为系统铃声</span>
         </div>
-        <div class="add-clean-row" onclick="triggerSheetAction('extract_cover')">
+        <div class="add-clean-row ripple-btn" onclick="triggerSheetAction('extract_cover')">
           <div class="add-clean-icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>
           <span class="add-clean-label">提取封面</span>
         </div>
-        <div class="add-clean-row" onclick="triggerSheetAction('share')">
+        <div class="add-clean-row ripple-btn" onclick="triggerSheetAction('share')">
           <div class="add-clean-icon"><svg viewBox="0 0 24 24"><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/></svg></div>
           <span class="add-clean-label">分享歌曲</span>
         </div>
-        <div class="add-clean-row" onclick="triggerSheetAction('delete')" style="color:var(--brand-red);">
+        <div class="add-clean-row ripple-btn" onclick="triggerSheetAction('delete')" style="color:var(--brand-red);">
           <div class="add-clean-icon" style="color:var(--brand-red);"><svg viewBox="0 0 24 24" stroke="currentColor"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></div>
           <span class="add-clean-label" id="sheetDeleteText" style="color:var(--brand-red);">移出此歌曲</span>
         </div>
@@ -3751,9 +3810,9 @@ body.night .add-clean-row:active {
         <div class="choose-sheet-title">加入歌单</div>
         <button class="choose-sheet-done-btn" onclick="confirmBatchAddToPlaylists()">完成</button>
       </div>
-      <div id="choosePlaylistItems" style="display:flex; flex-direction:column; gap:4px; max-height:48vh; overflow-y:auto;"></div>
+      <div id="choosePlaylistItems" class="choose-playlist-list" style="max-height:48vh; overflow-y:auto;"></div>
       <div class="choose-capsule-wrap">
-        <button class="choose-capsule-btn" onclick="openCreatePlaylistFromChoose()">新建歌单</button>
+        <button class="choose-capsule-btn ripple-btn" onclick="openCreatePlaylistFromChoose()">新建歌单</button>
       </div>
     </div>
   </div>
@@ -3769,22 +3828,22 @@ body.night .add-clean-row:active {
         <div class="choose-sheet-title" id="chooseRingtoneSongTitle">设为系统铃声</div>
         <div style="width:36px;"></div>
       </div>
-      <div style="display:flex; flex-direction:column; gap:4px; margin-top:4px;">
-        <div class="choose-item-row" onclick="confirmSetRingtone(1)">
+      <div class="choose-playlist-list" style="margin-top:4px;">
+        <div class="choose-item-row ripple-btn" onclick="confirmSetRingtone(1)">
           <div style="display:flex; align-items:center; gap:12px;">
             <div class="add-clean-icon"><svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg></div>
             <span class="choose-item-title">来电铃声 (默认)</span>
           </div>
           <span class="choose-item-sub">设为电话铃声</span>
         </div>
-        <div class="choose-item-row" onclick="confirmSetRingtone(2)">
+        <div class="choose-item-row ripple-btn" onclick="confirmSetRingtone(2)">
           <div style="display:flex; align-items:center; gap:12px;">
             <div class="add-clean-icon"><svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></div>
             <span class="choose-item-title">通知提示音</span>
           </div>
           <span class="choose-item-sub">设为系统通知音</span>
         </div>
-        <div class="choose-item-row" onclick="confirmSetRingtone(4)">
+        <div class="choose-item-row ripple-btn" onclick="confirmSetRingtone(4)">
           <div style="display:flex; align-items:center; gap:12px;">
             <div class="add-clean-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2"/><path d="m5 3 4 4"/><path d="m19 3-4 4"/></svg></div>
             <span class="choose-item-title">闹钟铃声</span>
@@ -4227,7 +4286,7 @@ const OTHER_AVATAR_SVG = `<svg width="14" height="14" viewBox="0 0 24 24" fill="
 
 const APP_CONFIG = {
   name: '灵犀音乐',
-  version: '2.3.4',
+  version: '2.3.5',
   build: '2026.10.09',
   codename: 'Pure Sound'
 };
@@ -5028,13 +5087,28 @@ function playSongAtQueue(idx) {
 
   // 发现页顶部推荐曲目联动：当前歌曲若为推荐曲目，唱片自动平滑滚入正方形卡片
   if (topRecommendedTracks && topRecommendedTracks.length > 0) {
-    const curOnlineId = song.onlineId || (song.id ? String(song.id).replace('online_', '') : '');
-    const matchIdx = topRecommendedTracks.findIndex(t => 
-      ('online_' + t.id === song.id) || 
-      (String(t.id) === curOnlineId) ||
-      (t.url_id && String(t.url_id) === curOnlineId) ||
-      (t.name === song.title && t.artist === song.artist)
-    );
+    let matchIdx = -1;
+    if (typeof song.topTrackIndex === 'number' && song.topTrackIndex >= 0 && song.topTrackIndex < topRecommendedTracks.length) {
+      matchIdx = song.topTrackIndex;
+    } else {
+      const curOnlineId = song.onlineId || (song.id ? String(song.id).replace('online_', '') : '');
+      const cleanCurTitle = (formatCleanTitle(song.title || '')).toLowerCase().trim();
+      const cleanCurArtist = (formatCleanArtist(song.artist || '')).toLowerCase().trim();
+
+      matchIdx = topRecommendedTracks.findIndex(t => {
+        if ('online_' + t.id === song.id) return true;
+        if (String(t.id) === curOnlineId) return true;
+        if (t.url_id && String(t.url_id) === curOnlineId) return true;
+        const cleanTTitle = (formatCleanTitle(t.name || t.title || '')).toLowerCase().trim();
+        const cleanTArtist = (formatCleanArtist(t.artist || '')).toLowerCase().trim();
+        if (cleanTTitle && cleanCurTitle && cleanTTitle === cleanCurTitle) {
+          if (!cleanCurArtist || !cleanTArtist || cleanCurArtist === cleanTArtist || cleanCurArtist.includes(cleanTArtist) || cleanTArtist.includes(cleanCurArtist)) {
+            return true;
+          }
+        }
+        return false;
+      });
+    }
     if (matchIdx !== -1) {
       scrollVinylToTrack(matchIdx, true);
     }
@@ -7163,19 +7237,39 @@ function updateFixedRadioCardUI() {
   }
 
   const curPlayingSong = currentPlaybackQueue[currentIndex];
-  if (isPlaying && curPlayingSong && topRecommendedTracks && topRecommendedTracks.length > 0) {
-    const curOnlineId = curPlayingSong.onlineId || (curPlayingSong.id ? String(curPlayingSong.id).replace('online_', '') : '');
-    const matchIdx = topRecommendedTracks.findIndex(t => 
-      ('online_' + t.id === curPlayingSong.id) || 
-      (String(t.id) === curOnlineId) ||
-      (t.url_id && String(t.url_id) === curOnlineId) ||
-      (t.name === curPlayingSong.title && t.artist === curPlayingSong.artist)
-    );
+  if (curPlayingSong && topRecommendedTracks && topRecommendedTracks.length > 0) {
+    let matchIdx = -1;
+    if (typeof curPlayingSong.topTrackIndex === 'number' && curPlayingSong.topTrackIndex >= 0 && curPlayingSong.topTrackIndex < topRecommendedTracks.length) {
+      matchIdx = curPlayingSong.topTrackIndex;
+    } else {
+      const curOnlineId = curPlayingSong.onlineId || (curPlayingSong.id ? String(curPlayingSong.id).replace('online_', '') : '');
+      const cleanCurTitle = (formatCleanTitle(curPlayingSong.title || '')).toLowerCase().trim();
+      const cleanCurArtist = (formatCleanArtist(curPlayingSong.artist || '')).toLowerCase().trim();
+
+      matchIdx = topRecommendedTracks.findIndex(t => {
+        if ('online_' + t.id === curPlayingSong.id) return true;
+        if (String(t.id) === curOnlineId) return true;
+        if (t.url_id && String(t.url_id) === curOnlineId) return true;
+        const cleanTTitle = (formatCleanTitle(t.name || t.title || '')).toLowerCase().trim();
+        const cleanTArtist = (formatCleanArtist(t.artist || '')).toLowerCase().trim();
+        if (cleanTTitle && cleanCurTitle && cleanTTitle === cleanCurTitle) {
+          if (!cleanCurArtist || !cleanTArtist || cleanCurArtist === cleanTArtist || cleanCurArtist.includes(cleanTArtist) || cleanTArtist.includes(cleanCurArtist)) {
+            return true;
+          }
+        }
+        return false;
+      });
+    }
+
     if (matchIdx !== -1 && matchIdx !== activeTopTrackIndex) {
       activeTopTrackIndex = matchIdx;
       const channel = document.getElementById('vinylScrollChannel');
       if (channel) {
-        channel.scrollTo({ left: matchIdx * 108, behavior: 'smooth' });
+        const targetLeft = matchIdx * 108;
+        try {
+          channel.scrollTo({ left: targetLeft, behavior: (document.visibilityState === 'visible') ? 'smooth' : 'auto' });
+        } catch(e) {}
+        channel.scrollLeft = targetLeft;
       }
     }
   }
@@ -7282,13 +7376,31 @@ function extractCardGlowColor(imgUrl) {
 function scrollVinylToTrack(idx, smooth = true) {
   const channel = document.getElementById('vinylScrollChannel');
   if (!channel) return;
-  const targetLeft = idx * 108;
-  channel.scrollTo({
-    left: targetLeft,
-    behavior: smooth ? 'smooth' : 'auto'
-  });
   const count = topRecommendedTracks ? topRecommendedTracks.length : 1;
-  activeTopTrackIndex = Math.min(count - 1, Math.max(0, idx));
+  const validIdx = Math.min(count - 1, Math.max(0, idx));
+  activeTopTrackIndex = validIdx;
+  const targetLeft = validIdx * 108;
+
+  if (smooth && document.visibilityState === 'visible') {
+    try {
+      channel.scrollTo({
+        left: targetLeft,
+        behavior: 'smooth'
+      });
+    } catch(e) {
+      channel.scrollLeft = targetLeft;
+    }
+  } else {
+    channel.scrollLeft = targetLeft;
+  }
+
+  // 强力确定性保险：确保 scrollLeft 必须精准到位，杜绝后台丢帧或 smooth 被取消
+  setTimeout(() => {
+    if (channel && Math.abs(channel.scrollLeft - targetLeft) > 2) {
+      channel.scrollLeft = targetLeft;
+    }
+  }, 160);
+
   updateFixedRadioCardUI();
 }
 
@@ -7332,9 +7444,10 @@ function playTopRecommendedTrack(idx, openFull = true) {
   scrollVinylToTrack(idx, true);
 
   // 将顶部全部推荐曲目作为播放队列，听完一首自然播放下一首推荐曲目
-  const queue = topRecommendedTracks.map(song => ({
+  const queue = topRecommendedTracks.map((song, sIdx) => ({
     id: 'online_' + song.id,
     onlineId: song.url_id || song.id,
+    topTrackIndex: sIdx,
     source: song.source || 'netease',
     title: song.name || song.title,
     artist: song.artist,
@@ -12016,7 +12129,7 @@ function toggleDefaultHomeTabSetting() {
   }
 })();
 
-/* ================== 发现页真实弹性下拉刷新交互 ================== */
+/* ================== 发现页真实弹性下拉刷新交互 (100% 灵敏稳定零概率失效) ================== */
 (function initDiscoverPulldownRefresh() {
   function bindPulldown() {
     const scrollEl = document.querySelector('.xianyin-content-scroll');
@@ -12031,22 +12144,29 @@ function toggleDefaultHomeTabSetting() {
 
     scrollEl.addEventListener('touchstart', (e) => {
       if (currentHomeTab !== 'discover' || isRefreshing) return;
-      if (scrollEl.scrollTop <= 2 && e.touches && e.touches.length === 1) {
+      if (e.touches && e.touches.length === 1) {
         touchStartY = e.touches[0].clientY;
         touchStartX = e.touches[0].clientX;
-        isPulling = true;
+        isPulling = (scrollEl.scrollTop <= 6);
       }
     }, { passive: true });
 
     scrollEl.addEventListener('touchmove', (e) => {
-      if (!isPulling || isRefreshing || !e.touches || e.touches.length !== 1) return;
+      if (isRefreshing || !e.touches || e.touches.length !== 1) return;
       const currentY = e.touches[0].clientY;
       const currentX = e.touches[0].clientX;
       const deltaY = currentY - touchStartY;
       const deltaX = Math.abs(currentX - touchStartX);
 
-      if (scrollEl.scrollTop <= 0 && deltaY > 0 && deltaY > deltaX * 1.2) {
-        const visualHeight = Math.min(68, deltaY * 0.42);
+      // 滑动中触顶且下拉动态激活
+      if (!isPulling && scrollEl.scrollTop <= 2 && deltaY > 0) {
+        isPulling = true;
+        touchStartY = currentY;
+        return;
+      }
+
+      if (isPulling && scrollEl.scrollTop <= 2 && deltaY > 0 && deltaY > deltaX * 0.85) {
+        const visualHeight = Math.min(68, deltaY * 0.45);
         indicator.style.transition = 'none';
         indicator.style.height = visualHeight + 'px';
         indicator.classList.add('pulling');
@@ -12059,10 +12179,10 @@ function toggleDefaultHomeTabSetting() {
           textEl.textContent = '下拉刷新推荐';
         }
 
-        if (deltaY > 12 && e.cancelable) {
+        if (deltaY > 6 && e.cancelable) {
           e.preventDefault();
         }
-      } else if (deltaY < 0) {
+      } else if (deltaY < 0 && indicator.classList.contains('pulling')) {
         indicator.style.height = '0px';
         indicator.classList.remove('pulling', 'ready');
       }
@@ -12108,15 +12228,16 @@ function toggleDefaultHomeTabSetting() {
 })();
 
 
-/* ================== Google Material 3 物理水波纹引擎 (1:1 严格复刻自 hhznx) ================== */
+/* ================== Google Material 3 物理水波纹引擎 (全面升级：强力抗手势误触) ================== */
 (function initGlobalRippleEngine() {
   const PRESS_GROW_MS = 450;
-  const MINIMUM_PRESS_MS = 225;
+  const MINIMUM_PRESS_MS = 200;
   const INITIAL_ORIGIN_SCALE = 0.2;
   const PADDING = 10;
   const SOFT_EDGE_MINIMUM_SIZE = 75;
   const SOFT_EDGE_CONTAINER_RATIO = 0.35;
   const EASING_STANDARD = 'cubic-bezier(0.2, 0, 0, 1)';
+  const TOUCH_GESTURE_DELAY_MS = 75; // 严格判定时间：滑动前绝对不生成波纹，杜绝闪烁
 
   let activeRipple = null;
   let growAnimation = null;
@@ -12125,9 +12246,10 @@ function toggleDefaultHomeTabSetting() {
   let startX = 0, startY = 0;
   let activeBtn = null;
   let pendingPoint = null;
+  let isPointerCancelled = false;
 
   const spawnRipple = (btn, clientX, clientY) => {
-    if (!btn || !btn.isConnected) return;
+    if (!btn || !btn.isConnected || isPointerCancelled) return;
     if (window.getComputedStyle(btn).pointerEvents === 'none') return;
 
     // 清理旧波纹
@@ -12166,10 +12288,10 @@ function toggleDefaultHomeTabSetting() {
 
     // 淡入：按压态 105ms 线性淡入
     requestAnimationFrame(() => {
-      ripple.classList.add('is-pressed');
+      if (ripple.parentNode) ripple.classList.add('is-pressed');
     });
 
-    // 运行官方原版展开动画：触点扩散并自然流向组件几何中心，饱满充盈整个容器
+    // 运行官方原版展开动画
     if (typeof ripple.animate === 'function') {
       growAnimation = ripple.animate({
         transform: [
@@ -12185,6 +12307,7 @@ function toggleDefaultHomeTabSetting() {
   };
 
   const cancelPending = () => {
+    isPointerCancelled = true;
     if (pendingTimer) {
       clearTimeout(pendingTimer);
       pendingTimer = null;
@@ -12192,14 +12315,14 @@ function toggleDefaultHomeTabSetting() {
     if (activeRipple) {
       const r = activeRipple;
       activeRipple = null;
-      r.classList.remove('is-pressed');
-      setTimeout(() => { if (r.parentNode) r.remove(); }, 380);
+      // 滑动手势触发时：立即彻底清除 DOM，绝不产生视觉残影
+      if (r.parentNode) r.remove();
     }
     activeBtn = null;
     pendingPoint = null;
   };
 
-  const RIPPLE_SELECTOR = '.ripple-btn, .group-menu-item, .cap-switch-row, .settings-item-row, .song-row, .discover-card-row, .library-album-pill, .voice-modal-btn, .modern-pill-btn, .icon-btn, .nav-btn, .fav-btn, .song-action-btn, .circle-btn, .color-option-row, .popup-menu-item, .modal-action-btn, .drawer-row';
+  const RIPPLE_SELECTOR = '.ripple-btn, .group-menu-item, .cap-switch-row, .settings-item-row, .song-row, .discover-card-row, .library-album-pill, .voice-modal-btn, .modern-pill-btn, .icon-btn, .nav-btn, .fav-btn, .song-action-btn, .circle-btn, .color-option-row, .popup-menu-item, .modal-action-btn, .drawer-row, .add-clean-row, .choose-item-row, .choose-capsule-btn';
 
   document.addEventListener('pointerdown', (e) => {
     if (e.target.closest('input, textarea, select')) return;
@@ -12209,32 +12332,32 @@ function toggleDefaultHomeTabSetting() {
     if (btn.classList.contains('no-ripple')) return;
     if (window.getComputedStyle(btn).pointerEvents === 'none') return;
 
-    if (pendingTimer || activeRipple) cancelPending();
+    cancelPending();
+    isPointerCancelled = false;
 
     startX = e.clientX;
     startY = e.clientY;
     activeBtn = btn;
     pendingPoint = { x: e.clientX, y: e.clientY };
 
-    // 核心防误触保护机制：如果在可滚动容器内，延迟 30ms 确认不是滑动，才触发水波纹
-    const scrollParent = btn.closest('.scroll-view, .page-settings-scroll, .view-settings-page, .settings-subview-scroll, .xianyin-content-scroll, .playlist-page-scroll, .playlist-track-scroll, .search-scroll-content, .search-results-list, .library-playlist-wrap, #discoverStream, #paneDiscover, #paneListen, #paneSettings');
-    if (scrollParent) {
+    // 触控防误触机制：若为触摸或手写笔，延迟 75ms 确认是否为手势滑动
+    if (e.pointerType === 'mouse') {
+      spawnRipple(btn, e.clientX, e.clientY);
+    } else {
       pendingTimer = setTimeout(() => {
         pendingTimer = null;
-        if (activeBtn && pendingPoint) {
+        if (activeBtn && pendingPoint && !isPointerCancelled) {
           spawnRipple(activeBtn, pendingPoint.x, pendingPoint.y);
         }
-      }, 30);
-    } else {
-      spawnRipple(btn, e.clientX, e.clientY);
+      }, TOUCH_GESTURE_DELAY_MS);
     }
   }, { passive: true, capture: true });
 
   document.addEventListener('pointermove', (e) => {
-    if (!activeBtn && !activeRipple) return;
-    // 核心防误触保护机制：位移超过 7px 立即判定为手势滑动，取消水波纹
+    if (!activeBtn && !pendingTimer && !activeRipple) return;
+    // 灵敏滑动判定：位移超过 5px 立即判定为手势滑动，取消波纹生成并清理
     const dist = Math.hypot(e.clientX - startX, e.clientY - startY);
-    if (dist > 7) {
+    if (dist > 5) {
       cancelPending();
     }
   }, { passive: true, capture: true });
@@ -12244,11 +12367,18 @@ function toggleDefaultHomeTabSetting() {
   }, { passive: true, capture: true });
 
   const finishRipple = () => {
+    if (isPointerCancelled) {
+      cancelPending();
+      return;
+    }
+
+    // 快速轻触 (tap)：如果在 75ms 内抬手，立即生成饱满波纹，零感知延迟
     if (pendingTimer && activeBtn && pendingPoint) {
       clearTimeout(pendingTimer);
       pendingTimer = null;
       spawnRipple(activeBtn, pendingPoint.x, pendingPoint.y);
     }
+
     activeBtn = null;
     pendingPoint = null;
 
@@ -12257,7 +12387,6 @@ function toggleDefaultHomeTabSetting() {
     activeRipple = null;
 
     const elapsed = Date.now() - pressTimestamp;
-    // 官方标准：保证至少展示 MINIMUM_PRESS_MS (225ms)，松手后 375ms 柔和淡出
     const remainingPressTime = Math.max(0, MINIMUM_PRESS_MS - elapsed);
 
     setTimeout(() => {
