@@ -1,6 +1,6 @@
 {
-  "versionCode": 48,
-  "versionName": "2.1.7",
-  "changelog": "1. 修复顶部左侧卡片视觉：移除描边，换上清雅薄荷水碧绿渐变，显示当前歌曲与电台信息\n2. 唱片彻底去除描边，无封面时去除外层黑色底色改为素雅浅底居中图标\n3. 私人专属曲目移除全部歌曲后缀，改为黑色精致微型播放按钮\n4. 底栏导航音波点击增加错落起伏波浪跳动动画，且支持快捷播放响应",
+  "versionCode": 49,
+  "versionName": "2.1.8",
+  "changelog": "1. 彻底清除卡片与唱片阴影，回归纯粹极简古典宣纸水墨风质感\n2. 移除突兀薄荷绿色调，还原温润宣纸浅色底与水墨墨色圆钮\n3. 剔除卡片标题中的Radio外来词汇，恢复优雅原生的曲库与歌单命名\n4. 底栏听歌音波条宽度优化为1.8px水墨纤细感，加长点击反馈动效至0.65s更舒缓自然",
   "downloadUrl": "https://ghfast.top/https://github.com/visitor315/lingxi-music/releases/download/v1.4.0/LingXiMusic.apk"
 }

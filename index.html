@@ -478,60 +478,53 @@ body.night .discover-section-play-btn {
 .fixed-radio-card {
   position: absolute; top: 0; left: 0; z-index: 10;
   width: 136px; height: 142px; border-radius: 20px;
-  background: linear-gradient(155deg, #E8F9F3 0%, #D2F5E9 50%, #A9EBD9 100%);
+  background: var(--card-bg);
   border: none !important; padding: 14px 12px;
   display: flex; flex-direction: column; justify-content: space-between; cursor: pointer;
-  box-shadow: 0 8px 22px rgba(46, 175, 137, 0.16);
+  box-shadow: none !important;
   position: relative; overflow: hidden;
 }
 body.night .fixed-radio-card {
-  background: linear-gradient(155deg, #18332A 0%, #10241E 100%);
+  background: #20201E;
   border: none !important;
-  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.35);
+  box-shadow: none !important;
 }
 
 .radio-card-header {
   display: flex; align-items: center; gap: 6px;
-  font-size: 15px; font-weight: 600; color: #12362C;
+  font-size: 15px; font-weight: 600; color: var(--ink-black);
 }
-body.night .radio-card-header { color: #E5F4EE; }
 
 .radio-header-rose-icon {
-  width: 16px; height: 16px; fill: #F87171 !important;
+  width: 15px; height: 15px; fill: var(--brand-red) !important;
   display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
 }
 .radio-header-rose-icon.hide { display: none !important; }
 
 .radio-card-sub {
-  font-size: 11px; color: rgba(18, 54, 44, 0.72);
+  font-size: 11px; color: var(--ink-gray);
   margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-body.night .radio-card-sub { color: rgba(229, 244, 238, 0.65); }
 
 .radio-card-bottom { display: flex; align-items: flex-end; justify-content: space-between; }
-.radio-live-bars { display: flex; align-items: flex-end; gap: 2px; height: 14px; }
+.radio-live-bars { display: flex; align-items: flex-end; gap: 2.5px; height: 14px; }
 .radio-live-bar {
-  width: 1.8px; background: rgba(255, 255, 255, 0.9); border-radius: 1px;
+  width: 1.8px; background: var(--ink-light); border-radius: 1px;
 }
-body.night .radio-live-bar { background: rgba(255, 255, 255, 0.65); }
 .radio-live-bar:nth-child(1) { height: 4px; }
 .radio-live-bar:nth-child(2) { height: 12px; }
 .radio-live-bar:nth-child(3) { height: 7px; }
-.radio-live-bar:nth-child(4) { height: 14px; }
-.radio-live-bar:nth-child(5) { height: 9px; }
-.radio-live-bar:nth-child(6) { height: 13px; }
-.radio-live-bar:nth-child(7) { height: 5px; }
-.radio-live-bar:nth-child(8) { height: 11px; }
+.radio-live-bar:nth-child(4) { height: 10px; }
 
 .radio-play-btn-circle {
-  width: 30px; height: 30px; border-radius: 50%; background: #05C197;
+  width: 28px; height: 28px; border-radius: 50%; background: var(--ink-black);
   color: #FFFFFF; display: flex; align-items: center; justify-content: center;
-  border: none !important; box-shadow: 0 3px 10px rgba(5, 193, 151, 0.35);
+  border: none !important; box-shadow: none !important;
   transition: transform 0.18s ease;
 }
 .radio-play-btn-circle:active { transform: scale(0.92); }
-body.night .radio-play-btn-circle { background: #05C197; color: #FFFFFF; }
-.radio-play-btn-circle svg { width: 12px; height: 12px; fill: #FFFFFF; stroke: none; margin-left: 2px; }
+body.night .radio-play-btn-circle { background: #E8E7E3; color: #171715; }
+.radio-play-btn-circle svg { width: 11px; height: 11px; fill: currentColor; stroke: none; margin-left: 1px; }
 
 .vinyl-scroll-channel {
   position: absolute; top: 0; left: 0; right: -16px; bottom: 0;
@@ -549,13 +542,13 @@ body.night .radio-play-btn-circle { background: #05C197; color: #FFFFFF; }
   background: #F4F1EA;
   border: none !important; display: flex; align-items: center; justify-content: center;
   position: relative; overflow: hidden;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+  box-shadow: none !important;
   animation: discSpinSlow 18s linear infinite; animation-play-state: paused;
 }
 body.night .stream-disc {
   background: #282826;
   border: none !important;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.28);
+  box-shadow: none !important;
 }
 .stream-disc.playing { animation-play-state: running; }
 
@@ -690,14 +683,14 @@ body.night .xianyin-bottom-nav { background: rgba(20, 20, 19, 0.96); }
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 2.8px;
+  gap: 2.5px;
   color: inherit;
   transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
   transform-origin: center center;
 }
 .nav-wave-bar {
-  width: 2.6px;
-  border-radius: 2px;
+  width: 1.8px;
+  border-radius: 1px;
   background: currentColor;
   transform-origin: center bottom;
 }
@@ -706,46 +699,46 @@ body.night .xianyin-bottom-nav { background: rgba(20, 20, 19, 0.96); }
 .nav-wave-bar:nth-child(3) { height: 14px; }
 .nav-wave-bar:nth-child(4) { height: 9px; }
 
-/* 点击时柱子跳跃律动动效，放歌时保持静止雅致 */
+/* 点击时柱子跳跃律动动效，放歌时保持静止雅致，动画加长至0.65s更具韵律 */
 .nav-wave-bars.anim-wave-tap {
-  animation: waveTapFeedback 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: waveTapFeedback 0.65s cubic-bezier(0.25, 1, 0.5, 1);
 }
 @keyframes waveTapFeedback {
-  0% { transform: scale(0.92); }
-  45% { transform: scale(1.08); }
+  0% { transform: scale(0.94); }
+  40% { transform: scale(1.06); }
   100% { transform: scale(1); }
 }
 .nav-wave-bars.anim-wave-tap .nav-wave-bar:nth-child(1) {
-  animation: waveBarBounce1 0.45s ease-in-out;
+  animation: waveBarBounce1 0.65s cubic-bezier(0.25, 1, 0.5, 1);
 }
 .nav-wave-bars.anim-wave-tap .nav-wave-bar:nth-child(2) {
-  animation: waveBarBounce2 0.45s ease-in-out;
+  animation: waveBarBounce2 0.65s cubic-bezier(0.25, 1, 0.5, 1);
 }
 .nav-wave-bars.anim-wave-tap .nav-wave-bar:nth-child(3) {
-  animation: waveBarBounce3 0.45s ease-in-out;
+  animation: waveBarBounce3 0.65s cubic-bezier(0.25, 1, 0.5, 1);
 }
 .nav-wave-bars.anim-wave-tap .nav-wave-bar:nth-child(4) {
-  animation: waveBarBounce4 0.45s ease-in-out;
+  animation: waveBarBounce4 0.65s cubic-bezier(0.25, 1, 0.5, 1);
 }
 @keyframes waveBarBounce1 {
   0%, 100% { height: 9px; }
   35% { height: 19px; }
-  70% { height: 5px; }
+  68% { height: 5px; }
 }
 @keyframes waveBarBounce2 {
   0%, 100% { height: 20px; }
-  30% { height: 7px; }
-  65% { height: 21px; }
+  28% { height: 7px; }
+  62% { height: 21px; }
 }
 @keyframes waveBarBounce3 {
   0%, 100% { height: 14px; }
-  40% { height: 22px; }
-  75% { height: 8px; }
+  38% { height: 22px; }
+  72% { height: 8px; }
 }
 @keyframes waveBarBounce4 {
   0%, 100% { height: 9px; }
   25% { height: 18px; }
-  60% { height: 6px; }
+  58% { height: 6px; }
 }
 
 /* 底部导航设置 SVG 动态旋转动画 */
@@ -2141,16 +2134,12 @@ body.in-pip-mode .view-player-full {
                   <svg id="radioHeaderRoseIcon" class="radio-header-rose-icon" viewBox="0 0 24 24" style="width:16px; height:16px; fill:#F87171; stroke:none; flex-shrink:0;">
                     <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
                   </svg>
-                  <span id="dynamicCardTitle">红心 Radio ⇋</span>
+                  <span id="dynamicCardTitle">全部歌曲</span>
                 </div>
                 <div class="radio-card-sub" id="dynamicCardSub">灵犀漫步 · 遇见知音</div>
               </div>
               <div class="radio-card-bottom">
                 <div class="radio-live-bars">
-                  <div class="radio-live-bar"></div>
-                  <div class="radio-live-bar"></div>
-                  <div class="radio-live-bar"></div>
-                  <div class="radio-live-bar"></div>
                   <div class="radio-live-bar"></div>
                   <div class="radio-live-bar"></div>
                   <div class="radio-live-bar"></div>
@@ -2279,7 +2268,7 @@ body.in-pip-mode .view-player-full {
         <span class="settings-group-header">关于与更新</span>
         <div class="group-menu-card">
           <div class="settings-item-row" onclick="checkAppUpdate(true)">
-            <div class="settings-item-col"><span class="settings-title-line">检查版本更新</span><span class="settings-sub-desc" id="aboutAppVersionDesc">自用无损音乐播放器 · v2.1.7</span></div>
+            <div class="settings-item-col"><span class="settings-title-line">检查版本更新</span><span class="settings-sub-desc" id="aboutAppVersionDesc">自用无损音乐播放器 · v2.1.8</span></div>
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" style="color:var(--ink-light); margin-left:auto;"><polyline points="9 18 15 12 9 6"/></svg>
           </div>
         </div>
@@ -3251,7 +3240,7 @@ const OTHER_AVATAR_SVG = `<svg width="14" height="14" viewBox="0 0 24 24" fill="
 
 const APP_CONFIG = {
   name: '灵犀音乐',
-  version: '2.1.7',
+  version: '2.1.8',
   build: '2026.09.23',
   codename: 'Pure Sound'
 };
@@ -5563,7 +5552,7 @@ function updateDynamicAppVersion(ver) {
       ver = window.AndroidBridge.getAppVersion();
     } catch(e) {}
   }
-  if (!ver) ver = '2.1.7';
+  if (!ver) ver = '2.1.8';
   APP_CONFIG.version = ver;
   const descEl = document.getElementById('aboutAppVersionDesc');
   if (descEl) {
@@ -6000,7 +5989,7 @@ function updateFixedRadioCardUI() {
   const target = VINYL_ALBUMS[activeRadioIndex];
   if (!target) return;
   const isFav = (target.hasRose || target.id === 'alb_fav');
-  const titleText = isFav ? '红心 Radio ⇋' : (target.title + ' Radio ⇋');
+  const titleText = isFav ? '我喜欢' : (target.title || '全部歌曲');
   const titleEl = document.getElementById('dynamicCardTitle');
   if (titleEl) titleEl.textContent = titleText;
 
