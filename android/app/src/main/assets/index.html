@@ -337,14 +337,14 @@ html, body {
   user-select: none;
 }
 .discover-section-title {
-  font-size: 17px;
+  font-size: 14.5px;
   font-weight: 600;
   color: var(--ink-black);
-  letter-spacing: 0.3px;
+  letter-spacing: -0.2px;
 }
 .discover-section-play-btn {
-  width: 22px;
-  height: 22px;
+  width: 18px;
+  height: 18px;
   border-radius: 50%;
   background: var(--ink-black);
   color: #FFFFFF;
@@ -364,10 +364,10 @@ body.night .discover-section-play-btn {
   color: #1C1B19;
 }
 .discover-section-play-btn svg {
-  width: 9px;
-  height: 9px;
+  width: 8px;
+  height: 8px;
   fill: currentColor;
-  margin-left: 1.5px;
+  margin-left: 1px;
 }
 .discover-section-more {
   color: var(--ink-light);
@@ -385,7 +385,7 @@ body.night .discover-section-play-btn {
 /* 推荐双列横滑流容器（每列3首歌，横向滑动切至下一列，右侧露出一截诱导滑动） */
 .discover-columns-scroll {
   display: flex;
-  gap: 14px;
+  gap: 12px;
   overflow-x: auto;
   padding-bottom: 6px;
   -webkit-overflow-scrolling: touch;
@@ -393,9 +393,9 @@ body.night .discover-section-play-btn {
 }
 .discover-columns-scroll::-webkit-scrollbar { display: none; }
 .discover-column {
-  width: calc(82vw - 24px);
-  min-width: 250px;
-  max-width: 305px;
+  width: calc(78vw - 18px);
+  min-width: 240px;
+  max-width: 285px;
   flex-shrink: 0;
   scroll-snap-align: start;
   display: flex;
@@ -403,12 +403,12 @@ body.night .discover-section-play-btn {
   gap: 2px;
 }
 
-/* 推荐歌曲项（图2单曲行） */
+/* 推荐歌曲项（精巧素雅排版） */
 .discover-card-row {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 7px 0;
+  gap: 10px;
+  padding: 4.5px 0;
   cursor: pointer;
   transition: opacity 0.15s ease;
 }
@@ -416,9 +416,9 @@ body.night .discover-section-play-btn {
   opacity: 0.72;
 }
 .discover-card-cover-wrap {
-  width: 46px;
-  height: 60px;
-  border-radius: 7px;
+  width: 42px;
+  height: 54px;
+  border-radius: 6px;
   overflow: hidden;
   position: relative;
   flex-shrink: 0;
@@ -430,7 +430,7 @@ body.night .discover-section-play-btn {
   height: 100%;
   object-fit: cover;
   display: block;
-  border-radius: 7px;
+  border-radius: 6px;
 }
 .discover-card-info {
   flex: 1;
@@ -441,9 +441,10 @@ body.night .discover-section-play-btn {
   gap: 2px;
 }
 .discover-card-title {
-  font-size: 15px;
+  font-size: 13.5px;
   font-weight: 500;
   color: var(--ink-black);
+  line-height: 1.25;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -453,29 +454,35 @@ body.night .discover-section-play-btn {
   font-weight: 600;
 }
 .discover-card-artist {
-  font-size: 12.5px;
+  font-size: 11px;
   color: var(--ink-gray);
+  line-height: 1.2;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .discover-card-reason {
-  font-size: 11.5px;
+  font-size: 10px;
   color: var(--ink-light);
+  line-height: 1.2;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   margin-top: 1px;
 }
 .discover-card-fav {
-  width: 38px;
-  height: 38px;
+  width: 28px;
+  height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
   color: var(--ink-light);
   cursor: pointer;
   flex-shrink: 0;
+}
+.discover-card-fav svg {
+  width: 16px;
+  height: 16px;
 }
 .discover-card-fav.active {
   color: var(--brand-red);
@@ -501,8 +508,8 @@ body.night .discover-section-play-btn {
 .fixed-radio-card {
   position: absolute; top: 0; left: 0; z-index: 10;
   width: 118px; height: 122px; border-radius: 16px;
-  background: rgba(255, 255, 255, 0.94);
-  backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+  background: rgba(255, 255, 255, 0.40);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
   border: none !important;
   padding: 11px 11px;
   display: flex; flex-direction: column; justify-content: space-between; cursor: pointer;
@@ -510,7 +517,7 @@ body.night .discover-section-play-btn {
   position: relative; overflow: hidden;
 }
 body.night .fixed-radio-card {
-  background: rgba(28, 28, 26, 0.92);
+  background: rgba(28, 28, 26, 0.45);
   border: none !important;
   box-shadow: none !important;
 }
@@ -518,18 +525,18 @@ body.night .fixed-radio-card {
 /* 底层柔和流动的云雾色彩层，播放时缓缓流转 */
 .fixed-radio-card::before {
   content: ''; position: absolute;
-  left: -20%; right: -20%; bottom: -30%; height: 95px;
-  background: radial-gradient(circle at 30% 70%, var(--card-glow-1, rgba(168, 218, 220, 0.65)) 0%, transparent 60%),
-              radial-gradient(circle at 75% 75%, var(--card-glow-2, rgba(230, 204, 178, 0.55)) 0%, transparent 58%),
-              radial-gradient(circle at 50% 90%, var(--card-glow-3, rgba(200, 214, 229, 0.50)) 0%, transparent 55%);
-  filter: blur(12px);
+  left: -20%; right: -20%; bottom: -25%; height: 90px;
+  background: radial-gradient(circle at 35% 70%, var(--card-glow-1, rgba(80, 185, 220, 0.85)) 0%, transparent 62%),
+              radial-gradient(circle at 75% 75%, var(--card-glow-2, rgba(245, 175, 130, 0.75)) 0%, transparent 60%),
+              radial-gradient(circle at 50% 90%, var(--card-glow-3, rgba(160, 210, 250, 0.70)) 0%, transparent 56%);
+  filter: blur(14px);
   pointer-events: none; z-index: 0;
-  opacity: 0.88;
+  opacity: 0.92;
   transform-origin: 50% 80%;
-  transition: opacity 0.5s ease;
+  animation: cloudColorFlow 14s ease-in-out infinite alternate;
 }
 .fixed-radio-card.playing::before {
-  animation: cloudColorFlow 12s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite alternate;
+  animation: cloudColorFlow 6s ease-in-out infinite alternate;
 }
 
 @keyframes cloudColorFlow {
@@ -538,12 +545,12 @@ body.night .fixed-radio-card {
     filter: blur(12px) hue-rotate(0deg);
   }
   33% {
-    transform: scale(1.12) translate(8%, -6%) rotate(7deg);
-    filter: blur(14px) hue-rotate(22deg);
+    transform: scale(1.18) translate(14%, -10%) rotate(16deg);
+    filter: blur(15px) hue-rotate(45deg);
   }
   66% {
-    transform: scale(1.05) translate(-8%, 5%) rotate(-6deg);
-    filter: blur(13px) hue-rotate(-16deg);
+    transform: scale(1.08) translate(-12%, 10%) rotate(-14deg);
+    filter: blur(14px) hue-rotate(-35deg);
   }
   100% {
     transform: scale(1) translate(0%, 0%) rotate(0deg);
@@ -551,27 +558,7 @@ body.night .fixed-radio-card {
   }
 }
 
-/* 顶部白色清透遮罩：保证卡片上半部分纯净素白，文字高清晰，下方才透出柔和云雾色彩 */
-.fixed-radio-card::after {
-  content: ''; position: absolute; inset: 0;
-  background: linear-gradient(to bottom, 
-    rgba(255, 255, 255, 0.98) 0%, 
-    rgba(255, 255, 255, 0.92) 36%, 
-    rgba(255, 255, 255, 0.45) 70%, 
-    rgba(255, 255, 255, 0.08) 100%
-  );
-  pointer-events: none; z-index: 1;
-}
-body.night .fixed-radio-card::after {
-  background: linear-gradient(to bottom, 
-    rgba(28, 28, 26, 0.96) 0%, 
-    rgba(28, 28, 26, 0.90) 36%, 
-    rgba(28, 28, 26, 0.45) 70%, 
-    rgba(28, 28, 26, 0.08) 100%
-  );
-}
-
-.fixed-radio-card > * { position: relative; z-index: 2; }
+.fixed-radio-card > * { position: relative; z-index: 1; }
 
 .radio-card-header {
   display: flex; align-items: center; gap: 5px;
@@ -2248,7 +2235,7 @@ body.in-pip-mode .view-player-full {
                   </svg>
                   <span id="dynamicCardTitle">全部歌曲</span>
                 </div>
-                <div class="radio-card-sub" id="dynamicCardSub">灵犀漫步 · 遇见知音</div>
+                <div class="radio-card-sub" id="dynamicCardSub">灵犀漫步 - 遇见知音</div>
               </div>
               <div class="radio-card-bottom">
                 <div class="radio-live-bars">
@@ -2328,7 +2315,7 @@ body.in-pip-mode .view-player-full {
           <div class="settings-item-row" onclick="openThemeSettingsSubpage()">
             <div class="settings-item-col">
               <span class="settings-title-line">外观与个性化</span>
-              <span class="settings-sub-desc" id="themeSettingsSummary">跟随系统 · 克莱因蓝</span>
+              <span class="settings-sub-desc" id="themeSettingsSummary">跟随系统 - 克莱因蓝</span>
             </div>
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" style="color:var(--ink-light);"><polyline points="9 18 15 12 9 6"/></svg>
           </div>
@@ -2351,7 +2338,7 @@ body.in-pip-mode .view-player-full {
         <span class="settings-group-header">乐库与存储</span>
         <div class="group-menu-card">
           <div class="settings-item-row" onclick="openQualityModal()">
-            <div class="settings-item-col"><span class="settings-title-line">播放音质</span><span class="settings-sub-desc" id="currentQualityDesc">极高音质 · 320 kbps (高清)</span></div>
+            <div class="settings-item-col"><span class="settings-title-line">播放音质</span><span class="settings-sub-desc" id="currentQualityDesc">极高音质 - 320 kbps (高清)</span></div>
           </div>
           <div class="group-menu-divider"></div>
           <div class="settings-item-row" onclick="triggerFileImport()">
@@ -2367,7 +2354,7 @@ body.in-pip-mode .view-player-full {
           </div>
           <div class="group-menu-divider"></div>
           <div class="settings-item-row" onclick="clearCachedMedia()">
-            <div class="settings-item-col"><span class="settings-title-line">清理播放缓存</span><span class="settings-sub-desc" id="cacheStorageDesc">释放临时存储 · 当前 0.0 MB</span></div>
+            <div class="settings-item-col"><span class="settings-title-line">清理播放缓存</span><span class="settings-sub-desc" id="cacheStorageDesc">释放临时存储 - 当前 0.0 MB</span></div>
           </div>
         </div>
         <span class="settings-group-header">帮助与指引</span>
@@ -2380,7 +2367,7 @@ body.in-pip-mode .view-player-full {
         <span class="settings-group-header">关于与更新</span>
         <div class="group-menu-card">
           <div class="settings-item-row" onclick="checkAppUpdate(true)">
-            <div class="settings-item-col"><span class="settings-title-line">检查版本更新</span><span class="settings-sub-desc" id="aboutAppVersionDesc">自用无损音乐播放器 · v2.1.8</span></div>
+            <div class="settings-item-col"><span class="settings-title-line">检查版本更新</span><span class="settings-sub-desc" id="aboutAppVersionDesc">自用无损音乐播放器 - v2.1.8</span></div>
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" style="color:var(--ink-light); margin-left:auto;"><polyline points="9 18 15 12 9 6"/></svg>
           </div>
         </div>
@@ -3376,7 +3363,7 @@ const DEFAULT_VINYL_ALBUMS = [
     id: 'alb_fav',
     title: "我喜欢",
     author: "我",
-    sub: "心选好歌 · 点击进入",
+    sub: "心选好歌 - 点击进入",
     hasRose: true,
     songs: []
   },
@@ -3384,7 +3371,7 @@ const DEFAULT_VINYL_ALBUMS = [
     id: 'alb_local',
     title: "本地歌曲",
     author: "本地音乐",
-    sub: "离线曲库 · 随心畅听",
+    sub: "离线曲库 - 随心畅听",
     hasRose: false,
     songs: []
   }
@@ -3427,8 +3414,8 @@ function loadPersistedData() {
         if (alb.songs) alb.songs = alb.songs.filter(s => !obsoleteIds.has(s.id));
         // 清理古风作者名字并升级歌单名
         if (alb.id === 'alb_all') { alb.author = '灵犀音乐'; alb.sub = '包含所有听过的歌'; }
-        if (alb.id === 'alb_fav') { alb.title = '我喜欢'; alb.author = '我'; alb.sub = '心选好歌 · 点击进入'; alb.hasRose = true; }
-        if (alb.id === 'alb_local') { alb.author = '本地音乐'; alb.sub = '离线曲库 · 随心畅听'; }
+        if (alb.id === 'alb_fav') { alb.title = '我喜欢'; alb.author = '我'; alb.sub = '心选好歌 - 点击进入'; alb.hasRose = true; }
+        if (alb.id === 'alb_local') { alb.author = '本地音乐'; alb.sub = '离线曲库 - 随心畅听'; }
         if (alb.desc && alb.id !== 'alb_all' && alb.id !== 'alb_fav' && alb.id !== 'alb_local') {
           alb.sub = alb.desc;
         }
@@ -3493,7 +3480,7 @@ function persistData() {
 loadPersistedData();
 
 let LYRICS_DATA = [
-  { time: 0, duration: 5, text: "空谷幽兰 · 系统演示" },
+  { time: 0, duration: 5, text: "空谷幽兰 - 系统演示" },
   { time: 5, duration: 13, text: "谁家的枝头鸟儿成双对" },
   { time: 18, duration: 14, text: "蝴蝶翩翩飞" },
   { time: 32, duration: 18, text: "晨光渐照，微风拂过" },
@@ -4751,7 +4738,7 @@ function renderSearchResults() {
           ${escapeHtml(song.name)}
           <span class="search-result-meta-tag ${song.isLocal ? 'local-tag' : ''}">${song.isLocal ? '本地' : '超清'}</span>
         </div>
-        <div class="song-artist">${escapeHtml(song.artist)}${song.album ? ' · ' + escapeHtml(song.album) : ''}</div>
+        <div class="song-artist">${escapeHtml(song.artist)}${song.album ? ' - ' + escapeHtml(song.album) : ''}</div>
       </div>
       <div class="song-actions-cluster">
         <div class="more-dots-btn" onclick="openSearchResultMenu(event, ${idx})" title="更多选项">
@@ -5145,9 +5132,9 @@ function switchHomeNavTab(tab) {
 
 const INITIAL_DISCOVER_SECTIONS = [
   {
-    title: '灵犀新推 · 今日佳作',
+    title: '灵犀新推 - 今日佳作',
     songs: [
-      { id: 'init_1', name: '愿我', artist: '伦桑', album: '愿我', source: 'netease', duration: 252, url_id: '1815967406', pic_id: '109951165671182684', reason: '伦桑 推荐 - 浅雪点点 推荐 · 很好听，一听就喜欢的歌' },
+      { id: 'init_1', name: '愿我', artist: '伦桑', album: '愿我', source: 'netease', duration: 252, url_id: '1815967406', pic_id: '109951165671182684', reason: '伦桑 推荐 - 浅雪点点 推荐 - 很好听，一听就喜欢的歌' },
       { id: 'init_2', name: '断桥残雪', artist: '许嵩', album: '断桥残雪', source: 'netease', duration: 226, url_id: '167827', pic_id: '109951165671182684', reason: '直视 推荐 - 经典永流传' },
       { id: 'init_3', name: '云与海', artist: '胡夏', album: '云与海', source: 'netease', duration: 241, url_id: '1492323898', pic_id: '109951165671182684', reason: 'Spring 推荐 - 昨天考的数学试卷发下来了，早上...' },
       { id: 'init_4', name: '山有木兮', artist: '伦桑', album: '橙光《人鱼传说》', source: 'netease', duration: 260, url_id: '426804563', pic_id: '109951165671182684', reason: '古风雅韵 - 山有木兮木有枝，温润抚慰人心' },
@@ -5309,7 +5296,7 @@ async function refreshRecommendations(showToast = false) {
 
     currentDiscoverSections = [
       {
-        title: `灵犀新推 · ${nowMonthDay}佳作`,
+        title: `灵犀新推 - ${nowMonthDay}佳作`,
         songs: sec1Songs.length >= 6 ? sec1Songs : (sec1Songs.concat(INITIAL_DISCOVER_SECTIONS[0].songs)).slice(0, 6)
       },
       {
@@ -5434,8 +5421,8 @@ function renderDiscoverPane() {
                         </div>
                         <div class="discover-card-info">
                           <div class="discover-card-title">${escapeHtml(song.name)}</div>
-                          <div class="discover-card-artist">${escapeHtml(song.artist)}${song.album ? ' · ' + escapeHtml(song.album) : ''}</div>
-                          <div class="discover-card-reason">${escapeHtml(song.reason || '灵犀精选 · 值得一听')}</div>
+                          <div class="discover-card-artist">${escapeHtml(song.artist)}${song.album ? ' - ' + escapeHtml(song.album) : ''}</div>
+                          <div class="discover-card-reason">${escapeHtml(song.reason || '灵犀精选 - 值得一听')}</div>
                         </div>
                         <div class="discover-card-fav ${isFav ? 'active' : ''}" onclick="event.stopPropagation(); toggleDiscoverSongFav(${globalIdx})" title="收藏">
                           <svg viewBox="0 0 24 24" width="20" height="20" fill="${isFav ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="1.4">
@@ -5641,12 +5628,12 @@ function openDiscoverSongMenu(e, idx) {
 const API_CHANNELS = {
   injahow: {
     title: 'Injahow 镜像 (高可用)',
-    desc: '推荐 · 实时鉴权 302 直链',
+    desc: '推荐 - 实时鉴权 302 直链',
     url: 'https://api.injahow.cn/meting/'
   },
   gdstudio: {
     title: 'GDStudio 聚合',
-    desc: '备用 · 多音源聚合解析通道',
+    desc: '备用 - 多音源聚合解析通道',
     url: 'https://music-api.gdstudio.xyz/api.php'
   },
   custom: {
@@ -5766,7 +5753,7 @@ function updateApiDescText() {
     } else if (currentApiBase === DEFAULT_API_BASE || currentApiBase.includes('gdstudio')) {
       descEl.textContent = 'GDStudio 聚合解析通道';
     } else {
-      descEl.textContent = '私有接口 · ' + currentApiBase.replace(/^https?:\/\//, '').slice(0, 18) + '...';
+      descEl.textContent = '私有接口 - ' + currentApiBase.replace(/^https?:\/\//, '').slice(0, 18) + '...';
     }
   }
 }
@@ -5782,7 +5769,7 @@ function updateDynamicAppVersion(ver) {
   APP_CONFIG.version = ver;
   const descEl = document.getElementById('aboutAppVersionDesc');
   if (descEl) {
-    descEl.textContent = '自用无损音乐播放器 · v' + ver;
+    descEl.textContent = '自用无损音乐播放器 - v' + ver;
   }
 }
 window.updateDynamicAppVersion = updateDynamicAppVersion;
@@ -5817,7 +5804,7 @@ function updateAudioFocusUI() {
   if (desc) {
     desc.textContent = isAudioFocusEnabled
       ? '通话或微信发语音时自动暂停，结束后自动继续播放'
-      : '已关闭 · 其他应用发声或通话时不自动打断音乐';
+      : '已关闭 - 其他应用发声或通话时不自动打断音乐';
   }
 }
 
@@ -5857,7 +5844,7 @@ async function updateCacheStorageDisplay() {
   } else if (totalBytes > 0) {
     sizeStr = Math.max(1, Math.round(totalBytes / 1024)) + ' KB';
   }
-  descEl.textContent = `释放临时存储 · 当前占用 ${sizeStr}`;
+  descEl.textContent = `释放临时存储 - 当前占用 ${sizeStr}`;
 }
 
 async function clearCachedMedia() {
@@ -5907,7 +5894,7 @@ async function clearCachedMedia() {
 
   // 6. 动态更新设置描述文案
   const descEl = document.getElementById('cacheStorageDesc');
-  if (descEl) descEl.textContent = '释放临时存储 · 当前占用 0 KB';
+  if (descEl) descEl.textContent = '释放临时存储 - 当前占用 0 KB';
 
   if (freedStr && freedBytes > 1024) {
     toast(`已清理临时媒体与歌词缓存，释放 ${freedStr}`);
@@ -6227,7 +6214,7 @@ function updateFixedRadioCardUI() {
     } else if (target.songs && target.songs.length > 0) {
       subEl.textContent = `${target.songs[0].title} - ${target.songs[0].artist}`;
     } else {
-      subEl.textContent = target.desc || target.sub || '灵犀漫步 · 遇见知音';
+      subEl.textContent = target.desc || target.sub || '灵犀漫步 - 遇见知音';
     }
   }
 
@@ -6252,9 +6239,9 @@ function extractCardGlowColor(imgUrl) {
   const card = document.querySelector('.fixed-radio-card');
   if (!card) return;
   const setDefaultGlow = () => {
-    card.style.setProperty('--card-glow-1', 'rgba(168, 218, 220, 0.65)');
-    card.style.setProperty('--card-glow-2', 'rgba(230, 204, 178, 0.55)');
-    card.style.setProperty('--card-glow-3', 'rgba(200, 214, 229, 0.50)');
+    card.style.setProperty('--card-glow-1', 'rgba(75, 180, 220, 0.85)');
+    card.style.setProperty('--card-glow-2', 'rgba(245, 165, 125, 0.78)');
+    card.style.setProperty('--card-glow-3', 'rgba(145, 205, 250, 0.72)');
   };
 
   if (!imgUrl) {
@@ -6296,14 +6283,14 @@ function extractCardGlowColor(imgUrl) {
 
       // 保持清透雅致的浅云色温
       const hue1 = h;
-      const hue2 = (h + 35) % 360;
-      const hue3 = (h + 315) % 360;
-      const sat = Math.max(45, Math.min(70, Math.round(s * 100)));
-      const light = 76; // 76% 高明度，明亮清丽，与白色自然融为一体
+      const hue2 = (h + 38) % 360;
+      const hue3 = (h + 312) % 360;
+      const sat = Math.max(65, Math.min(90, Math.round(s * 100) || 75));
+      const light = 66; // 66% 饱满通透明亮，流转流动感极强
 
-      card.style.setProperty('--card-glow-1', `hsla(${hue1}, ${sat}%, ${light}%, 0.65)`);
-      card.style.setProperty('--card-glow-2', `hsla(${hue2}, ${Math.max(40, sat - 10)}%, ${light + 4}%, 0.55)`);
-      card.style.setProperty('--card-glow-3', `hsla(${hue3}, ${sat}%, ${light + 2}%, 0.50)`);
+      card.style.setProperty('--card-glow-1', `hsla(${hue1}, ${sat}%, ${light}%, 0.88)`);
+      card.style.setProperty('--card-glow-2', `hsla(${hue2}, ${sat}%, ${light + 4}%, 0.78)`);
+      card.style.setProperty('--card-glow-3', `hsla(${hue3}, ${sat}%, ${light - 2}%, 0.72)`);
     } catch(e) {
       setDefaultGlow();
     }
@@ -6861,7 +6848,7 @@ function updateSettingsSummary() {
   const modeText = textMap[currentThemeMode] || '跟随系统';
   const cInfo = PRESET_THEME_COLORS.find(c => c.id === currentThemeColorId) || PRESET_THEME_COLORS[0];
   const sumEl = document.getElementById('themeSettingsSummary');
-  if (sumEl) sumEl.textContent = `${modeText} · ${cInfo.name}`;
+  if (sumEl) sumEl.textContent = `${modeText} - ${cInfo.name}`;
 
   const fontDisp = document.getElementById('main-font-display');
   if (fontDisp) fontDisp.textContent = (currentAppFont === 'system' ? '系统自带' : '霞鹜文楷');
@@ -7009,7 +6996,7 @@ function openExportPlaylistModal(title, textContent, count) {
   const titleEl = document.getElementById('exportModalTitle');
   const descEl = document.getElementById('exportModalDesc');
   const areaEl = document.getElementById('exportPlaylistTextArea');
-  if (titleEl) titleEl.textContent = '导出歌单 · ' + title;
+  if (titleEl) titleEl.textContent = '导出歌单 - ' + title;
   if (descEl) descEl.textContent = '共 ' + count + ' 首歌曲，已复制到剪贴板，可直接粘贴分享。';
   if (areaEl) areaEl.value = textContent;
   if (modal) modal.classList.add('active');
@@ -7259,7 +7246,7 @@ function saveEditedPlaylist() {
   alb.title = title;
   alb.desc = desc;
   // 将简介同步为副标题（在听歌页卡片中替换原本硬编码的“自建私享”）
-  alb.sub = desc || (alb.id === 'alb_fav' ? '心选好歌 · 点击进入' : (alb.id === 'alb_local' ? '离线曲库 · 随心畅听' : (alb.id === 'alb_all' ? '包含所有听过的歌' : '自建私享 · 触碰进入')));
+  alb.sub = desc || (alb.id === 'alb_fav' ? '心选好歌 - 点击进入' : (alb.id === 'alb_local' ? '离线曲库 - 随心畅听' : (alb.id === 'alb_all' ? '包含所有听过的歌' : '自建私享 - 触碰进入')));
   if (tempEditCoverUrl) {
     alb.customCover = tempEditCoverUrl;
   }
@@ -7322,7 +7309,7 @@ function openCreatePlaylistPrompt() {
       id: 'alb_custom_' + Date.now(),
       title: trimmedName,
       author: '我',
-      sub: '自建私享 · 触碰进入',
+      sub: '自建私享 - 触碰进入',
       hasRose: false,
       songs: []
     };
@@ -8279,7 +8266,7 @@ function openChooseRingtoneModal(song) {
   const modal = document.getElementById('chooseRingtoneModal');
   const titleEl = document.getElementById('chooseRingtoneSongTitle');
   if (titleEl && song) {
-    titleEl.textContent = `设为系统铃声 · 《${song.title}》`;
+    titleEl.textContent = `设为系统铃声 - 《${song.title}》`;
   }
   if (modal) modal.classList.add('active');
 }
@@ -8558,7 +8545,7 @@ function executeTextPlaylistImport() {
     id: 'alb_import_' + Date.now(),
     title: playlistName,
     author: '酷狗/外部导入',
-    sub: `${songs.length} 首好歌 · 点击进入`,
+    sub: `${songs.length} 首好歌 - 点击进入`,
     hasRose: false,
     songs: songs
   };
@@ -8832,7 +8819,7 @@ function updateDesktopLyricsUI() {
     toggle.classList.toggle('active', !!active);
   }
   if (desc) {
-    desc.textContent = active ? '桌面悬浮歌词运行中 · 点击可关闭' : '在手机桌面与应用上方浮窗显示歌词，支持滑动切词与拖拽';
+    desc.textContent = active ? '桌面悬浮歌词运行中 - 点击可关闭' : '在手机桌面与应用上方浮窗显示歌词，支持滑动切词与拖拽';
   }
 }
 
@@ -8866,11 +8853,11 @@ window.onDesktopLyricsStateChanged = function(active) {
 
 function syncCurrentLyricToDesktop() {
   if (window.AndroidBridge && window.AndroidBridge.updateDesktopLyric) {
-    let curTxt = '灵犀音乐 · 随心听';
+    let curTxt = '灵犀音乐 - 随心听';
     let nextTxt = '';
     const curSong = currentPlaybackQueue[currentIndex];
     if (curSong) {
-      curTxt = `${curSong.title} · ${curSong.artist}`;
+      curTxt = `${curSong.title} - ${curSong.artist}`;
     }
     if (LYRICS_DATA && LYRICS_DATA.length > 0) {
       const rawTime = isNativeAudioSupported
@@ -9153,7 +9140,7 @@ function updatePipCanvas() {
   pipCtx.font = '20px sans-serif';
   pipCtx.textAlign = 'center';
   pipCtx.textBaseline = 'middle';
-  pipCtx.fillText(`${curSong.title} · ${curSong.artist}`, pipCanvas.width / 2, 55);
+  pipCtx.fillText(`${curSong.title} - ${curSong.artist}`, pipCanvas.width / 2, 55);
 
   pipCtx.fillStyle = '#FFFFFF';
   pipCtx.font = 'bold 30px sans-serif';
@@ -9804,7 +9791,7 @@ function openCreatePlaylistFromChoose() {
       id: 'alb_custom_' + Date.now(),
       title: trimmedName,
       author: '我',
-      sub: '自建私享 · 触碰进入',
+      sub: '自建私享 - 触碰进入',
       hasRose: false,
       songs: []
     };
@@ -9958,7 +9945,7 @@ function selectQuality(q, rowEl) {
 function updateQualityDescText() {
   const el = document.getElementById('currentQualityDesc');
   if (el) {
-    el.textContent = currentAudioQuality === '320' ? '极高音质 · 320 kbps (高清)' : '标准音质 · 128 kbps (流畅)';
+    el.textContent = currentAudioQuality === '320' ? '极高音质 - 320 kbps (高清)' : '标准音质 - 128 kbps (流畅)';
   }
 }
 
@@ -10148,7 +10135,7 @@ function updateSleepTimerUI() {
     const m = Math.floor(remainingSec / 60);
     const s = remainingSec % 60;
     const timeStr = `${m}:${String(s).padStart(2, '0')}`;
-    if (descEl) descEl.textContent = `倒计时 ${timeStr} · 停止播放`;
+    if (descEl) descEl.textContent = `倒计时 ${timeStr} - 停止播放`;
     if (badgeEl) {
       badgeEl.textContent = `${m + 1}m`;
       badgeEl.style.display = 'block';
