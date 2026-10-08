@@ -610,12 +610,11 @@ body.night .radio-play-btn-circle { background: #E8E7E3; color: #171715; }
 .vinyl-scroll-channel {
   position: absolute; top: 0; left: 0; right: -16px; bottom: 0;
   display: flex; align-items: center;
-  overflow-x: auto !important;
+  overflow-x: hidden !important;
   overflow-y: hidden !important;
   padding-right: 240px; z-index: 2;
   clip-path: inset(-10px -40px -10px 1px);
-  touch-action: pan-x pan-y !important;
-  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y !important;
   scrollbar-width: none;
 }
 .vinyl-scroll-channel::-webkit-scrollbar { display: none; }
@@ -3014,22 +3013,18 @@ body.night .create-playlist-drag-handle {
 }
 
 .create-playlist-sheet-header {
-  padding: 12px 4px 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+  display: grid;
+  grid-template-columns: 32px 1fr 32px;
+  align-items: center;
+  padding: 12px 0 16px;
+  width: 100%;
 }
 .create-playlist-sheet-title {
-  font-size: 17px;
+  font-size: 16.5px;
   font-weight: 600;
   color: var(--ink-black);
-}
-.create-playlist-sheet-desc {
-  font-size: 13px;
-  color: var(--ink-light);
-}
-body.night .create-playlist-sheet-desc {
-  color: var(--ink-gray);
+  text-align: center;
+  letter-spacing: -0.2px;
 }
 
 .create-playlist-input {
@@ -3059,41 +3054,32 @@ body.night .create-playlist-input {
 .create-playlist-sheet-actions {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-top: 18px;
+  width: 100%;
+  margin-top: 20px;
 }
-.create-playlist-sheet-btn {
-  flex: 1;
-  height: 46px;
+.create-playlist-sheet-confirm {
+  width: 100%;
+  height: 48px;
   border-radius: 12px;
-  font-size: 15px;
-  font-weight: 500;
+  font-size: 15.5px;
+  font-weight: 600;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   border: none;
   outline: none !important;
-  transition: opacity 0.16s ease, transform 0.12s ease;
-}
-.create-playlist-sheet-btn:active {
-  transform: scale(0.97);
-}
-.create-playlist-sheet-cancel {
-  background: rgba(24, 26, 28, 0.06);
-  color: var(--ink-dark);
-}
-body.night .create-playlist-sheet-cancel {
-  background: rgba(255, 255, 255, 0.08);
-  color: var(--ink-black);
-}
-.create-playlist-sheet-confirm {
   background: var(--dark-cold-btn, #2E3034);
   color: #FFFFFF;
+  transition: opacity 0.16s ease, transform 0.12s ease;
 }
 body.night .create-playlist-sheet-confirm {
   background: var(--dark-cold-btn, #FAF9F5);
   color: #141413;
+}
+.create-playlist-sheet-confirm:active {
+  transform: scale(0.98);
+  opacity: 0.9;
 }
 
 /* ================== 发现页上滑刷新好歌底栏 ================== */
@@ -3442,7 +3428,7 @@ body.night .create-playlist-sheet-confirm {
               </div>
               <div class="item-content">
                 <span class="item-main-title">检查版本更新</span>
-                <span class="item-subtitle-tight" id="aboutAppVersionDesc">v2.4.3</span>
+                <span class="item-subtitle-tight" id="aboutAppVersionDesc">v2.4.4</span>
               </div>
             </div>
             <svg class="item-arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
@@ -4478,15 +4464,17 @@ body.night .create-playlist-sheet-confirm {
     <div class="create-playlist-sheet-card" onclick="event.stopPropagation()">
       <div class="create-playlist-drag-handle"></div>
       <div class="create-playlist-sheet-header">
+        <button class="choose-sheet-close-btn" onclick="closeCreatePlaylistModal()" title="关闭">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
         <div class="create-playlist-sheet-title">新建歌单</div>
-        <div class="create-playlist-sheet-desc">输入歌单标题，定制专属私享曲库</div>
+        <div style="width: 32px;"></div>
       </div>
       <div class="create-playlist-input-wrap">
         <input type="text" class="create-playlist-input" id="createPlaylistInput" placeholder="输入歌单名称..." maxlength="24" onkeydown="if(event.key==='Enter')submitCreatePlaylistModal()">
       </div>
       <div class="create-playlist-sheet-actions">
-        <button type="button" class="create-playlist-sheet-btn create-playlist-sheet-cancel ripple-btn" onclick="closeCreatePlaylistModal()">取消</button>
-        <button type="button" class="create-playlist-sheet-btn create-playlist-sheet-confirm ripple-btn" onclick="submitCreatePlaylistModal()">确定</button>
+        <button type="button" class="create-playlist-sheet-confirm ripple-btn" onclick="submitCreatePlaylistModal()">确定</button>
       </div>
     </div>
   </div>
@@ -4514,7 +4502,7 @@ const OTHER_AVATAR_SVG = `<svg width="14" height="14" viewBox="0 0 24 24" fill="
 
 const APP_CONFIG = {
   name: '灵犀音乐',
-  version: '2.4.3',
+  version: '2.4.4',
   build: '2026.10.09',
   codename: 'Pure Sound'
 };
@@ -12769,10 +12757,67 @@ window.addEventListener('load', () => {
   if (typeof updateDefaultHomeTabUI === 'function') updateDefaultHomeTabUI();
   setTimeout(() => checkAppUpdate(false), 1500);
 });
+/* ================== 顶部唱片滑动切歌 (全区域左右滑动手势直接切换上下曲) ================== */
+(function initVinylSwipeGesture() {
+  function bindGesture() {
+    const stage = document.querySelector('.radio-stage-viewport');
+    if (!stage) return;
 
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let touchDeltaX = 0;
+    let touchDeltaY = 0;
+    let isSwiping = false;
 
+    stage.addEventListener('touchstart', (e) => {
+      if (e.touches && e.touches.length === 1) {
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+        touchDeltaX = 0;
+        touchDeltaY = 0;
+        isSwiping = true;
+      }
+    }, { passive: true });
 
+    stage.addEventListener('touchmove', (e) => {
+      if (!isSwiping || !e.touches || e.touches.length !== 1) return;
+      touchDeltaX = e.touches[0].clientX - touchStartX;
+      touchDeltaY = e.touches[0].clientY - touchStartY;
+    }, { passive: true });
 
+    const handleSwipeEnd = () => {
+      if (!isSwiping) return;
+      isSwiping = false;
+
+      const absX = Math.abs(touchDeltaX);
+      const absY = Math.abs(touchDeltaY);
+
+      if (absX > 25 && absX > absY * 0.6) {
+        const total = topRecommendedTracks ? topRecommendedTracks.length : 0;
+        if (total > 1) {
+          if (touchDeltaX < 0) {
+            // 左滑 -> 下一曲
+            const nextIdx = (activeTopTrackIndex + 1) % total;
+            playTopRecommendedTrack(nextIdx, false);
+          } else {
+            // 右滑 -> 上一曲
+            const prevIdx = (activeTopTrackIndex - 1 + total) % total;
+            playTopRecommendedTrack(prevIdx, false);
+          }
+        }
+      }
+    };
+
+    stage.addEventListener('touchend', handleSwipeEnd, { passive: true });
+    stage.addEventListener('touchcancel', handleSwipeEnd, { passive: true });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', bindGesture);
+  } else {
+    bindGesture();
+  }
+})();
 /* ================== 发现页真实弹性下拉刷新交互 (100% 灵敏稳定零概率失效) ================== */
 (function initDiscoverPulldownRefresh() {
   function bindPulldown() {
