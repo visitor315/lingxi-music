@@ -5141,15 +5141,21 @@ function switchHomeNavTab(tab) {
 function formatCleanTitle(title) {
   if (!title) return '';
   return String(title)
-    .replace(/\s*[\(\[（【](?:Live|现场|伴奏|Inst|Instrumental|Remix|重制版|重置版|重录版|新版|原声|纯享版|纯音乐|DJ版|高品质|正式版|20\d\d|19\d\d).*?[\)\]）】]/gi, '')
+    .replace(/\s*[\(\[（【](?:Live|现场|伴奏|Inst|Instrumental|Remix|Cover|翻唱|改编|重制版|重置版|重录版|新版|原声|纯享版|纯音乐|DJ版|高品质|正式版|片段|超清|无损|精选|完整版|20\d\d|19\d\d).*?[\)\]）】]/gi, '')
+    .replace(/\s*[-_—]\s*(?:电视剧|电影|网剧|橙光|游戏|动漫|动画|主题曲|片尾曲|插曲|推广曲|原声|官方版).*?$/gi, '')
+    .replace(/\s*[-_—]\s*《.*?》.*?$/gi, '')
+    .replace(/\s*[\(\[（【].*?[\)\]）】]$/gi, '')
     .trim();
 }
 
 function formatCleanArtist(artist) {
   if (!artist) return '未知歌手';
-  return String(artist)
-    .replace(/\s*[\(\[（【].*?[\)\]）】]/g, '')
-    .trim() || '未知歌手';
+  let str = String(artist).replace(/\s*[\(\[（【].*?[\)\]）】]/g, '').trim();
+  const parts = str.split(/[\/,、&]/).map(p => p.trim()).filter(Boolean);
+  if (parts.length > 2) {
+    return parts.slice(0, 2).join(' / ');
+  }
+  return str || '未知歌手';
 }
 
 let topRecommendedTracks = [];
