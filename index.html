@@ -2037,9 +2037,9 @@ body.night .add-sheet-drag-handle, body.night .choose-drag-handle {
 .playlist-items .song-row {
   display: flex !important;
   align-items: center !important;
-  gap: 10px !important;
-  padding: 8px 18px !important;
-  min-height: 44px !important;
+  gap: 12px !important;
+  padding: 11px 20px !important;
+  min-height: 52px !important;
   border-radius: 0 !important;
   margin: 0 !important;
   cursor: pointer !important;
@@ -2059,23 +2059,23 @@ body.night .add-sheet-drag-handle, body.night .choose-drag-handle {
 .playlist-items .song-row .song-info {
   display: flex !important;
   flex-direction: column !important;
-  gap: 2px !important;
+  gap: 3px !important;
   flex: 1 !important;
   min-width: 0 !important;
 }
 .playlist-items .song-row .song-title {
-  font-size: 14px !important;
+  font-size: 15.5px !important;
   font-weight: 500 !important;
   color: var(--ink-black) !important;
-  line-height: 1.25 !important;
+  line-height: 1.3 !important;
   white-space: nowrap !important;
   overflow: hidden !important;
   text-overflow: ellipsis !important;
 }
 .playlist-items .song-row .song-artist {
-  font-size: 11.5px !important;
+  font-size: 12.5px !important;
   color: var(--ink-light) !important;
-  line-height: 1.2 !important;
+  line-height: 1.25 !important;
   white-space: nowrap !important;
   overflow: hidden !important;
   text-overflow: ellipsis !important;
@@ -3270,7 +3270,7 @@ body.night .voice-modal-btn.voice-modal-btn-primary {
               </div>
               <div class="item-content">
                 <span class="item-main-title">检查版本更新</span>
-                <span class="item-subtitle-tight" id="aboutAppVersionDesc">v2.3.7</span>
+                <span class="item-subtitle-tight" id="aboutAppVersionDesc">v2.3.8</span>
               </div>
             </div>
             <svg class="item-arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
@@ -4339,10 +4339,31 @@ const OTHER_AVATAR_SVG = `<svg width="14" height="14" viewBox="0 0 24 24" fill="
 
 const APP_CONFIG = {
   name: '灵犀音乐',
-  version: '2.3.7',
+  version: '2.3.8',
   build: '2026.10.09',
   codename: 'Pure Sound'
 };
+
+/* ================== 设置页主页面切换（发现 vs 乐库） ================== */
+let defaultHomeTab = localStorage.getItem('lingxi_default_tab') || 'discover';
+let currentHomeTab = defaultHomeTab;
+
+function updateDefaultHomeTabUI() {
+  const descEl = document.getElementById('defaultHomeTabDesc');
+  if (descEl) {
+    const curTab = localStorage.getItem('lingxi_default_tab') || 'discover';
+    descEl.textContent = curTab === 'library' ? '当前：乐库（我的曲库）' : '当前：发现（精选推荐）';
+  }
+}
+
+function toggleDefaultHomeTabSetting() {
+  let curTab = localStorage.getItem('lingxi_default_tab') || 'discover';
+  curTab = (curTab === 'discover') ? 'library' : 'discover';
+  localStorage.setItem('lingxi_default_tab', curTab);
+  defaultHomeTab = curTab;
+  updateDefaultHomeTabUI();
+  toast(curTab === 'library' ? '已设为启动默认进入「乐库」' : '已设为启动默认进入「发现」');
+}
 
 /* ================== 全局完整曲库源（核心：仅保留 1 首演示曲目，支持全网收录） ================== */
 const DEFAULT_LIBRARY_SONGS = [
@@ -4669,10 +4690,28 @@ function init() {
   calibrateSystemInsets();
   initNativeAudioEngine();
   initAudioEngine();
+
+  const defTab = localStorage.getItem('lingxi_default_tab') || 'discover';
+  defaultHomeTab = defTab;
+  currentHomeTab = defTab;
+  if (defTab === 'library') {
+    const tabNavLibrary = document.getElementById('tabNavLibrary');
+    const tabNavDiscover = document.getElementById('tabNavDiscover');
+    const paneListen = document.getElementById('paneListen');
+    const paneDiscover = document.getElementById('paneDiscover');
+    if (tabNavLibrary) tabNavLibrary.classList.add('active');
+    if (tabNavDiscover) tabNavDiscover.classList.remove('active');
+    if (paneListen) paneListen.style.display = 'block';
+    if (paneDiscover) paneDiscover.style.display = 'none';
+  }
+  updateDefaultHomeTabUI();
+
   renderVinylDiscs();
   renderSongList();
   renderLibraryAlbumPills();
-  renderDiscoverPane();
+  if (defTab === 'discover') {
+    renderDiscoverPane();
+  }
   setTimeout(() => {
     const initNeedPicSongs = currentDiscoverSongs.filter(s => !s.cover && (s.pic_id || s.url_id));
     if (initNeedPicSongs.length > 0) {
@@ -4836,7 +4875,7 @@ function renderDrawerList() {
   document.getElementById('drawerCountText').textContent = currentPlaybackQueue.length;
   c.innerHTML = currentPlaybackQueue.map((song, idx) => `
     <div class="song-row ${idx === currentIndex && isPlaying ? 'playing' : ''}" onclick="playSongAtQueue(${idx})">
-      <div style="width:24px; font-size:13px; color:var(--ink-light); text-align:center;">${idx + 1}</div>
+      <div style="width:24px; font-size:14px; font-weight:500; color:var(--ink-light); text-align:center;">${idx + 1}</div>
       <div class="song-info">
         <div class="song-title">${song.title}</div>
         <div class="song-artist">${song.artist}</div>
@@ -5986,7 +6025,14 @@ async function fetchLyricForSong(songId, songTitle, source = 'netease') {
   initLyricsList();
 }
 
+let currentAppliedCoverUrl = null;
+
 function applySongCoverToUI(coverUrl) {
+  if (useExtractedCover && coverUrl && coverUrl === currentAppliedCoverUrl) {
+    return;
+  }
+  currentAppliedCoverUrl = (useExtractedCover && coverUrl) ? coverUrl : '';
+
   const plate = document.getElementById('plate');
   const bottomDisc = document.getElementById('bottomDisc');
   const centerEl = document.querySelector('.turntable-center');
@@ -6022,10 +6068,14 @@ function applySongCoverToUI(coverUrl) {
   if (useExtractedCover && coverUrl) {
     const testImg = new Image();
     testImg.onload = function() {
-      renderCover(coverUrl);
+      if (currentAppliedCoverUrl === coverUrl) {
+        renderCover(coverUrl);
+      }
     };
     testImg.onerror = function() {
-      renderDefaultSvg();
+      if (currentAppliedCoverUrl === coverUrl) {
+        renderDefaultSvg();
+      }
     };
     testImg.src = coverUrl;
     if (testImg.complete && testImg.naturalWidth > 0) {
@@ -6038,6 +6088,7 @@ function applySongCoverToUI(coverUrl) {
 
 function toggleCoverDisplayMode() {
   useExtractedCover = !useExtractedCover;
+  currentAppliedCoverUrl = null;
   localStorage.setItem('yyrc_use_extracted_cover', useExtractedCover ? 'true' : 'false');
   updateCoverDisplayToggleUI();
   const curSong = currentPlaybackQueue[currentIndex];
@@ -6111,7 +6162,6 @@ function openSearchResultMenu(e, idx) {
 }
 
 /* ================== 灵犀推荐引擎与交互 ================== */
-let currentHomeTab = 'discover';
 let currentDiscoverSeeds = [];
 let isDiscoverLoading = false;
 
@@ -6488,7 +6538,7 @@ function renderDiscoverPane() {
                     const coverUrl = song.cover || song.pic || '';
 
                     return `
-                      <div class="discover-card-row ${isCurPlaying ? 'playing' : ''}" onclick="playDiscoverTrack(${globalIdx})">
+                      <div class="discover-card-row ${isCurPlaying ? 'playing' : ''}" data-song-id="${song.id}" onclick="playDiscoverTrack(${globalIdx})">
                         <div class="discover-card-cover-wrap">
                           ${coverUrl ? `
                             <img src="${coverUrl}" class="discover-card-cover" alt="cover" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
@@ -6521,6 +6571,35 @@ function renderDiscoverPane() {
       `).join('')}
     </div>
   `;
+}
+
+function updateDiscoverCardPlayingStates() {
+  const curPlayingSong = currentPlaybackQueue[currentIndex];
+  const rows = document.querySelectorAll('.discover-card-row');
+  rows.forEach(row => {
+    const sId = row.getAttribute('data-song-id');
+    const isThisPlaying = isPlaying && curPlayingSong && sId && (
+      curPlayingSong.id === 'online_' + sId ||
+      String(curPlayingSong.onlineId) === sId ||
+      String(curPlayingSong.id).replace('online_', '') === sId
+    );
+    row.classList.toggle('playing', !!isThisPlaying);
+    let bars = row.querySelector('.playing-bars');
+    if (isThisPlaying) {
+      if (!bars) {
+        const coverWrap = row.querySelector('.discover-card-cover-wrap');
+        if (coverWrap) {
+          bars = document.createElement('div');
+          bars.className = 'playing-bars';
+          bars.style.zIndex = '4';
+          bars.innerHTML = '<div class="bar"></div><div class="bar"></div><div class="bar"></div>';
+          coverWrap.appendChild(bars);
+        }
+      }
+    } else {
+      if (bars) bars.remove();
+    }
+  });
 }
 
 function playDiscoverSection(secIdx) {
@@ -7240,7 +7319,12 @@ function updateUI() {
   renderSongList();
   renderDrawerList();
   if (currentHomeTab === 'discover' && currentDiscoverSongs && currentDiscoverSongs.length > 0) {
-    renderDiscoverPane();
+    const dContainer = document.getElementById('discoverSectionsContainer');
+    if (!dContainer || !dContainer.children.length) {
+      renderDiscoverPane();
+    } else {
+      updateDiscoverCardPlayingStates();
+    }
   }
   const detailView = document.getElementById('viewPlaylistDetail');
   if (detailView && detailView.classList.contains('active')) {
@@ -7480,22 +7564,37 @@ function handleVinylScroll(el) {
 }
 
 function openCurrentRadioAlbum() {
-  playTopRecommendedTrack(activeTopTrackIndex, true);
+  const target = topRecommendedTracks[activeTopTrackIndex];
+  if (!target) return;
+  const curPlayingSong = currentPlaybackQueue[currentIndex];
+  const isCurrentTarget = curPlayingSong && (
+    curPlayingSong.id === 'online_' + target.id ||
+    String(curPlayingSong.onlineId) === String(target.id) ||
+    String(curPlayingSong.id).replace('online_', '') === String(target.id) ||
+    (curPlayingSong.title === (target.name || target.title) && curPlayingSong.artist === target.artist)
+  );
+
+  if (isCurrentTarget) {
+    openPlayerFull();
+  } else {
+    playTopRecommendedTrack(activeTopTrackIndex, true);
+  }
 }
 
 function togglePlayCurrentRadioAlbum() {
   const target = topRecommendedTracks[activeTopTrackIndex];
   if (!target) return;
   const curPlayingSong = currentPlaybackQueue[currentIndex];
-  const isTargetPlaying = isPlaying && curPlayingSong && (
+  const isCurrentTarget = curPlayingSong && (
     curPlayingSong.id === 'online_' + target.id ||
+    String(curPlayingSong.onlineId) === String(target.id) ||
+    String(curPlayingSong.id).replace('online_', '') === String(target.id) ||
     (curPlayingSong.title === (target.name || target.title) && curPlayingSong.artist === target.artist)
   );
 
-  if (isTargetPlaying) {
+  if (isCurrentTarget) {
     togglePlayState();
   } else {
-    // 点击正方形播放键只触发播放，不自动进入歌曲全屏详情页
     playTopRecommendedTrack(activeTopTrackIndex, false);
   }
 }
@@ -7636,14 +7735,75 @@ function exitHomeMultiSelectMode() {
   renderSongList();
 }
 
+function isSongUnorganized(song) {
+  if (!song) return false;
+  if (song.isFav) return false;
+  const favAlb = VINYL_ALBUMS.find(a => a.id === 'alb_fav');
+  if (favAlb && favAlb.songs && favAlb.songs.some(s => s.id === song.id || (s.title === song.title && s.artist === song.artist))) {
+    return false;
+  }
+  const customAlbums = VINYL_ALBUMS.filter(a => a.id !== 'alb_all' && a.id !== 'alb_fav');
+  for (const a of customAlbums) {
+    if (a.songs && a.songs.some(s => s.id === song.id || (s.title === song.title && s.artist === song.artist))) {
+      return false;
+    }
+  }
+  return true;
+}
+
+function getUnorganizedSongIndices(alb) {
+  if (!alb || !alb.songs) return [];
+  const indices = [];
+  alb.songs.forEach((s, idx) => {
+    if (isSongUnorganized(s)) indices.push(idx);
+  });
+  return indices;
+}
+
 function toggleSelectAllSongs() {
   const alb = VINYL_ALBUMS[activeRadioIndex];
-  if (!alb || !alb.songs) return;
-  if (selectedSongIndices.size === alb.songs.length) {
-    selectedSongIndices.clear();
+  if (!alb || !alb.songs || alb.songs.length === 0) return;
+
+  const isAllAlbum = (alb.id === 'alb_all');
+  const unorganizedIndices = isAllAlbum ? getUnorganizedSongIndices(alb) : [];
+
+  if (isAllAlbum) {
+    const allSelected = (selectedSongIndices.size === alb.songs.length);
+    const unorganizedAllSelected = (unorganizedIndices.length > 0 &&
+      selectedSongIndices.size === unorganizedIndices.length &&
+      unorganizedIndices.every(idx => selectedSongIndices.has(idx)));
+
+    if (allSelected) {
+      // 态 3 -> 取消全选
+      selectedSongIndices.clear();
+      toast('已取消全选');
+    } else if (unorganizedAllSelected) {
+      // 态 2 -> 全选全部歌曲
+      selectedSongIndices.clear();
+      alb.songs.forEach((_, idx) => selectedSongIndices.add(idx));
+      toast(`已全选 ${alb.songs.length} 首歌曲`);
+    } else {
+      // 态 1 -> 优先全选未整理歌曲
+      if (unorganizedIndices.length > 0) {
+        selectedSongIndices.clear();
+        unorganizedIndices.forEach(idx => selectedSongIndices.add(idx));
+        toast(`已勾选 ${unorganizedIndices.length} 首未整理歌曲`);
+      } else {
+        selectedSongIndices.clear();
+        alb.songs.forEach((_, idx) => selectedSongIndices.add(idx));
+        toast(`已全选 ${alb.songs.length} 首歌曲`);
+      }
+    }
   } else {
-    alb.songs.forEach((_, idx) => selectedSongIndices.add(idx));
+    // 普通歌单：常规全选 / 取消全选
+    if (selectedSongIndices.size === alb.songs.length) {
+      selectedSongIndices.clear();
+    } else {
+      selectedSongIndices.clear();
+      alb.songs.forEach((_, idx) => selectedSongIndices.add(idx));
+    }
   }
+
   updateMultiSelectUI();
   if (document.getElementById('viewPlaylistDetail').classList.contains('active')) {
     renderPlaylistDetailSongsOnly();
@@ -7674,14 +7834,29 @@ function updateMultiSelectUI() {
   const isAll = (alb && alb.id === 'alb_all');
   const removeLabel = isAll ? '删除歌曲' : '移出歌单';
   const hasSelection = count > 0;
+  const unorganizedIndices = isAll ? getUnorganizedSongIndices(alb) : [];
+
+  let selectBtnLabel = '全选';
+  if (alb && alb.songs && alb.songs.length > 0) {
+    if (count === alb.songs.length) {
+      selectBtnLabel = '取消全选';
+    } else if (isAll) {
+      const isUnorgSelected = (unorganizedIndices.length > 0 &&
+        count === unorganizedIndices.length &&
+        unorganizedIndices.every(idx => selectedSongIndices.has(idx)));
+      if (isUnorgSelected) {
+        selectBtnLabel = '全选';
+      } else {
+        selectBtnLabel = (unorganizedIndices.length > 0) ? '选未整理' : '全选';
+      }
+    }
+  }
 
   // 1. 歌单详情页内多选控件
   const countEl = document.getElementById('multiSelectedCountText');
   if (countEl) countEl.textContent = `已选 ${count} 首`;
   const toggleBtn = document.getElementById('multiSelectAllToggleBtn');
-  if (toggleBtn && alb) {
-    toggleBtn.textContent = (count === alb.songs.length && alb.songs.length > 0) ? '取消全选' : '全选';
-  }
+  if (toggleBtn) toggleBtn.textContent = selectBtnLabel;
   const removeBtnText = document.getElementById('multiDockRemoveBtnText');
   if (removeBtnText) removeBtnText.textContent = removeLabel;
   const nextBtn = document.getElementById('multiDockPlayNextBtn');
@@ -7695,9 +7870,7 @@ function updateMultiSelectUI() {
   const homeCountEl = document.getElementById('homeMultiSelectedCountText');
   if (homeCountEl) homeCountEl.textContent = `已选 ${count} 首`;
   const homeToggleBtn = document.getElementById('homeMultiSelectAllToggleBtn');
-  if (homeToggleBtn && alb) {
-    homeToggleBtn.textContent = (count === alb.songs.length && alb.songs.length > 0) ? '取消全选' : '全选';
-  }
+  if (homeToggleBtn) homeToggleBtn.textContent = selectBtnLabel;
   const homeRemoveBtnText = document.getElementById('homeMultiDockRemoveBtnText');
   if (homeRemoveBtnText) homeRemoveBtnText.textContent = removeLabel;
   const homeNextBtn = document.getElementById('homeMultiDockPlayNextBtn');
@@ -12198,23 +12371,6 @@ window.addEventListener('load', () => {
   if (typeof updateDefaultHomeTabUI === 'function') updateDefaultHomeTabUI();
   setTimeout(() => checkAppUpdate(false), 1500);
 });
-
-/* ================== 设置页主页面切换（发现 vs 乐库） ================== */
-let defaultHomeTab = localStorage.getItem('lingxi_default_tab') || 'discover';
-
-function updateDefaultHomeTabUI() {
-  const descEl = document.getElementById('defaultHomeTabDesc');
-  if (descEl) {
-    descEl.textContent = defaultHomeTab === 'library' ? '当前：乐库（我的曲库）' : '当前：发现（精选推荐）';
-  }
-}
-
-function toggleDefaultHomeTabSetting() {
-  defaultHomeTab = (defaultHomeTab === 'discover') ? 'library' : 'discover';
-  localStorage.setItem('lingxi_default_tab', defaultHomeTab);
-  updateDefaultHomeTabUI();
-  toast(defaultHomeTab === 'library' ? '已设为启动默认进入「乐库」' : '已设为启动默认进入「发现」');
-}
 
 
 /* ================== 顶部唱片滑动切歌 (全区域左右滑动手势直接切换上下曲) ================== */
