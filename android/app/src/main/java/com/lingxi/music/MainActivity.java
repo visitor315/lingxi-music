@@ -207,6 +207,10 @@ public class MainActivity extends Activity {
             window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
             window.setStatusBarColor(Color.TRANSPARENT);
             window.setNavigationBarColor(Color.TRANSPARENT);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                window.setNavigationBarContrastEnforced(false);
+                window.setStatusBarContrastEnforced(false);
+            }
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
                 WindowManager.LayoutParams lp = window.getAttributes();
@@ -2081,7 +2085,7 @@ public class MainActivity extends Activity {
                 PackageInfo pInfo = getPackageManager().getPackageInfo(getPackageName(), 0);
                 return pInfo.versionName;
             } catch (Exception e) {
-                return "2.2.8";
+                return "2.2.9";
             }
         }
 
@@ -2095,7 +2099,7 @@ public class MainActivity extends Activity {
                     return pInfo.versionCode;
                 }
             } catch (Exception e) {
-                return 61;
+                return 62;
             }
         }
 

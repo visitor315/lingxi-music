@@ -406,12 +406,12 @@ body.night .discover-section-play-btn {
 /* 推荐歌曲项（精巧素雅排版） */
 .discover-card-row {
   display: flex; align-items: center; gap: 12px;
-  padding: 8px 10px !important; cursor: pointer;
-  border-radius: 12px !important; overflow: hidden !important;
+  padding: 8px 6px 8px 0 !important; cursor: pointer;
+  border-radius: 10px !important; overflow: hidden !important;
   position: relative; transition: background 0.15s ease;
 }
 .discover-card-row:active {
-  opacity: 0.72;
+  opacity: 1 !important;
 }
 .discover-card-cover-wrap {
   width: 48px;
@@ -606,7 +606,7 @@ body.night .radio-play-btn-circle { background: #E8E7E3; color: #171715; }
   position: absolute; top: 0; left: 0; right: -16px; bottom: 0;
   display: flex; align-items: center; overflow-x: auto; padding-right: 240px; z-index: 2;
   -webkit-overflow-scrolling: touch; clip-path: inset(-10px -40px -10px 1px);
-  touch-action: pan-y !important;
+  touch-action: pan-y pinch-zoom;
 }
 .vinyl-scroll-channel::-webkit-scrollbar { display: none; }
 .vinyl-initial-offset { width: 62px; flex-shrink: 0; }
@@ -755,12 +755,19 @@ body.night .library-album-pill.active {
 /* ================== 6. 设置页面 ================== */
 .view-settings-page { display: none; flex-direction: column; padding: 10px 16px 84px; gap: 16px; }
 .view-settings-page.active { display: flex; }
-.settings-group-header { font-size: 12.5px; color: var(--ink-gray); margin: 6px 6px -6px; font-weight: 500; letter-spacing: 0.3px; }
+.settings-group-header, .sub-group-header {
+  font-size: 13px;
+  color: var(--ink-gray);
+  margin: 14px 6px 6px;
+  font-weight: 500;
+  letter-spacing: 0.2px;
+  display: block;
+}
 .group-menu-card { background: var(--card-bg); border-radius: 14px; overflow: hidden; display: flex; flex-direction: column; flex-shrink: 0; }
 .settings-item-row {
   display: flex; align-items: center; justify-content: space-between; padding: 13px 16px; min-height: 52px;
   cursor: pointer; -webkit-tap-highlight-color: transparent; position: relative; overflow: hidden;
-  border-radius: 0 !important; user-select: none;
+  border-radius: 0 !important; user-select: none; gap: 14px;
 }
 .settings-item-row:active { opacity: 1 !important; }
 .group-menu-divider { height: 1px; width: 100%; background: var(--inner-divider); flex-shrink: 0; }
@@ -772,7 +779,7 @@ body.night .library-album-pill.active {
 .settings-sub-desc { font-size: 12px; color: var(--ink-gray); }
 
 .blue-toggle-switch {
-  width: 44px; height: 26px; border-radius: 13px; background: #D1D1CF; position: relative; transition: background 0.2s ease; flex-shrink: 0; cursor: pointer;
+  width: 44px; height: 26px; border-radius: 13px; background: #D1D1CF; position: relative; transition: background 0.2s ease; flex-shrink: 0; cursor: pointer; margin-left: 12px;
 }
 .blue-toggle-switch::after {
   content: ''; position: absolute; top: 2px; left: 2px; width: 22px; height: 22px; border-radius: 50%; background: #FFFFFF; transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -2250,7 +2257,9 @@ body.night {
 .group-menu-divider {
   display: none !important;
 }
-.settings-item-row, .group-menu-item {
+.group-menu-card > div:not(.group-menu-divider),
+.group-menu-card > .settings-item-row,
+.group-menu-card > .group-menu-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -2261,41 +2270,50 @@ body.night {
   position: relative;
   overflow: hidden;
   user-select: none;
-  background: var(--card-bg) !important;
-  border-radius: 2px !important;
+  background: var(--card-bg);
+  border-radius: 2px;
   box-shadow: none !important;
   border: none !important;
+  gap: 14px;
   transition: border-radius 0.22s cubic-bezier(0.2, 0.8, 0.2, 1), background-color 0.15s ease;
 }
-body.night .settings-item-row, body.night .group-menu-item {
+body.night .group-menu-card > div:not(.group-menu-divider),
+body.night .group-menu-card > .settings-item-row,
+body.night .group-menu-card > .group-menu-item {
   background: #1E1E1C !important;
 }
 
 /* 首项：顶部两角 14px 圆角，底部两角 2px 微圆角 */
-.group-menu-card > div:not(.group-menu-divider):first-of-type,
-.group-menu-card > .settings-item-row:first-of-type,
-.group-menu-card > .group-menu-item:first-of-type {
+.group-menu-card > div:not(.group-menu-divider):first-child,
+.group-menu-card > .settings-item-row:first-child,
+.group-menu-card > .group-menu-item:first-child {
   border-radius: 14px 14px 2px 2px !important;
 }
 
 /* 末项：顶部两角 2px 微圆角，底部两角 14px 圆角 */
-.group-menu-card > div:not(.group-menu-divider):last-of-type,
-.group-menu-card > .settings-item-row:last-of-type,
-.group-menu-card > .group-menu-item:last-of-type {
+.group-menu-card > div:not(.group-menu-divider):last-child,
+.group-menu-card > .settings-item-row:last-child,
+.group-menu-card > .group-menu-item:last-child {
   border-radius: 2px 2px 14px 14px !important;
 }
 
 /* 单项：独占一卡，四角均为 14px 圆角 */
-.group-menu-card > div:not(.group-menu-divider):only-of-type,
-.group-menu-card > .settings-item-row:only-of-type,
-.group-menu-card > .group-menu-item:only-of-type {
+.group-menu-card > div:not(.group-menu-divider):first-child:last-child,
+.group-menu-card > .settings-item-row:first-child:last-child,
+.group-menu-card > .group-menu-item:first-child:last-child,
+.group-menu-card > div:not(.group-menu-divider):only-child,
+.group-menu-card > .settings-item-row:only-child,
+.group-menu-card > .group-menu-item:only-child {
   border-radius: 14px !important;
 }
 
-/* 点击按下态（:active）变为整圆角 14px */
+/* 点击按下态（:active 与 .is-card-pressed）：平滑形变为 14px 全圆角，产生经典翘角/吸角动效 */
 .group-menu-card > div:not(.group-menu-divider):active,
 .group-menu-card > .settings-item-row:active,
-.group-menu-card > .group-menu-item:active {
+.group-menu-card > .group-menu-item:active,
+.group-menu-card > div.is-card-pressed,
+.group-menu-card > .settings-item-row.is-card-pressed,
+.group-menu-card > .group-menu-item.is-card-pressed {
   border-radius: 14px !important;
   transform: none !important;
   box-shadow: none !important;
@@ -2543,7 +2561,18 @@ body.night .add-clean-row:active {
         <span class="nav-tag-btn active" id="tabNavDiscover" onclick="switchHomeNavTab('discover')">发现</span>
         <span class="nav-tag-btn" id="tabNavLibrary" onclick="switchHomeNavTab('library')">乐库</span>
       </div>
-      <div class="listen-nav-titles" id="settingsNavTitles" style="display:none;"><span class="nav-tag-btn active" style="cursor:default;">设置</span></div>
+      <div class="settings-nav-header-box" id="settingsNavTitles" style="display:none; align-items:center; gap:8px;">
+        <button class="nav-btn fine-back ripple-btn" onclick="switchBottomTab('listen')" title="返回主界面" style="width:34px; height:34px; margin:0;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="width:19px; height:19px;">
+            <line x1="19" y1="12" x2="5" y2="12"></line>
+            <polyline points="12 19 5 12 12 5"></polyline>
+          </svg>
+        </button>
+        <div style="display:flex; flex-direction:column; gap:0.5px;">
+          <span style="font-size:18.5px; font-weight:700; color:var(--ink-black); letter-spacing:-0.2px; line-height:1.2;">设置</span>
+          <span style="font-size:10.5px; color:var(--ink-light); letter-spacing:0.2px; line-height:1.2;">偏好配置与个性定制</span>
+        </div>
+      </div>
       <div class="listen-header-actions">
         <button class="icon-btn" onclick="openBeginnerGuideModal()" title="新手引导">
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -2658,7 +2687,6 @@ body.night .add-clean-row:active {
             </div>
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" style="color:var(--ink-light);"><polyline points="9 18 15 12 9 6"/></svg>
           </div>
-          <div class="group-menu-divider"></div>
           <div class="settings-item-row ripple-btn" onclick="openThemeSettingsSubpage()">
             <div class="settings-item-col">
               <span class="settings-title-line">外观与个性化</span>
@@ -2667,13 +2695,11 @@ body.night .add-clean-row:active {
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" style="color:var(--ink-light);"><polyline points="9 18 15 12 9 6"/></svg>
           </div>
         </div>
-        <span class="settings-group-header">播放与控制</span>
         <div class="group-menu-card">
           <div class="settings-item-row" onclick="openSleepTimerModal()">
             <div class="settings-item-col"><span class="settings-title-line">定时关闭</span><span class="settings-sub-desc" id="sleepTimerSettingsDesc">未开启</span></div>
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" style="color:var(--ink-light); margin-left:auto;"><polyline points="9 18 15 12 9 6"/></svg>
           </div>
-          <div class="group-menu-divider"></div>
           <div class="settings-item-row" onclick="toggleAudioFocusSetting()">
             <div class="settings-item-col">
               <span class="settings-title-line">通话与录音时自动暂停</span>
@@ -2682,43 +2708,35 @@ body.night .add-clean-row:active {
             <div class="blue-toggle-switch active" id="audioFocusToggle"></div>
           </div>
         </div>
-        <span class="settings-group-header">乐库与存储</span>
         <div class="group-menu-card">
           <div class="settings-item-row" onclick="openQualityModal()">
             <div class="settings-item-col"><span class="settings-title-line">播放音质</span><span class="settings-sub-desc" id="currentQualityDesc">极高音质 - 320 kbps (高清)</span></div>
           </div>
-          <div class="group-menu-divider"></div>
           <div class="settings-item-row" onclick="triggerFileImport()">
             <div class="settings-item-col"><span class="settings-title-line">导入本地音频</span><span class="settings-sub-desc">读取外部 MP3、FLAC、WAV 格式音频</span></div>
           </div>
-          <div class="group-menu-divider"></div>
           <div class="settings-item-row" onclick="openPlaylistImportDialog()">
             <div class="settings-item-col"><span class="settings-title-line">导入外部歌单</span><span class="settings-sub-desc">支持酷狗概念版、网易云等分享文本直接导入</span></div>
           </div>
-          <div class="group-menu-divider"></div>
           <div class="settings-item-row" onclick="openApiConfigModal()">
             <div class="settings-item-col"><span class="settings-title-line">自定义音乐接口</span><span class="settings-sub-desc" id="currentApiServerDesc">高可用聚合解析引擎</span></div>
           </div>
-          <div class="group-menu-divider"></div>
           <div class="settings-item-row" onclick="clearCachedMedia()">
             <div class="settings-item-col"><span class="settings-title-line">清理播放缓存</span><span class="settings-sub-desc" id="cacheStorageDesc">释放临时存储 - 当前 0.0 MB</span></div>
           </div>
         </div>
-        <span class="settings-group-header">帮助与指引</span>
         <div class="group-menu-card">
           <div class="settings-item-row" onclick="openBeginnerGuideModal()">
             <div class="settings-item-col"><span class="settings-title-line">新手入门指南</span><span class="settings-sub-desc">核心规则与操作指引</span></div>
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" style="color:var(--ink-light); margin-left:auto;"><polyline points="9 18 15 12 9 6"/></svg>
           </div>
         </div>
-        <span class="settings-group-header">关于与更新</span>
         <div class="group-menu-card">
           <div class="settings-item-row" onclick="checkAppUpdate(true)">
             <div class="settings-item-col"><span class="settings-title-line">检查版本更新</span><span class="settings-sub-desc" id="aboutAppVersionDesc">自用无损音乐播放器 - v2.1.8</span></div>
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" style="color:var(--ink-light); margin-left:auto;"><polyline points="9 18 15 12 9 6"/></svg>
           </div>
         </div>
-        <span class="settings-group-header">系统与调试</span>
         <div class="group-menu-card">
           <div class="settings-item-row" onclick="promptResetAppData()">
             <div class="settings-item-col"><span class="settings-title-line" style="color:var(--brand-red);">重置灵犀音乐</span><span class="settings-sub-desc">清空搜索历史、恢复默认歌单与初始曲库</span></div>
@@ -2957,14 +2975,12 @@ body.night .add-clean-row:active {
             <span class="settings-sub-desc" id="main-theme-display">跟随系统</span>
           </div>
         </div>
-        <div class="group-menu-divider"></div>
         <div class="settings-item-row" onclick="openThemeColorModal()">
           <div class="settings-item-col">
             <span class="settings-title-line">主题色调</span>
             <span class="settings-sub-desc" id="main-theme-color-display">克莱因蓝</span>
           </div>
         </div>
-        <div class="group-menu-divider"></div>
         <div class="settings-item-row" onclick="openFontModal()">
           <div class="settings-item-col">
             <span class="settings-title-line">应用字体</span>
@@ -2979,7 +2995,6 @@ body.night .add-clean-row:active {
           <div class="settings-item-col"><span class="settings-title-line">唱片封面展示</span><span class="settings-sub-desc" id="coverDisplayModeDesc">真实封面 (显示提取的专辑画作)</span></div>
           <div class="blue-toggle-switch active" id="coverDisplayToggle"></div>
         </div>
-        <div class="group-menu-divider"></div>
         
         <div class="settings-item-row" onclick="toggleDesktopLyricsFromUI()">
           <div class="settings-item-col"><span class="settings-title-line">桌面悬浮歌词</span><span class="settings-sub-desc" id="desktopLyricsDesc">在手机桌面与应用上方浮窗显示歌词，支持滑动切词与拖拽</span></div>
@@ -3699,8 +3714,8 @@ const OTHER_AVATAR_SVG = `<svg width="14" height="14" viewBox="0 0 24 24" fill="
 
 const APP_CONFIG = {
   name: '灵犀音乐',
-  version: '2.1.8',
-  build: '2026.09.23',
+  version: '2.2.9',
+  build: '2026.10.09',
   codename: 'Pure Sound'
 };
 
@@ -11417,31 +11432,37 @@ function toggleDefaultHomeTabSetting() {
 /* ================== 顶部唱片左右滑动手势切换上下曲 (替换原生自由乱滚) ================== */
 (function initVinylSwipeGesture() {
   function bindGesture() {
-    const channel = document.querySelector('.radio-stage-inner') || document.getElementById('vinylScrollChannel');
-    if (!channel) return;
+    const stage = document.querySelector('.radio-stage-viewport') || document.querySelector('.radio-stage-inner');
+    if (!stage) return;
     let startX = 0, startY = 0;
+    let lastX = 0, lastY = 0;
     let isSwiping = false;
 
-    channel.addEventListener('touchstart', (e) => {
-      if (e.touches && e.touches.length === 1) {
-        startX = e.touches[0].clientX;
-        startY = e.touches[0].clientY;
-        isSwiping = true;
-      }
-    }, { passive: true });
+    const onStart = (clientX, clientY) => {
+      startX = clientX;
+      startY = clientY;
+      lastX = clientX;
+      lastY = clientY;
+      isSwiping = true;
+    };
 
-    channel.addEventListener('touchend', (e) => {
-      if (!isSwiping || !e.changedTouches || e.changedTouches.length === 0) return;
+    const onMove = (clientX, clientY) => {
+      if (!isSwiping) return;
+      lastX = clientX;
+      lastY = clientY;
+    };
+
+    const onEnd = () => {
+      if (!isSwiping) return;
       isSwiping = false;
-      const endX = e.changedTouches[0].clientX;
-      const endY = e.changedTouches[0].clientY;
-      const deltaX = endX - startX;
-      const deltaY = endY - startY;
+      const deltaX = lastX - startX;
+      const deltaY = lastY - startY;
 
-      if (Math.abs(deltaX) > 30 && Math.abs(deltaX) > Math.abs(deltaY) * 1.1) {
+      if (Math.abs(deltaX) > 25 && Math.abs(deltaX) > Math.abs(deltaY) * 0.7) {
+        const total = topRecommendedTracks ? topRecommendedTracks.length : 0;
         if (deltaX < 0) {
           // 左滑 -> 下一曲
-          if (activeTopTrackIndex < (topRecommendedTracks ? topRecommendedTracks.length - 1 : 0)) {
+          if (activeTopTrackIndex < total - 1) {
             scrollVinylToTrack(activeTopTrackIndex + 1, true);
           }
         } else {
@@ -11451,6 +11472,30 @@ function toggleDefaultHomeTabSetting() {
           }
         }
       }
+    };
+
+    stage.addEventListener('touchstart', (e) => {
+      if (e.touches && e.touches.length > 0) {
+        onStart(e.touches[0].clientX, e.touches[0].clientY);
+      }
+    }, { passive: true });
+
+    stage.addEventListener('touchmove', (e) => {
+      if (e.touches && e.touches.length > 0) {
+        onMove(e.touches[0].clientX, e.touches[0].clientY);
+      }
+    }, { passive: true });
+
+    stage.addEventListener('touchend', (e) => {
+      if (e.changedTouches && e.changedTouches.length > 0) {
+        lastX = e.changedTouches[0].clientX;
+        lastY = e.changedTouches[0].clientY;
+      }
+      onEnd();
+    }, { passive: true });
+
+    stage.addEventListener('touchcancel', () => {
+      onEnd();
     }, { passive: true });
   }
 
@@ -11592,6 +11637,8 @@ function toggleDefaultHomeTabSetting() {
     pendingPoint = null;
   };
 
+  document.addEventListener('touchstart', () => {}, { passive: true });
+
   const RIPPLE_SELECTOR = '.ripple-btn, .settings-item-row, .group-menu-item, .song-row, .discover-card-row, .library-album-pill, .voice-modal-btn, .modern-pill-btn, .icon-btn, .nav-btn, .fav-btn, .song-action-btn, .circle-btn, .color-option-row, .popup-menu-item, .modal-action-btn, .drawer-row';
 
   document.addEventListener('pointerdown', (e) => {
@@ -11608,6 +11655,10 @@ function toggleDefaultHomeTabSetting() {
     startY = e.clientY;
     activeBtn = btn;
     pendingPoint = { x: e.clientX, y: e.clientY };
+
+    if (btn.classList.contains('settings-item-row') || btn.classList.contains('group-menu-item')) {
+      btn.classList.add('is-card-pressed');
+    }
 
     const scrollParent = btn.closest('.xianyin-content-scroll, .settings-subview-scroll, .playlist-page-scroll, .search-results-list');
     if (scrollParent) {
@@ -11634,7 +11685,14 @@ function toggleDefaultHomeTabSetting() {
     cancelPending();
   }, { passive: true, capture: true });
 
+  const clearCardPressed = () => {
+    document.querySelectorAll('.is-card-pressed').forEach(el => {
+      setTimeout(() => el.classList.remove('is-card-pressed'), 220);
+    });
+  };
+
   const finishRipple = () => {
+    clearCardPressed();
     if (pendingTimer && activeBtn && pendingPoint) {
       clearTimeout(pendingTimer);
       pendingTimer = null;
@@ -11659,7 +11717,10 @@ function toggleDefaultHomeTabSetting() {
   };
 
   document.addEventListener('pointerup', finishRipple, { passive: true });
-  document.addEventListener('pointercancel', cancelPending, { passive: true });
+  document.addEventListener('pointercancel', () => {
+    clearCardPressed();
+    cancelPending();
+  }, { passive: true });
 })();
 
 </script>
