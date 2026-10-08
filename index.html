@@ -573,6 +573,41 @@ body.night .stream-disc.stream-disc-add { border-color: #444 !important; }
 
 @keyframes discSpinSlow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
+/* 乐库歌单切换药丸栏（古典宣纸水墨风极简卡片胶囊） */
+.library-album-pills-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 12px 16px 6px;
+  -webkit-overflow-scrolling: touch;
+}
+.library-album-pills-bar::-webkit-scrollbar { display: none; }
+.library-album-pill {
+  padding: 6px 14px;
+  border-radius: 16px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-gray);
+  background: var(--claude-pill-bg);
+  white-space: nowrap;
+  cursor: pointer;
+  border: none !important;
+  box-shadow: none !important;
+  transition: all 0.18s ease;
+  flex-shrink: 0;
+}
+.library-album-pill:active { transform: scale(0.95); }
+.library-album-pill.active {
+  color: #FFFFFF;
+  background: var(--ink-black);
+  font-weight: 600;
+}
+body.night .library-album-pill.active {
+  color: #171715;
+  background: #E8E7E3;
+}
+
 /* 歌曲列表区 */
 .song-list-panel { padding: 4px 16px 20px; margin-top: 2px; }
 .list-panel-header {
@@ -683,14 +718,12 @@ body.night .xianyin-bottom-nav { background: rgba(20, 20, 19, 0.96); }
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 2.8px;
+  gap: 2.6px;
   color: inherit;
-  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
-  transform-origin: center center;
 }
 .nav-wave-bar {
-  width: 2.4px;
-  border-radius: 1.2px;
+  width: 2.0px;
+  border-radius: 1px;
   background: currentColor;
   transform-origin: center bottom;
 }
@@ -699,26 +732,18 @@ body.night .xianyin-bottom-nav { background: rgba(20, 20, 19, 0.96); }
 .nav-wave-bar:nth-child(3) { height: 12.5px; }
 .nav-wave-bar:nth-child(4) { height: 8px; }
 
-/* 点击时柱子跳跃律动动效，放歌时保持静止雅致，动画延长至0.9s呈现从容舒缓水墨呼吸感 */
-.nav-wave-bars.anim-wave-tap {
-  animation: waveTapFeedback 0.9s cubic-bezier(0.22, 1, 0.36, 1);
-}
-@keyframes waveTapFeedback {
-  0% { transform: scale(0.92); }
-  35% { transform: scale(1.06); }
-  100% { transform: scale(1); }
-}
+/* 点击时柱子跳跃律动动效：绝对禁止缩放容器避免线条变粗，仅在固定宽度下改变高度 */
 .nav-wave-bars.anim-wave-tap .nav-wave-bar:nth-child(1) {
-  animation: waveBarBounce1 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+  animation: waveBarBounce1 0.8s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .nav-wave-bars.anim-wave-tap .nav-wave-bar:nth-child(2) {
-  animation: waveBarBounce2 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+  animation: waveBarBounce2 0.8s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .nav-wave-bars.anim-wave-tap .nav-wave-bar:nth-child(3) {
-  animation: waveBarBounce3 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+  animation: waveBarBounce3 0.8s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .nav-wave-bars.anim-wave-tap .nav-wave-bar:nth-child(4) {
-  animation: waveBarBounce4 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+  animation: waveBarBounce4 0.8s cubic-bezier(0.22, 1, 0.36, 1);
 }
 @keyframes waveBarBounce1 {
   0%, 100% { height: 8px; }
@@ -2100,8 +2125,8 @@ body.in-pip-mode .view-player-full {
   <div class="view-xianyin active" id="viewXianyin">
     <header class="listen-header-bar" id="listenHeaderBar">
       <div class="listen-nav-titles" id="homeNavTitles">
-        <span class="nav-tag-btn active" id="tabNavLibrary" onclick="switchHomeNavTab('library')">乐库</span>
-        <span class="nav-tag-btn" id="tabNavDiscover" onclick="switchHomeNavTab('discover')">灵犀推荐</span>
+        <span class="nav-tag-btn active" id="tabNavDiscover" onclick="switchHomeNavTab('discover')">发现</span>
+        <span class="nav-tag-btn" id="tabNavLibrary" onclick="switchHomeNavTab('library')">乐库</span>
       </div>
       <div class="listen-nav-titles" id="settingsNavTitles" style="display:none;">
         <span class="nav-tag-btn active" style="cursor:default;">设置</span>
@@ -2124,8 +2149,8 @@ body.in-pip-mode .view-player-full {
     </header>
 
     <div class="xianyin-content-scroll">
-      <!-- 发现面板：光盘本身即歌单入口 -->
-      <div id="paneListen">
+      <!-- 第一页：发现与灵犀推荐（默认主页，顶部精选唱片推荐 + 底部板块流推荐） -->
+      <div id="paneDiscover" style="display:block;">
         <div class="radio-stage-viewport">
           <div class="radio-stage-inner">
             <div class="fixed-radio-card" onclick="openCurrentRadioAlbum()">
@@ -2154,23 +2179,28 @@ body.in-pip-mode .view-player-full {
             <div class="vinyl-scroll-channel" id="vinylScrollChannel" onscroll="handleVinylScroll(this)">
               <div class="vinyl-initial-offset"></div>
               <div class="vinyl-disc-stream" id="vinylDiscStream">
-                <!-- 光盘 0: 全部歌曲 -->
-                <div class="vinyl-stream-card" onclick="handleStreamCardClick(0)"><div class="stream-disc" id="streamDisc0"><div class="stream-disc-core"><svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></div></div></div>
-                <!-- 光盘 1: 我喜欢 -->
-                <div class="vinyl-stream-card" onclick="handleStreamCardClick(1)"><div class="stream-disc" id="streamDisc1"><div class="stream-disc-core rose-core"><svg viewBox="0 0 512 512"><path d="M281.31 21.217L239.997 127.13l76.01 103.673 97.135-7.532-3.1-79.284-78.2-12.468-1.61 41.535 29.11 7.568-.766-14.1 18.662-1.012 2.15 39.635-68.41-17.788 3.004-77.61 68.65 10.946-2.456-86.044-98.863-13.43zM243.63 66.39l-73.702 39.917L195.885 243.7l141.306 80.704 154.447-80.037-11.252-142.205-79.617-.988.642 22.512 26.705 4.257 4.403 112.57-125.436 9.727-88.227-120.338 24.774-63.51zm-93.107 88.706c-2.992-.017-6.01.004-9.054.06-9.456.174-19.425.853-29.44 1.594 9.427 13.32 18.694 26.165 30.157 35.938 7.894 6.73 16.835 12.308 28.075 16.056l-10.1-53.453c-3.184-.11-6.396-.176-9.64-.194zm25.57 84.51c-14.278 5.27-27.16 13.25-39.437 23.55-17.875 14.995-34.273 35.22-50.625 58.47 56.9 2.6 100.16-6.41 147.316-35.01l-54.223-30.966-3.03-16.045zm270.854 48.968l-50.64 26.244c27.874 20.83 54.865 27.206 90.162 28.557-8.76-21.213-22.617-39.484-39.523-54.8zm-189.853 4.895c-14.566 9.75-28.84 17.8-43.156 24.342.37 10.843 2.813 19.703 6.968 26.47-29.49 37.69-61.714 72.017-96.78 102.843-17.584-1.215-24.577-19.137-17.845-37.344-22.758 18.074-30.427 42.166-20 68.376-6.832 5.23-13.75 10.354-20.78 15.344h45.344c25.65-20.11 49.915-41.82 72.844-65.094 29.485 9.192 54.05-1.51 69.625-27.97-14.975 8.052-31.217 5.627-37.438-6.686 9.653-11.06 19.037-22.436 28.156-34.125 7.25 1.21 15.586.57 24.72-2.03-8.863-17.974-13.326-39.19-11.656-64.126zm18.133 17.065c1.205 25.213 10.463 44.01 24.648 60.12 17.914 20.346 44.73 35.942 73.625 50.814 7.79-33.575 9.555-62.664-2.05-93.77l-34.692 17.978-61.53-35.143z"/></svg></div></div></div>
-                <!-- 光盘 2: 本地歌曲 -->
-                <div class="vinyl-stream-card" onclick="handleStreamCardClick(2)"><div class="stream-disc" id="streamDisc2"><div class="stream-disc-core"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></div></div></div>
+                <!-- 光盘由 renderVinylDiscs 动态填充 -->
               </div>
             </div>
           </div>
         </div>
+
+        <!-- 推荐多板块流：宝藏故事、私人专属好歌等 -->
+        <div style="padding: 0 16px 40px;">
+          <div id="discoverSectionsContainer"></div>
+        </div>
+      </div>
+
+      <!-- 第二页：乐库与歌曲列表（承载本地曲库、歌单切换与批量管理） -->
+      <div id="paneListen" style="display:none;">
+        <div class="library-album-pills-bar" id="libraryAlbumPills"></div>
 
         <div class="song-list-panel">
           <div class="list-panel-header">
             <!-- 正常状态标头 -->
             <div id="homeNormalHeader" style="display:flex; align-items:center; justify-content:space-between; width:100%;">
               <div class="discover-section-title-wrap" onclick="togglePlayCurrentRadioAlbum()" style="display:flex; align-items:center; gap:8px; cursor:pointer;" title="播放全部歌曲">
-                <span id="songListPanelTitle" style="font-size:16px; font-weight:600; color:var(--ink-black);">私人专属好歌</span>
+                <span id="songListPanelTitle" style="font-size:16px; font-weight:600; color:var(--ink-black);">我的曲库</span>
                 <div class="discover-section-play-btn" style="width:20px; height:20px; border-radius:50%; background:var(--ink-black); color:#FFFFFF; display:inline-flex; align-items:center; justify-content:center; flex-shrink:0;">
                   <svg viewBox="0 0 24 24" style="width:10px; height:10px; fill:#FFFFFF; stroke:none; margin-left:1px;"><polygon points="7 4 19 12 7 20 7 4"/></svg>
                 </div>
@@ -2202,11 +2232,6 @@ body.in-pip-mode .view-player-full {
           <!-- 此处始终显示完整的私人专属曲目库，永不丢失截断 -->
           <div id="songsContainer"></div>
         </div>
-      </div>
-
-      <!-- 灵犀推荐页面（完全对齐用户参考图2多板块推荐流） -->
-      <div id="paneDiscover" style="display:none; padding: 6px 16px 40px;">
-        <div id="discoverSectionsContainer"></div>
       </div>
 
 <!-- 设置页 -->
@@ -3572,7 +3597,11 @@ function init() {
   initAudioEngine();
   renderVinylDiscs();
   renderSongList();
-    const initialSong = currentPlaybackQueue[currentIndex];
+  renderLibraryAlbumPills();
+  setTimeout(() => {
+    if (typeof refreshRecommendations === 'function') refreshRecommendations(false);
+  }, 100);
+  const initialSong = currentPlaybackQueue[currentIndex];
   if (initialSong) {
     const initLrc = initialSong.lrc || getCachedLyric(initialSong.title, initialSong.artist);
     if (initLrc) {
@@ -3664,7 +3693,7 @@ function renderSongList() {
 
   const titleEl = document.getElementById('songListPanelTitle');
   if (titleEl) {
-    titleEl.textContent = '私人专属好歌';
+    titleEl.textContent = activeAlb.title || '我的曲库';
   }
 
   if (songs.length === 0) {
@@ -4955,10 +4984,26 @@ function openSearchResultMenu(e, idx) {
 }
 
 /* ================== 灵犀推荐引擎与交互 ================== */
-let currentHomeTab = 'library';
+let currentHomeTab = 'discover';
 let currentDiscoverSongs = [];
 let currentDiscoverSeeds = [];
 let isDiscoverLoading = false;
+
+function renderLibraryAlbumPills() {
+  const bar = document.getElementById('libraryAlbumPills');
+  if (!bar) return;
+  bar.innerHTML = VINYL_ALBUMS.map((alb, idx) => {
+    const isActive = (activeRadioIndex === idx);
+    const count = (alb.songs ? alb.songs.length : 0);
+    return `<div class="library-album-pill ${isActive ? 'active' : ''}" onclick="selectLibraryAlbum(${idx})">${escapeHtml(alb.title)} (${count})</div>`;
+  }).join('');
+}
+
+function selectLibraryAlbum(idx) {
+  activeRadioIndex = idx;
+  renderLibraryAlbumPills();
+  renderSongList();
+}
 
 function switchHomeNavTab(tab) {
   if (tab === currentHomeTab) return;
@@ -4969,12 +5014,13 @@ function switchHomeNavTab(tab) {
   const paneDiscover = document.getElementById('paneDiscover');
 
   if (tab === 'library') {
+    exitHomeMultiSelectMode();
     if (tabNavLibrary) tabNavLibrary.classList.add('active');
     if (tabNavDiscover) tabNavDiscover.classList.remove('active');
     if (paneListen) paneListen.style.display = 'block';
     if (paneDiscover) paneDiscover.style.display = 'none';
+    renderLibraryAlbumPills();
     renderSongList();
-    renderVinylDiscs();
     renderDrawerList();
   } else if (tab === 'discover') {
     exitHomeMultiSelectMode();
@@ -4982,6 +5028,7 @@ function switchHomeNavTab(tab) {
     if (tabNavDiscover) tabNavDiscover.classList.add('active');
     if (paneListen) paneListen.style.display = 'none';
     if (paneDiscover) paneDiscover.style.display = 'block';
+    renderVinylDiscs();
     if (currentDiscoverSections.length === 0 || currentDiscoverSongs.length === 0) {
       refreshRecommendations(false);
     } else {
@@ -9951,8 +9998,8 @@ function handleSystemBack() {
   else if (searchP && searchP.classList.contains('active')) closeSearchView();
   else if (editP && editP.classList.contains('active')) closeEditPlaylistPage();
   else if (detailP && detailP.classList.contains('active')) closePlaylistDetail();
-  else if (currentHomeTab === 'discover') {
-    switchHomeNavTab('library');
+  else if (currentHomeTab === 'library') {
+    switchHomeNavTab('discover');
   } else {
     // 已经位于应用主界面，按返回键直接退回手机桌面
     if (window.AndroidBridge && window.AndroidBridge.minimizeApp) {
@@ -10123,12 +10170,13 @@ function switchBottomTab(tab) {
     if (currentHomeTab === 'discover') {
       if (paneListen) paneListen.style.display = 'none';
       if (paneDiscover) paneDiscover.style.display = 'block';
+      renderVinylDiscs();
       renderDiscoverPane();
     } else {
       if (paneListen) paneListen.style.display = 'block';
       if (paneDiscover) paneDiscover.style.display = 'none';
+      renderLibraryAlbumPills();
       renderSongList();
-      renderVinylDiscs();
       renderDrawerList();
     }
   } else {
