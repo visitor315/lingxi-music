@@ -1,6 +1,6 @@
 {
-  "versionCode": 85,
-  "versionName": "2.5.2",
-  "changelog": "彻底消除同名歌曲扎堆问题：引入全局歌曲主干基准标题唯一性拦截，禁止同名曲目翻唱重复出现，种子仅使用偏好歌手保证百花齐放",
+  "versionCode": 86,
+  "versionName": "2.5.3",
+  "changelog": "彻底移除小众宝藏静态硬编码青花瓷与空谷幽兰回退，全面净化推荐仅限优质中文歌曲，解除发现页误跳乐库手势与返回键干扰",
   "downloadUrl": "https://ghfast.top/https://github.com/visitor315/lingxi-music/releases/download/v1.4.0/LingXiMusic.apk"
 }

@@ -3531,7 +3531,7 @@ body.night .create-playlist-sheet-confirm {
               </div>
               <div class="item-content">
                 <span class="item-main-title">检查版本更新</span>
-                <span class="item-subtitle-tight" id="aboutAppVersionDesc">v2.5.2</span>
+                <span class="item-subtitle-tight" id="aboutAppVersionDesc">v2.5.3</span>
               </div>
             </div>
             <svg class="item-arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
@@ -4181,7 +4181,7 @@ body.night .create-playlist-sheet-confirm {
       </div>
       <div style="display:flex; flex-direction:column; align-items:center; padding:4px 0 14px;">
         <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px;">
-          <span style="font-size:18px; font-weight:700; color:var(--ink-black);" id="updateVersionTitle">v2.5.2</span>
+          <span style="font-size:18px; font-weight:700; color:var(--ink-black);" id="updateVersionTitle">v2.5.3</span>
           <span style="font-size:11px; font-weight:600; background:rgba(35,75,184,0.08); color:var(--brand-blue); padding:2px 8px; border-radius:10px;" id="updateVersionBadge">最新版本</span>
         </div>
         <div id="updateChangelogBox" style="width:100%; box-sizing:border-box; background:var(--claude-pill-bg, rgba(20,20,19,0.03)); border:none; border-radius:14px; padding:14px 16px; font-size:13.5px; line-height:1.65; color:var(--ink-gray); white-space:pre-line; max-height:36vh; overflow-y:auto;"></div>
@@ -4605,7 +4605,7 @@ const OTHER_AVATAR_SVG = `<svg width="14" height="14" viewBox="0 0 24 24" fill="
 
 const APP_CONFIG = {
   name: '灵犀音乐',
-  version: '2.5.2',
+  version: '2.5.3',
   build: '2026.10.09',
   codename: 'Pure Sound'
 };
@@ -6845,9 +6845,9 @@ const INITIAL_DISCOVER_SECTIONS = [
   {
     title: '小众宝藏佳作',
     songs: [
-      { id: 'init_13', name: '空谷幽兰', artist: '阿鲲', album: '新萧十一郎', source: 'netease', duration: 186, url_id: '405485307', cover: 'https://p1.music.126.net/V_91UwA85Pz9G3s2SBQTTQ==/109951169999694247.jpg', reason: '古典意境' },
-      { id: 'init_14', name: '千度', artist: '许嵩', album: '苏格拉没有底', source: 'netease', duration: 247, url_id: '167876', cover: 'https://p1.music.126.net/Zg4XDfsiRi5vawjSWPP8Ng==/109951172899966259.jpg', reason: '细腻婉转' },
-      { id: 'init_15', name: '青花瓷', artist: '周杰伦', album: '我很忙', source: 'netease', duration: 239, url_id: '185997', cover: 'https://p1.music.126.net/BxDuZ92mCF3WRXfpKssOUg==/109951165681023773.jpg', reason: '余韵悠长' },
+      { id: 'init_13', name: '年轮', artist: '汪苏泷', album: '花千骨 电视剧原声带', source: 'netease', duration: 273, url_id: '32507038', cover: 'https://p1.music.126.net/H4aJb090l81W2B0l1W73uA==/109951163456381628.jpg', reason: '经典古风' },
+      { id: 'init_14', name: '千百度', artist: '许嵩', album: '苏格拉没有底', source: 'netease', duration: 247, url_id: '167876', cover: 'https://p1.music.126.net/Zg4XDfsiRi5vawjSWPP8Ng==/109951172899966259.jpg', reason: '细腻婉转' },
+      { id: 'init_15', name: '消愁', artist: '毛不易', album: '平凡的一天', source: 'netease', duration: 258, url_id: '569213220', cover: 'https://p1.music.126.net/b4Wz_l02K7uP0b7_l_G97Q==/109951163311849102.jpg', reason: '深情吟唱' },
       { id: 'init_16', name: '水星记', artist: '郭顶', album: '飞行器的执行周期', source: 'netease', duration: 325, url_id: '441491828', cover: 'https://p1.music.126.net/wSMfGvFzOAYRU_yVIfquAA==/2946691248081599.jpg', reason: '深夜独享' },
       { id: 'init_17', name: '借月', artist: '王宇宙 / 乔浚丞', album: '借月', source: 'netease', duration: 220, url_id: '1969248538', cover: 'https://p1.music.126.net/j6H8QcBRXmmHfKdu8AZSXA==/2907108746014408.jpg', reason: '月色温柔' },
       { id: 'init_18', name: '琵琶行', artist: '奇然 / 沈谧仁', album: '高考背诵曲目', source: 'netease', duration: 312, url_id: '504262174', cover: 'https://p1.music.126.net/uumDETX_PnWbHlDfbLcilQ==/7454688836371728.jpg', reason: '弦音如诉' }
@@ -6904,13 +6904,17 @@ function isQualityMusic(song) {
   const artist = (song.artist || '').trim();
   if (!name) return false;
 
-  // 严格过滤非正规音频、片段、试听、铃声、纯伴奏等杂音
+  // 1. 严格过滤非正规音频、片段、试听、铃声、纯伴奏等杂音
   const lowName = name.toLowerCase();
   const lowArtist = artist.toLowerCase();
   const junkKws = ['试听', '片段', '铃声', '30s', '30秒', '副歌', '高潮版', '截取', '伴奏', '纯伴奏', 'inst', 'instrumental'];
   if (junkKws.some(k => lowName.includes(k) || lowArtist.includes(k))) return false;
 
-  // 统一消毒间隔号，确保UI遵循无间隔点规范
+  // 2. 严格杜绝外文/英文歌曲，专注高雅华语流行与国风（必须包含中文字符）
+  const hasChinese = /[\u4e00-\u9fa5]/.test(name) || /[\u4e00-\u9fa5]/.test(artist);
+  if (!hasChinese) return false;
+
+  // 3. 统一消毒间隔号，确保UI遵循无间隔点规范
   if (song.name) song.name = song.name.replace(/[\u00b7]/g, '-');
   if (song.title) song.title = song.title.replace(/[\u00b7]/g, '-');
   if (song.artist) song.artist = song.artist.replace(/[\u00b7]/g, '-');
@@ -6942,7 +6946,10 @@ async function refreshRecommendations(showToast = false) {
       if (s.artist && s.artist !== '未知歌手') {
         const parts = s.artist.split(/[\/,、&]/).map(a => a.trim()).filter(Boolean);
         parts.forEach(a => {
-          artistScores[a] = (artistScores[a] || 0) + weight;
+          // 仅聚焦中文歌手，杜绝外文歌手污染
+          if (/[\u4e00-\u9fa5]/.test(a)) {
+            artistScores[a] = (artistScores[a] || 0) + weight;
+          }
         });
       }
     });
@@ -6953,16 +6960,18 @@ async function refreshRecommendations(showToast = false) {
         if (s.artist && s.artist !== '未知歌手') {
           const parts = s.artist.split(/[\/,、&]/).map(a => a.trim()).filter(Boolean);
           parts.forEach(a => {
-            artistScores[a] = (artistScores[a] || 0) + 2;
+            if (/[\u4e00-\u9fa5]/.test(a)) {
+              artistScores[a] = (artistScores[a] || 0) + 2;
+            }
           });
         }
       });
     });
 
-    // 统计搜索历史
+    // 统计搜索历史（仅采纳中文关键词）
     (searchHistory || []).forEach(kw => {
       const trimmed = (kw || '').trim();
-      if (trimmed.length >= 2 && trimmed.length <= 20) {
+      if (trimmed.length >= 2 && trimmed.length <= 20 && /[\u4e00-\u9fa5]/.test(trimmed)) {
         searchCandidates.push(trimmed);
         if (artistScores[trimmed] !== undefined) {
           artistScores[trimmed] += 4;
@@ -6973,15 +6982,15 @@ async function refreshRecommendations(showToast = false) {
     // 按偏好权重降序排列喜爱歌手
     const preferredArtists = Object.keys(artistScores).sort((a, b) => artistScores[b] - artistScores[a]);
 
-    // 2. 智能种子生成（严禁单一歌手扎堆，绝不使用单一歌名作为搜索词）
+    // 2. 智能种子生成（严禁单一歌手扎堆，选出 6 个完全不同的种子）
     const selectedSeeds = [];
     const usedSeedKeys = new Set();
 
-    // 优先：从用户喜爱的歌手中随机抽取 3~4 位完全不同的歌手（绝不重复）
+    // 优先：从用户喜爱的歌手中随机抽取至多 6 位完全不同的歌手（绝不重复）
     if (preferredArtists.length > 0) {
-      const topPool = preferredArtists.slice(0, 12).sort(() => 0.5 - Math.random());
+      const topPool = preferredArtists.slice(0, 16).sort(() => 0.5 - Math.random());
       for (const art of topPool) {
-        if (selectedSeeds.length >= 4) break;
+        if (selectedSeeds.length >= 6) break;
         const low = art.toLowerCase().trim();
         if (!usedSeedKeys.has(low)) {
           usedSeedKeys.add(low);
@@ -6994,10 +7003,10 @@ async function refreshRecommendations(showToast = false) {
     }
 
     // 补充：检查搜索历史中的关键词
-    if (selectedSeeds.length < 4 && searchCandidates.length > 0) {
+    if (selectedSeeds.length < 6 && searchCandidates.length > 0) {
       const shuffledSearch = [...searchCandidates].sort(() => 0.5 - Math.random());
       for (const kw of shuffledSearch) {
-        if (selectedSeeds.length >= 4) break;
+        if (selectedSeeds.length >= 6) break;
         const low = kw.toLowerCase().trim();
         if (!usedSeedKeys.has(low)) {
           usedSeedKeys.add(low);
@@ -7009,18 +7018,16 @@ async function refreshRecommendations(showToast = false) {
       }
     }
 
-    // 冷启动兜底：若偏好数据不足 4 个，使用多流派、跨风格的多样化歌手池补充（每位歌手独立，绝不重复）
-    const DIVERSE_FALLBACK_ARTISTS = [
-      '周杰伦', 'Taylor Swift', '林俊杰', 'Ed Sheeran', '毛不易',
-      'Coldplay', '陈奕迅', 'Adele', '薛之谦', 'Billie Eilish',
-      '王菲', 'Maroon 5', '许嵩', 'OneRepublic', '李健',
-      'Michael Jackson', '朴树', 'Bruno Mars', '胡夏', 'Post Malone',
-      '双笙', 'Avril Lavigne', '伦桑', 'Katy Perry', '汪苏泷',
-      'Imagine Dragons', '银临', 'Charlie Puth', '阿鲲', 'The Weeknd'
+    // 冷启动兜底：若偏好数据不足 6 个，使用多样化华语经典歌手池补充（全部为中文名家，绝无英文歌手）
+    const CHINESE_CLASSIC_ARTISTS = [
+      '周杰伦', '许嵩', '陈奕迅', '林俊杰', '薛之谦', '毛不易',
+      '王菲', '李健', '朴树', '胡夏', '伦桑', '银临', '双笙',
+      '汪苏泷', '郁可唯', '司南', '房东的猫', '蔡健雅', '郭顶',
+      '梁静茹', '孙燕姿', '张惠妹', '陶喆', '莫文蔚', '赵雷', '许巍'
     ];
-    const shuffledFallbacks = [...DIVERSE_FALLBACK_ARTISTS].sort(() => 0.5 - Math.random());
+    const shuffledFallbacks = [...CHINESE_CLASSIC_ARTISTS].sort(() => 0.5 - Math.random());
     for (const fbArt of shuffledFallbacks) {
-      if (selectedSeeds.length >= 4) break;
+      if (selectedSeeds.length >= 6) break;
       const low = fbArt.toLowerCase().trim();
       if (!usedSeedKeys.has(low)) {
         usedSeedKeys.add(low);
@@ -7054,8 +7061,8 @@ async function refreshRecommendations(showToast = false) {
 
     for (let i = 0; i < maxLen; i++) {
       for (let sIdx = 0; sIdx < selectedSeeds.length; sIdx++) {
-        // 单个种子最多贡献 2 首歌曲，保障不同偏好歌手均衡呈现
-        if ((seedSongCount[sIdx] || 0) >= 2) {
+        // 单个种子最多贡献 3 首歌曲，保障不同偏好歌手均衡呈现
+        if ((seedSongCount[sIdx] || 0) >= 3) {
           continue;
         }
 
@@ -7094,42 +7101,45 @@ async function refreshRecommendations(showToast = false) {
       if (merged.length >= 24) break;
     }
 
-    // 若依然不足 18 首，使用多元流派词继续补充
+    // 若依然不足 18 首，循环使用优质华语词汇连续补充直至填满 18 首
     if (merged.length < 18) {
-      const fallbackKws = ['经典流行', '热门金曲', '悠扬旋律', '宝藏好歌', '流行榜单'];
-      const fbKw = fallbackKws[Math.floor(Math.random() * fallbackKws.length)];
-      const fallbackList = await requestOnlineSearch(fbKw, 30, Math.floor(Math.random() * 3) + 1, true);
-      if (Array.isArray(fallbackList)) {
-        for (const fbSong of fallbackList) {
-          const rawTitle = fbSong.name || fbSong.title || '';
-          const baseTitleKey = extractSongBaseKey(rawTitle);
-          const rawArtist = (fbSong.artist || '未知').trim();
-          const artists = rawArtist.split(/[\/,、&]/).map(a => a.trim().toLowerCase()).filter(Boolean);
-          const songKey = `${fbSong.source || ''}_${fbSong.url_id || fbSong.id}`;
+      const fallbackKws = ['国风雅韵', '经典华语', '深情好歌', '诗意古风', '清欢民谣'];
+      for (const fbKw of fallbackKws) {
+        if (merged.length >= 18) break;
+        const fallbackList = await requestOnlineSearch(fbKw, 25, Math.floor(Math.random() * 3) + 1, true);
+        if (Array.isArray(fallbackList)) {
+          for (const fbSong of fallbackList) {
+            const rawTitle = fbSong.name || fbSong.title || '';
+            const baseTitleKey = extractSongBaseKey(rawTitle);
+            const rawArtist = (fbSong.artist || '未知').trim();
+            const artists = rawArtist.split(/[\/,、&]/).map(a => a.trim().toLowerCase()).filter(Boolean);
+            const songKey = `${fbSong.source || ''}_${fbSong.url_id || fbSong.id}`;
 
-          if (!baseTitleKey || seenBaseSongTitles.has(baseTitleKey) || localBaseTitles.has(baseTitleKey)) {
-            continue;
+            if (!baseTitleKey || seenBaseSongTitles.has(baseTitleKey) || localBaseTitles.has(baseTitleKey)) {
+              continue;
+            }
+
+            const exceedsLimit = artists.some(a => (artistSongCount[a] || 0) >= 2);
+            if (exceedsLimit) continue;
+
+            if (!seenOnlineIds.has(songKey) && isQualityMusic(fbSong)) {
+              seenOnlineIds.add(songKey);
+              seenBaseSongTitles.add(baseTitleKey);
+              artists.forEach(a => {
+                artistSongCount[a] = (artistSongCount[a] || 0) + 1;
+              });
+              const template = DISCOVER_NOTE_TEMPLATES[(merged.length) % DISCOVER_NOTE_TEMPLATES.length];
+              fbSong.reason = template.replace(/[\u00b7]/g, '-');
+              merged.push(fbSong);
+            }
+            if (merged.length >= 24) break;
           }
-
-          const exceedsLimit = artists.some(a => (artistSongCount[a] || 0) >= 2);
-          if (exceedsLimit) continue;
-
-          if (!seenOnlineIds.has(songKey) && isQualityMusic(fbSong)) {
-            seenOnlineIds.add(songKey);
-            seenBaseSongTitles.add(baseTitleKey);
-            artists.forEach(a => {
-              artistSongCount[a] = (artistSongCount[a] || 0) + 1;
-            });
-            const template = DISCOVER_NOTE_TEMPLATES[(merged.length) % DISCOVER_NOTE_TEMPLATES.length];
-            fbSong.reason = template.replace(/[\u00b7]/g, '-');
-            merged.push(fbSong);
-          }
-          if (merged.length >= 24) break;
         }
       }
     }
 
     // 5. 构建多板块双列横滑流分组（每个板块 6 首歌曲，每列 3 首）
+    // 100% 采用线上动态精选歌曲，绝不向板块尾部追加硬编码静态歌曲！
     const sec1Songs = merged.slice(0, 6);
     const sec2Songs = merged.slice(6, 12);
     const sec3Songs = merged.slice(12, 18);
@@ -7144,15 +7154,15 @@ async function refreshRecommendations(showToast = false) {
     currentDiscoverSections = [
       {
         title: `灵犀新推 - ${nowMonthDay}佳作`,
-        songs: sec1Songs.length >= 6 ? sec1Songs : (sec1Songs.concat(INITIAL_DISCOVER_SECTIONS[0].songs)).slice(0, 6)
+        songs: sec1Songs
       },
       {
         title: '私人专属好歌',
-        songs: sec2Songs.length >= 6 ? sec2Songs : (sec2Songs.concat(INITIAL_DISCOVER_SECTIONS[1].songs)).slice(0, 6)
+        songs: sec2Songs
       },
       {
         title: '小众宝藏佳作',
-        songs: sec3Songs.length >= 6 ? sec3Songs : (sec3Songs.concat(INITIAL_DISCOVER_SECTIONS[2].songs)).slice(0, 6)
+        songs: sec3Songs
       }
     ];
 
@@ -12456,9 +12466,7 @@ function handleSystemBack() {
   else if (searchP && searchP.classList.contains('active')) closeSearchView();
   else if (editP && editP.classList.contains('active')) closeEditPlaylistPage();
   else if (detailP && detailP.classList.contains('active')) closePlaylistDetail();
-  else if (currentHomeTab !== (localStorage.getItem('lingxi_default_tab') || 'discover')) {
-    switchHomeNavTab(localStorage.getItem('lingxi_default_tab') || 'discover');
-  } else {
+  else {
     // 已经位于应用主界面，按返回键直接退回手机桌面
     if (window.AndroidBridge && window.AndroidBridge.minimizeApp) {
       window.AndroidBridge.minimizeApp();
@@ -13229,7 +13237,8 @@ window.addEventListener('load', () => {
         return;
       }
 
-      if (!target.closest('.xianyin-content-scroll') && !target.closest('#listenHeaderBar')) {
+      // 切页手势仅在顶部导航标题栏有效，严禁在页面内容滚动区域拦截滑动手势造成意外切页
+      if (!target.closest('#listenHeaderBar')) {
         isTracking = false;
         return;
       }
@@ -13256,10 +13265,10 @@ window.addEventListener('load', () => {
       const absX = Math.abs(diffX);
       const absY = Math.abs(diffY);
 
-      if (absX > 45 && absX > absY * 1.3) {
-        if (currentHomeTab === 'discover' && diffX < -45) {
+      if (absX > 80 && absX > absY * 1.5) {
+        if (currentHomeTab === 'discover' && diffX < -80) {
           switchHomeNavTab('library');
-        } else if (currentHomeTab === 'library' && diffX > 45) {
+        } else if (currentHomeTab === 'library' && diffX > 80) {
           switchHomeNavTab('discover');
         }
       }
