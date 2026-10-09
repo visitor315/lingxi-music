@@ -1,6 +1,6 @@
 {
-  "versionCode": 87,
-  "versionName": "2.5.4",
-  "changelog": "新增乐库歌单胶囊长按删除功能（仅限自建歌单），支持触感震动反馈与双药丸删除确认",
+  "versionCode": 88,
+  "versionName": "2.5.5",
+  "changelog": "新增发现页与个性化歌曲推荐，支持长按乐库歌单胶囊管理自建歌单；全面精修水墨宣纸美学UI与动效交互，体验更加清雅流畅。",
   "downloadUrl": "https://ghfast.top/https://github.com/visitor315/lingxi-music/releases/download/v1.4.0/LingXiMusic.apk"
 }
