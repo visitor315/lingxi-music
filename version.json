@@ -1,6 +1,6 @@
 {
-  "versionCode": 84,
-  "versionName": "2.5.1",
-  "changelog": "重构发现推荐引擎：基于用户收藏与搜索偏好多维画像动态推荐，彻底解除语言限制，引入同歌手2首上限熔断机制，实现多元百花齐放",
+  "versionCode": 85,
+  "versionName": "2.5.2",
+  "changelog": "彻底消除同名歌曲扎堆问题：引入全局歌曲主干基准标题唯一性拦截，禁止同名曲目翻唱重复出现，种子仅使用偏好歌手保证百花齐放",
   "downloadUrl": "https://ghfast.top/https://github.com/visitor315/lingxi-music/releases/download/v1.4.0/LingXiMusic.apk"
 }

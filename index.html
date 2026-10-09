@@ -3531,7 +3531,7 @@ body.night .create-playlist-sheet-confirm {
               </div>
               <div class="item-content">
                 <span class="item-main-title">检查版本更新</span>
-                <span class="item-subtitle-tight" id="aboutAppVersionDesc">v2.5.1</span>
+                <span class="item-subtitle-tight" id="aboutAppVersionDesc">v2.5.2</span>
               </div>
             </div>
             <svg class="item-arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
@@ -4181,7 +4181,7 @@ body.night .create-playlist-sheet-confirm {
       </div>
       <div style="display:flex; flex-direction:column; align-items:center; padding:4px 0 14px;">
         <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px;">
-          <span style="font-size:18px; font-weight:700; color:var(--ink-black);" id="updateVersionTitle">v2.5.1</span>
+          <span style="font-size:18px; font-weight:700; color:var(--ink-black);" id="updateVersionTitle">v2.5.2</span>
           <span style="font-size:11px; font-weight:600; background:rgba(35,75,184,0.08); color:var(--brand-blue); padding:2px 8px; border-radius:10px;" id="updateVersionBadge">最新版本</span>
         </div>
         <div id="updateChangelogBox" style="width:100%; box-sizing:border-box; background:var(--claude-pill-bg, rgba(20,20,19,0.03)); border:none; border-radius:14px; padding:14px 16px; font-size:13.5px; line-height:1.65; color:var(--ink-gray); white-space:pre-line; max-height:36vh; overflow-y:auto;"></div>
@@ -4605,7 +4605,7 @@ const OTHER_AVATAR_SVG = `<svg width="14" height="14" viewBox="0 0 24 24" fill="
 
 const APP_CONFIG = {
   name: '灵犀音乐',
-  version: '2.5.1',
+  version: '2.5.2',
   build: '2026.10.09',
   codename: 'Pure Sound'
 };
@@ -6888,6 +6888,16 @@ const DISCOVER_NOTE_TEMPLATES = [
   '深情治愈'
 ];
 
+function extractSongBaseKey(title) {
+  if (!title) return '';
+  return title
+    .replace(/\(.*?\)|\[.*?\]|（.*?）|【.*?】|《.*?》/g, '')
+    .replace(/-?\s*20\d\d/g, '')
+    .replace(/(live|现场版|翻唱|重制版|原版|伴奏|纯伴奏|remix|dj|版本)/gi, '')
+    .replace(/[\s\-_/\u00b7]/g, '')
+    .toLowerCase();
+}
+
 function isQualityMusic(song) {
   if (!song) return false;
   const name = (song.name || song.title || '').trim();
@@ -6899,6 +6909,11 @@ function isQualityMusic(song) {
   const lowArtist = artist.toLowerCase();
   const junkKws = ['试听', '片段', '铃声', '30s', '30秒', '副歌', '高潮版', '截取', '伴奏', '纯伴奏', 'inst', 'instrumental'];
   if (junkKws.some(k => lowName.includes(k) || lowArtist.includes(k))) return false;
+
+  // 统一消毒间隔号，确保UI遵循无间隔点规范
+  if (song.name) song.name = song.name.replace(/[\u00b7]/g, '-');
+  if (song.title) song.title = song.title.replace(/[\u00b7]/g, '-');
+  if (song.artist) song.artist = song.artist.replace(/[\u00b7]/g, '-');
 
   return true;
 }
@@ -6919,10 +6934,9 @@ async function refreshRecommendations(showToast = false) {
   try {
     // 1. 深度聚合使用者的真实多维偏好画像（喜爱歌手、收藏常听、搜索足迹）
     const artistScores = {};
-    const titleCandidates = [];
     const searchCandidates = [];
 
-    // 统计收藏与曲库歌曲（收藏权重更高）
+    // 统计收藏与曲库歌曲中喜爱的歌手（收藏歌手权重更高）
     (ALL_LIBRARY_SONGS || []).forEach(s => {
       const weight = s.isFav ? 5 : 2;
       if (s.artist && s.artist !== '未知歌手') {
@@ -6930,12 +6944,6 @@ async function refreshRecommendations(showToast = false) {
         parts.forEach(a => {
           artistScores[a] = (artistScores[a] || 0) + weight;
         });
-      }
-      if (s.title && s.title !== '未知曲目') {
-        const cleanTitle = s.title.replace(/\(.*?\)|\[.*?\]|（.*?）|【.*?】/g, '').trim();
-        if (cleanTitle.length >= 2 && cleanTitle.length <= 15) {
-          titleCandidates.push({ title: cleanTitle, artist: s.artist, weight });
-        }
       }
     });
 
@@ -6951,7 +6959,7 @@ async function refreshRecommendations(showToast = false) {
       });
     });
 
-    // 统计搜索历史（用户主动表达的强意向关键词）
+    // 统计搜索历史
     (searchHistory || []).forEach(kw => {
       const trimmed = (kw || '').trim();
       if (trimmed.length >= 2 && trimmed.length <= 20) {
@@ -6965,16 +6973,16 @@ async function refreshRecommendations(showToast = false) {
     // 按偏好权重降序排列喜爱歌手
     const preferredArtists = Object.keys(artistScores).sort((a, b) => artistScores[b] - artistScores[a]);
 
-    // 2. 智能种子生成（严禁单一歌手扎堆，每个种子保证来自不同歌手或不同维度）
+    // 2. 智能种子生成（严禁单一歌手扎堆，绝不使用单一歌名作为搜索词）
     const selectedSeeds = [];
     const usedSeedKeys = new Set();
 
-    // 优先：从用户高偏好歌手中随机抽取 2 位不同的歌手（绝不重复）
+    // 优先：从用户喜爱的歌手中随机抽取 3~4 位完全不同的歌手（绝不重复）
     if (preferredArtists.length > 0) {
-      const topPool = preferredArtists.slice(0, 10).sort(() => 0.5 - Math.random());
+      const topPool = preferredArtists.slice(0, 12).sort(() => 0.5 - Math.random());
       for (const art of topPool) {
-        if (selectedSeeds.length >= 2) break;
-        const low = art.toLowerCase();
+        if (selectedSeeds.length >= 4) break;
+        const low = art.toLowerCase().trim();
         if (!usedSeedKeys.has(low)) {
           usedSeedKeys.add(low);
           selectedSeeds.push({
@@ -6985,30 +6993,12 @@ async function refreshRecommendations(showToast = false) {
       }
     }
 
-    // 其次：从用户收藏/常听的单曲中抽取 1 个相关歌曲种子
-    if (titleCandidates.length > 0) {
-      const shuffledTitles = [...titleCandidates].sort(() => 0.5 - Math.random());
-      for (const item of shuffledTitles) {
-        if (selectedSeeds.length >= 3) break;
-        const artLow = (item.artist || '').toLowerCase();
-        const titleLow = item.title.toLowerCase();
-        if (!usedSeedKeys.has(artLow) && !usedSeedKeys.has(titleLow)) {
-          if (artLow) usedSeedKeys.add(artLow);
-          usedSeedKeys.add(titleLow);
-          selectedSeeds.push({
-            keyword: item.title,
-            reason: item.artist ? `相似推荐 - 似于《${item.title}》` : '心选推荐'
-          });
-        }
-      }
-    }
-
-    // 再次：从搜索历史中抽取 1 个关键词
-    if (selectedSeeds.length < 3 && searchCandidates.length > 0) {
+    // 补充：检查搜索历史中的关键词
+    if (selectedSeeds.length < 4 && searchCandidates.length > 0) {
       const shuffledSearch = [...searchCandidates].sort(() => 0.5 - Math.random());
       for (const kw of shuffledSearch) {
-        if (selectedSeeds.length >= 3) break;
-        const low = kw.toLowerCase();
+        if (selectedSeeds.length >= 4) break;
+        const low = kw.toLowerCase().trim();
         if (!usedSeedKeys.has(low)) {
           usedSeedKeys.add(low);
           selectedSeeds.push({
@@ -7019,7 +7009,7 @@ async function refreshRecommendations(showToast = false) {
       }
     }
 
-    // 冷启动兜底：若偏好数据不足 3 个，使用多流派、跨风格的多样化歌手池补充（每位歌手独立，绝不重复）
+    // 冷启动兜底：若偏好数据不足 4 个，使用多流派、跨风格的多样化歌手池补充（每位歌手独立，绝不重复）
     const DIVERSE_FALLBACK_ARTISTS = [
       '周杰伦', 'Taylor Swift', '林俊杰', 'Ed Sheeran', '毛不易',
       'Coldplay', '陈奕迅', 'Adele', '薛之谦', 'Billie Eilish',
@@ -7030,8 +7020,8 @@ async function refreshRecommendations(showToast = false) {
     ];
     const shuffledFallbacks = [...DIVERSE_FALLBACK_ARTISTS].sort(() => 0.5 - Math.random());
     for (const fbArt of shuffledFallbacks) {
-      if (selectedSeeds.length >= 3) break;
-      const low = fbArt.toLowerCase();
+      if (selectedSeeds.length >= 4) break;
+      const low = fbArt.toLowerCase().trim();
       if (!usedSeedKeys.has(low)) {
         usedSeedKeys.add(low);
         selectedSeeds.push({
@@ -7049,37 +7039,54 @@ async function refreshRecommendations(showToast = false) {
     const resultsLists = await Promise.all(searchPromises);
 
     // 4. 构建排重与合并歌曲池
-    const localSongSet = new Set(
-      (ALL_LIBRARY_SONGS || []).map(s => (s.title || '').trim().toLowerCase())
+    // 本地曲库歌曲核心标题库（绝不向用户推荐本地已有曲目）
+    const localBaseTitles = new Set(
+      (ALL_LIBRARY_SONGS || []).map(s => extractSongBaseKey(s.title || s.name || ''))
     );
 
     const merged = [];
     const seenOnlineIds = new Set();
-    // 关键机制：限制同一个歌手在整份推荐中最多出现 2 首歌曲，彻底根绝同一歌手刷屏！
+    const seenBaseSongTitles = new Set();
     const artistSongCount = {};
+    const seedSongCount = {};
 
     const maxLen = Math.max(...resultsLists.map(list => (Array.isArray(list) ? list.length : 0)));
 
     for (let i = 0; i < maxLen; i++) {
       for (let sIdx = 0; sIdx < selectedSeeds.length; sIdx++) {
+        // 单个种子最多贡献 2 首歌曲，保障不同偏好歌手均衡呈现
+        if ((seedSongCount[sIdx] || 0) >= 2) {
+          continue;
+        }
+
         const list = resultsLists[sIdx];
         if (list && list[i]) {
           const song = list[i];
-          const lowTitle = (song.name || '').trim().toLowerCase();
+          const rawTitle = song.name || song.title || '';
+          const baseTitleKey = extractSongBaseKey(rawTitle);
           const rawArtist = (song.artist || '未知').trim();
-          const firstArtist = rawArtist.split(/[\/,、&]/)[0].trim().toLowerCase();
+          const artists = rawArtist.split(/[\/,、&]/).map(a => a.trim().toLowerCase()).filter(Boolean);
           const songKey = `${song.source || ''}_${song.url_id || song.id}`;
 
-          // 单个歌手最多 2 首上限限制
-          const currentCount = artistSongCount[firstArtist] || 0;
-          if (currentCount >= 2) {
+          // 核心拦截 1：歌名去重，严禁同一首歌（包括翻唱、版本、同名曲）出现第二次！
+          if (!baseTitleKey || seenBaseSongTitles.has(baseTitleKey) || localBaseTitles.has(baseTitleKey)) {
             continue;
           }
 
-          if (!localSongSet.has(lowTitle) && !seenOnlineIds.has(songKey) && isQualityMusic(song)) {
+          // 核心拦截 2：单个歌手在整份推荐中最多出现 2 首歌
+          const exceedsLimit = artists.some(a => (artistSongCount[a] || 0) >= 2);
+          if (exceedsLimit) {
+            continue;
+          }
+
+          if (!seenOnlineIds.has(songKey) && isQualityMusic(song)) {
             seenOnlineIds.add(songKey);
-            artistSongCount[firstArtist] = currentCount + 1;
-            song.reason = selectedSeeds[sIdx].reason || '精选推荐';
+            seenBaseSongTitles.add(baseTitleKey);
+            seedSongCount[sIdx] = (seedSongCount[sIdx] || 0) + 1;
+            artists.forEach(a => {
+              artistSongCount[a] = (artistSongCount[a] || 0) + 1;
+            });
+            song.reason = (selectedSeeds[sIdx].reason || '精选推荐').replace(/[\u00b7]/g, '-');
             merged.push(song);
           }
         }
@@ -7094,19 +7101,27 @@ async function refreshRecommendations(showToast = false) {
       const fallbackList = await requestOnlineSearch(fbKw, 30, Math.floor(Math.random() * 3) + 1, true);
       if (Array.isArray(fallbackList)) {
         for (const fbSong of fallbackList) {
-          const lowTitle = (fbSong.name || '').trim().toLowerCase();
+          const rawTitle = fbSong.name || fbSong.title || '';
+          const baseTitleKey = extractSongBaseKey(rawTitle);
           const rawArtist = (fbSong.artist || '未知').trim();
-          const firstArtist = rawArtist.split(/[\/,、&]/)[0].trim().toLowerCase();
+          const artists = rawArtist.split(/[\/,、&]/).map(a => a.trim().toLowerCase()).filter(Boolean);
           const songKey = `${fbSong.source || ''}_${fbSong.url_id || fbSong.id}`;
 
-          const currentCount = artistSongCount[firstArtist] || 0;
-          if (currentCount >= 2) continue;
+          if (!baseTitleKey || seenBaseSongTitles.has(baseTitleKey) || localBaseTitles.has(baseTitleKey)) {
+            continue;
+          }
 
-          if (!localSongSet.has(lowTitle) && !seenOnlineIds.has(songKey) && isQualityMusic(fbSong)) {
+          const exceedsLimit = artists.some(a => (artistSongCount[a] || 0) >= 2);
+          if (exceedsLimit) continue;
+
+          if (!seenOnlineIds.has(songKey) && isQualityMusic(fbSong)) {
             seenOnlineIds.add(songKey);
-            artistSongCount[firstArtist] = currentCount + 1;
+            seenBaseSongTitles.add(baseTitleKey);
+            artists.forEach(a => {
+              artistSongCount[a] = (artistSongCount[a] || 0) + 1;
+            });
             const template = DISCOVER_NOTE_TEMPLATES[(merged.length) % DISCOVER_NOTE_TEMPLATES.length];
-            fbSong.reason = template;
+            fbSong.reason = template.replace(/[\u00b7]/g, '-');
             merged.push(fbSong);
           }
           if (merged.length >= 24) break;
