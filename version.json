@@ -1,6 +1,6 @@
 {
-  "versionCode": 89,
-  "versionName": "2.5.6",
-  "changelog": "修复搜索歌曲加入全部歌曲后封面丢失的问题，重构网易云官方专辑原图无损解析链路并自动补全历史曲库封面；新增发现页与个性化推荐；全面精修UI与交互。",
+  "versionCode": 90,
+  "versionName": "2.5.7",
+  "changelog": "修复曲库渲染闭合标签解析异常，彻底解决界面点击无响应问题；优化搜索歌曲进入全部歌曲后的官方高清封面自动解析与历史补全；精修发现页与交互体验。",
   "downloadUrl": "https://ghfast.top/https://github.com/visitor315/lingxi-music/releases/download/v1.4.0/LingXiMusic.apk"
 }
