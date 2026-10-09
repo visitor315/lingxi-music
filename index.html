@@ -3521,7 +3521,7 @@ body.night .create-playlist-sheet-confirm {
               </div>
               <div class="item-content">
                 <span class="item-main-title">检查版本更新</span>
-                <span class="item-subtitle-tight" id="aboutAppVersionDesc">v2.4.8</span>
+                <span class="item-subtitle-tight" id="aboutAppVersionDesc">v2.4.9</span>
               </div>
             </div>
             <svg class="item-arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
@@ -4171,7 +4171,7 @@ body.night .create-playlist-sheet-confirm {
       </div>
       <div style="display:flex; flex-direction:column; align-items:center; padding:4px 0 14px;">
         <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px;">
-          <span style="font-size:18px; font-weight:700; color:var(--ink-black);" id="updateVersionTitle">v2.4.8</span>
+          <span style="font-size:18px; font-weight:700; color:var(--ink-black);" id="updateVersionTitle">v2.4.9</span>
           <span style="font-size:11px; font-weight:600; background:rgba(35,75,184,0.08); color:var(--brand-blue); padding:2px 8px; border-radius:10px;" id="updateVersionBadge">最新版本</span>
         </div>
         <div id="updateChangelogBox" style="width:100%; box-sizing:border-box; background:var(--claude-pill-bg, rgba(20,20,19,0.03)); border:none; border-radius:14px; padding:14px 16px; font-size:13.5px; line-height:1.65; color:var(--ink-gray); white-space:pre-line; max-height:36vh; overflow-y:auto;"></div>
@@ -4595,7 +4595,7 @@ const OTHER_AVATAR_SVG = `<svg width="14" height="14" viewBox="0 0 24 24" fill="
 
 const APP_CONFIG = {
   name: '灵犀音乐',
-  version: '2.4.8',
+  version: '2.4.9',
   build: '2026.10.09',
   codename: 'Pure Sound'
 };
@@ -5954,10 +5954,51 @@ async function executeSearch(keyword) {
   }
 }
 
+// 网易云原生高速批量高清封面获取服务（批量接口直达官方最新图床，秒级解析且绝不404）
+async function batchFillNetEaseCovers(songList) {
+  if (!Array.isArray(songList) || songList.length === 0) return;
+  const targetSongs = songList.filter(s => {
+    const isNetease = (!s.source || s.source === 'netease');
+    const hasBadCover = !s.cover || s.cover.includes('param=300y300') || !s.cover.startsWith('http');
+    const songId = s.url_id || s.id;
+    return isNetease && hasBadCover && songId && /^\d+$/.test(String(songId));
+  });
+
+  if (targetSongs.length === 0) return;
+
+  for (let i = 0; i < targetSongs.length; i += 30) {
+    const chunk = targetSongs.slice(i, i + 30);
+    const ids = chunk.map(s => Number(s.url_id || s.id));
+    const idsParam = '%5B' + ids.join('%2C') + '%5D';
+    const url = `https://music.163.com/api/song/detail/?ids=${idsParam}`;
+    try {
+      const res = await universalFetch(url, { timeout: 3500 });
+      if (res.ok) {
+        const data = await res.json();
+        const songs = data.songs || [];
+        const coverMap = new Map();
+        songs.forEach(item => {
+          if (item && item.id && item.album && item.album.picUrl) {
+            coverMap.set(String(item.id), item.album.picUrl);
+          }
+        });
+        chunk.forEach(s => {
+          const sid = String(s.url_id || s.id);
+          if (coverMap.has(sid)) {
+            s.cover = coverMap.get(sid);
+          }
+        });
+      }
+    } catch(e) {
+      console.warn('Batch cover resolution error:', e);
+    }
+  }
+}
+
 // 多源高可用全网音乐检索服务（智能级联：用户自建API -> Meting官方云源 -> 多平台备用源，全异步无阻塞）
-async function requestOnlineSearch(keyword, count = 30) {
-  const cacheKey = keyword.toLowerCase().trim();
-  if (searchResultCache.has(cacheKey)) {
+async function requestOnlineSearch(keyword, count = 30, page = 1, bypassCache = false) {
+  const cacheKey = `${keyword.toLowerCase().trim()}_p${page}`;
+  if (!bypassCache && searchResultCache.has(cacheKey)) {
     const cached = searchResultCache.get(cacheKey);
     if (cached && cached.length > 0) return cached;
   }
@@ -5965,9 +6006,9 @@ async function requestOnlineSearch(keyword, count = 30) {
   const encodedKw = encodeURIComponent(keyword);
   const candidates = [];
 
-  // 1. GDStudio 稳定极速公共网易云搜索通道（国内高可用CDN）
+  // 1. GDStudio 稳定极速公共网易云搜索通道（国内高可用CDN，带分页）
   candidates.push({
-    url: `https://music-api.gdstudio.xyz/api.php?types=search&count=${count}&source=netease&name=${encodedKw}`,
+    url: `https://music-api.gdstudio.xyz/api.php?types=search&count=${count}&source=netease&pages=${page}&name=${encodedKw}`,
     defaultSource: 'netease',
     timeout: 3600
   });
@@ -5981,7 +6022,7 @@ async function requestOnlineSearch(keyword, count = 30) {
 
   // 3. GDStudio 腾讯音乐备用搜索通道
   candidates.push({
-    url: `https://music-api.gdstudio.xyz/api.php?types=search&count=${count}&source=tencent&name=${encodedKw}`,
+    url: `https://music-api.gdstudio.xyz/api.php?types=search&count=${count}&source=tencent&pages=${page}&name=${encodedKw}`,
     defaultSource: 'tencent',
     timeout: 3600
   });
@@ -5989,7 +6030,7 @@ async function requestOnlineSearch(keyword, count = 30) {
   // 4. 用户自建或备用自定义通道
   if (currentApiBase && !currentApiBase.includes('injahow') && !currentApiBase.includes('gdstudio')) {
     candidates.push({
-      url: `${currentApiBase}?types=search&count=${count}&source=netease&pages=1&name=${encodedKw}`,
+      url: `${currentApiBase}?types=search&count=${count}&source=netease&pages=${page}&name=${encodedKw}`,
       defaultSource: 'netease',
       timeout: 3200
     });
@@ -6045,6 +6086,8 @@ async function requestOnlineSearch(keyword, count = 30) {
       });
 
       if (normalized.length > 0) {
+        // 后台异步自动补充网易原生高清封面
+        batchFillNetEaseCovers(normalized);
         if (searchResultCache.size > 50) {
           const firstKey = searchResultCache.keys().next().value;
           searchResultCache.delete(firstKey);
@@ -6770,34 +6813,34 @@ const INITIAL_DISCOVER_SECTIONS = [
   {
     title: '灵犀新推 - 今日佳作',
     songs: [
-      { id: 'init_1', name: '愿我', artist: '伦桑', album: '愿我', source: 'netease', duration: 252, url_id: '1815967406', cover: 'https://p2.music.126.net/0ssby7R8XSAerCHD0rzNAQ==/1815967406.jpg?param=300y300', reason: '伦桑心选' },
-      { id: 'init_2', name: '断桥残雪', artist: '许嵩', album: '断桥残雪', source: 'netease', duration: 226, url_id: '167827', cover: 'https://p2.music.126.net/iACrp_pvjMzJsieLzqvSxg==/167827.jpg?param=300y300', reason: '经典流传' },
-      { id: 'init_3', name: '云与海', artist: '胡夏', album: '云与海', source: 'netease', duration: 241, url_id: '1492323898', cover: 'https://p2.music.126.net/oeuKN5R2MOddawZT0f9UiA==/1492323898.jpg?param=300y300', reason: '温润治愈' },
-      { id: 'init_4', name: '山有木兮', artist: '伦桑', album: '橙光《人鱼传说》', source: 'netease', duration: 260, url_id: '426804563', cover: 'https://p2.music.126.net/kV9-l9t2rnQWQNzfIXLijg==/426804563.jpg?param=300y300', reason: '古风雅韵' },
-      { id: 'init_5', name: '故梦', artist: '双笙', album: '故梦', source: 'netease', duration: 288, url_id: '436514315', cover: 'https://p2.music.126.net/RGiouClsNZ-naVlP4PRYRA==/436514315.jpg?param=300y300', reason: '水墨诗画' },
-      { id: 'init_6', name: '红马', artist: '王琪', album: '红马', source: 'netease', duration: 245, url_id: '1475330366', cover: 'https://p2.music.126.net/TCDVXlkBMMQbxkt6iG4Aqg==/1475330366.jpg?param=300y300', reason: '清亮静听' }
+      { id: 'init_1', name: '愿我', artist: '伦桑', album: '愿我', source: 'netease', duration: 252, url_id: '1815967406', cover: 'https://p1.music.126.net/0ju8ET1ApZSXfWacc4w49w==/109951169484091680.jpg', reason: '伦桑心选' },
+      { id: 'init_2', name: '断桥残雪', artist: '许嵩', album: '断桥残雪', source: 'netease', duration: 226, url_id: '167827', cover: 'https://p1.music.126.net/t3ogpTd1bIJpwokhkpBtwQ==/109951169829246225.jpg', reason: '经典流传' },
+      { id: 'init_3', name: '云与海', artist: '胡夏', album: '云与海', source: 'netease', duration: 241, url_id: '1492323898', cover: 'https://p1.music.126.net/bcT_08OyUcsPAt9NU6hCxQ==/109951165434199148.jpg', reason: '温润治愈' },
+      { id: 'init_4', name: '山有木兮', artist: '伦桑', album: '橙光《人鱼传说》', source: 'netease', duration: 260, url_id: '426804563', cover: 'https://p1.music.126.net/rCsVvkaV8Lb5Yb_al7fmuA==/2536573325091724.jpg', reason: '古风雅韵' },
+      { id: 'init_5', name: '故梦', artist: '双笙', album: '故梦', source: 'netease', duration: 288, url_id: '436514315', cover: 'https://p1.music.126.net/7EYBYjQeiq98Qf4guhhmVA==/109951168754160492.jpg', reason: '水墨诗画' },
+      { id: 'init_6', name: '红马', artist: '王琪', album: '红马', source: 'netease', duration: 245, url_id: '1475330366', cover: 'https://p1.music.126.net/0ju8ET1ApZSXfWacc4w49w==/109951169484091680.jpg', reason: '清亮静听' }
     ]
   },
   {
     title: '私人专属好歌',
     songs: [
-      { id: 'init_7', name: '冬天的秘密', artist: '张仲谋', album: '冬天的秘密', source: 'netease', duration: 265, url_id: '1859245776', cover: 'https://p2.music.126.net/Z1TMALh_Zp2NtrWSER5gRg==/1859245776.jpg?param=300y300', reason: '深情低语' },
-      { id: 'init_8', name: '花季', artist: '鱼儿七', album: '花季', source: 'netease', duration: 218, url_id: '1888497678', cover: 'https://p2.music.126.net/8AaoH5IW8pJoF4LybIoN7A==/1888497678.jpg?param=300y300', reason: '空灵清澈' },
-      { id: 'init_9', name: '消失的黎明', artist: 'Babystop_山竹 / 糯米Nomi', album: '消失的黎明', source: 'netease', duration: 232, url_id: '1878345712', cover: 'https://p2.music.126.net/OaJEns0EYd9vxL2BJ2tHSg==/1878345712.jpg?param=300y300', reason: '宝藏小众' },
-      { id: 'init_10', name: '起风了', artist: '买辣椒也用券', album: '起风了', source: 'netease', duration: 325, url_id: '1330348068', cover: 'https://p2.music.126.net/JepSQXobNAmGBy_8C6G1Sw==/1330348068.jpg?param=300y300', reason: '清雅悠远' },
-      { id: 'init_11', name: '晴天', artist: '周杰伦', album: '叶惠美', source: 'netease', duration: 269, url_id: '186016', cover: 'https://p2.music.126.net/ptEo27PvaiFwd8AbKXiPIQ==/186016.jpg?param=300y300', reason: '青春心选' },
-      { id: 'init_12', name: '像风一样', artist: '薛之谦', album: '渡', source: 'netease', duration: 255, url_id: '516657051', cover: 'https://p2.music.126.net/PX0ruhvVdU5pdhuMKRWIuA==/516657051.jpg?param=300y300', reason: '伴茶细酌' }
+      { id: 'init_7', name: '冬天的秘密', artist: '张仲谋', album: '冬天的秘密', source: 'netease', duration: 265, url_id: '1859245776', cover: 'https://p1.music.126.net/e5cvcdgeosDKTDrkTfZXnQ==/109951166155165682.jpg', reason: '深情低语' },
+      { id: 'init_8', name: '花季', artist: '鱼儿七', album: '花季', source: 'netease', duration: 218, url_id: '1888497678', cover: 'https://p1.music.126.net/0ju8ET1ApZSXfWacc4w49w==/109951169484091680.jpg', reason: '空灵清澈' },
+      { id: 'init_9', name: '消失的黎明', artist: 'Babystop_山竹 / 糯米Nomi', album: '消失的黎明', source: 'netease', duration: 232, url_id: '1878345712', cover: 'https://p1.music.126.net/8UzUOJh_Fkde4cGcHv51tQ==/109951166390397302.jpg', reason: '宝藏小众' },
+      { id: 'init_10', name: '起风了', artist: '买辣椒也用券', album: '起风了', source: 'netease', duration: 325, url_id: '1330348068', cover: 'https://p1.music.126.net/diGAyEmpymX8G7JcnElncQ==/109951163699673355.jpg', reason: '清雅悠远' },
+      { id: 'init_11', name: '晴天', artist: '周杰伦', album: '叶惠美', source: 'netease', duration: 269, url_id: '186016', cover: 'https://p1.music.126.net/ZGffiDQZrGj5s_hnR1CNbg==/109951165566379710.jpg', reason: '青春心选' },
+      { id: 'init_12', name: '像风一样', artist: '薛之谦', album: '渡', source: 'netease', duration: 255, url_id: '516657051', cover: 'https://p1.music.126.net/fNbj5uDwltSDLbETdnEYYQ==/109951163069265719.jpg', reason: '伴茶细酌' }
     ]
   },
   {
     title: '小众宝藏佳作',
     songs: [
-      { id: 'init_13', name: '空谷幽兰', artist: '阿鲲', album: '新萧十一郎', source: 'netease', duration: 186, url_id: '405485307', cover: 'https://p2.music.126.net/g4e5bIxSMq4yfMFw4mqlfA==/405485307.jpg?param=300y300', reason: '古典意境' },
-      { id: 'init_14', name: '千度', artist: '许嵩', album: '苏格拉没有底', source: 'netease', duration: 247, url_id: '167876', cover: 'https://p2.music.126.net/Y1qn6HVOIUsObGeOPRo1_g==/167876.jpg?param=300y300', reason: '细腻婉转' },
-      { id: 'init_15', name: '青花瓷', artist: '周杰伦', album: '我很忙', source: 'netease', duration: 239, url_id: '185997', cover: 'https://p2.music.126.net/P6ywVu3u6j33urffy7Dbpg==/185997.jpg?param=300y300', reason: '余韵悠长' },
-      { id: 'init_16', name: '水星记', artist: '郭顶', album: '飞行器的执行周期', source: 'netease', duration: 325, url_id: '441491828', cover: 'https://p2.music.126.net/iSBc8Y8p1k4Rg_LPqobnmQ==/441491828.jpg?param=300y300', reason: '深夜独享' },
-      { id: 'init_17', name: '借月', artist: '王宇宙 / 乔浚丞', album: '借月', source: 'netease', duration: 220, url_id: '1969248538', cover: 'https://p2.music.126.net/qILSvrfpcmz8gL95whKMrQ==/1969248538.jpg?param=300y300', reason: '月色温柔' },
-      { id: 'init_18', name: '琵琶行', artist: '奇然 / 沈谧仁', album: '高考背诵曲目', source: 'netease', duration: 312, url_id: '504262174', cover: 'https://p2.music.126.net/b4amV-Y9WmAsm5Asbz_96w==/504262174.jpg?param=300y300', reason: '弦音如诉' }
+      { id: 'init_13', name: '空谷幽兰', artist: '阿鲲', album: '新萧十一郎', source: 'netease', duration: 186, url_id: '405485307', cover: 'https://p1.music.126.net/V_91UwA85Pz9G3s2SBQTTQ==/109951169999694247.jpg', reason: '古典意境' },
+      { id: 'init_14', name: '千度', artist: '许嵩', album: '苏格拉没有底', source: 'netease', duration: 247, url_id: '167876', cover: 'https://p1.music.126.net/Zg4XDfsiRi5vawjSWPP8Ng==/109951172899966259.jpg', reason: '细腻婉转' },
+      { id: 'init_15', name: '青花瓷', artist: '周杰伦', album: '我很忙', source: 'netease', duration: 239, url_id: '185997', cover: 'https://p1.music.126.net/BxDuZ92mCF3WRXfpKssOUg==/109951165681023773.jpg', reason: '余韵悠长' },
+      { id: 'init_16', name: '水星记', artist: '郭顶', album: '飞行器的执行周期', source: 'netease', duration: 325, url_id: '441491828', cover: 'https://p1.music.126.net/wSMfGvFzOAYRU_yVIfquAA==/2946691248081599.jpg', reason: '深夜独享' },
+      { id: 'init_17', name: '借月', artist: '王宇宙 / 乔浚丞', album: '借月', source: 'netease', duration: 220, url_id: '1969248538', cover: 'https://p1.music.126.net/j6H8QcBRXmmHfKdu8AZSXA==/2907108746014408.jpg', reason: '月色温柔' },
+      { id: 'init_18', name: '琵琶行', artist: '奇然 / 沈谧仁', album: '高考背诵曲目', source: 'netease', duration: 312, url_id: '504262174', cover: 'https://p1.music.126.net/uumDETX_PnWbHlDfbLcilQ==/7454688836371728.jpg', reason: '弦音如诉' }
     ]
   }
 ];
@@ -6811,6 +6854,16 @@ currentDiscoverSections.forEach((sec, secIdx) => {
     currentDiscoverSongs.push(song);
   });
 });
+
+setTimeout(() => {
+  if (typeof batchFillNetEaseCovers === 'function') {
+    batchFillNetEaseCovers(currentDiscoverSongs).then(() => {
+      renderDiscoverPane();
+      renderVinylDiscs();
+      updateFixedRadioCardUI();
+    });
+  }
+}, 500);
 
 const DISCOVER_NOTE_TEMPLATES = [
   '古典意境',
@@ -6839,7 +6892,7 @@ async function refreshRecommendations(showToast = false) {
   }
 
   try {
-    // 1. 构建歌手画像与常听权重
+    // 1. 构建多样化种子推荐池（混合常听、多元流派与精选音乐人）
     const artistScores = {};
     (ALL_LIBRARY_SONGS || []).forEach(s => {
       if (s.artist && s.artist !== '未知歌手') {
@@ -6854,24 +6907,34 @@ async function refreshRecommendations(showToast = false) {
     const sortedArtists = Object.keys(artistScores).sort((a, b) => artistScores[b] - artistScores[a]);
     let selectedSeeds = [];
     if (sortedArtists.length > 0) {
-      const pool = sortedArtists.slice(0, 8);
+      const pool = sortedArtists.slice(0, 10);
       const shuffled = [...pool].sort(() => 0.5 - Math.random());
-      selectedSeeds = shuffled.slice(0, 3);
+      selectedSeeds = shuffled.slice(0, 2);
     }
 
-    const defaultSeeds = ['伦桑', '许嵩', '胡夏', '周杰伦', '毛不易', '薛之谦', '国风', '阿鲲'];
-    const shuffledDefault = [...defaultSeeds].sort(() => 0.5 - Math.random());
-    while (selectedSeeds.length < 3) {
-      const candidate = shuffledDefault.pop();
-      if (!selectedSeeds.includes(candidate)) {
-        selectedSeeds.push(candidate);
+    const DIVERSE_SEED_PACKS = [
+      ['周杰伦', '许嵩', '陈奕迅'],
+      ['毛不易', '林俊杰', '薛之谦'],
+      ['国风', '伦桑', '银临'],
+      ['流行热歌', '邓紫棋', '张韶涵'],
+      ['民谣', '李健', '朴树'],
+      ['古风', '双笙', '音频怪物'],
+      ['治愈', '阿鲲', '赵海洋'],
+      ['新歌精选', '单依纯', '周深'],
+      ['经典金曲', '王菲', '张学友']
+    ];
+    const randomPack = DIVERSE_SEED_PACKS[Math.floor(Math.random() * DIVERSE_SEED_PACKS.length)];
+    randomPack.forEach(k => {
+      if (selectedSeeds.length < 3 && !selectedSeeds.includes(k)) {
+        selectedSeeds.push(k);
       }
-    }
+    });
 
     currentDiscoverSeeds = selectedSeeds;
 
-    // 2. 并行拉取线上优质曲目
-    const searchPromises = selectedSeeds.map(seed => requestOnlineSearch(seed, 20));
+    // 2. 并行拉取线上优质曲目（随机分页偏移，绕过旧缓存，确保每次都是全新曲目）
+    const randomPage = Math.floor(Math.random() * 4) + 1;
+    const searchPromises = selectedSeeds.map(seed => requestOnlineSearch(seed, 20, randomPage, true));
     const resultsLists = await Promise.all(searchPromises);
 
     // 3. 构建本地已知歌曲排重集
@@ -6892,7 +6955,6 @@ async function refreshRecommendations(showToast = false) {
           const songKey = `${song.source || ''}_${song.url_id || song.id}`;
           if (!localSongSet.has(lowTitle) && !seenOnlineIds.has(songKey)) {
             seenOnlineIds.add(songKey);
-            const template = DISCOVER_NOTE_TEMPLATES[(merged.length) % DISCOVER_NOTE_TEMPLATES.length];
             song.reason = `${selectedSeeds[sIdx]}心选`;
             merged.push(song);
           }
@@ -6901,9 +6963,11 @@ async function refreshRecommendations(showToast = false) {
       if (merged.length >= 24) break;
     }
 
-    // 若不足 18 首则补充热歌榜
+    // 若依然不足 18 首，使用流行备用词继续补充
     if (merged.length < 18) {
-      const fallbackList = await requestOnlineSearch('热歌榜', 30);
+      const fallbackKws = ['流行', '热歌', '新歌', '精选'];
+      const fbKw = fallbackKws[Math.floor(Math.random() * fallbackKws.length)];
+      const fallbackList = await requestOnlineSearch(fbKw, 30, Math.floor(Math.random() * 3) + 1, true);
       if (Array.isArray(fallbackList)) {
         for (const fbSong of fallbackList) {
           const lowTitle = (fbSong.name || '').trim().toLowerCase();
@@ -6956,7 +7020,10 @@ async function refreshRecommendations(showToast = false) {
       });
     });
 
-    // 5. 同时更新顶部黑胶唱片的随机推荐曲目流
+    // 立即通过网易云原生批量接口补齐全部曲目的高清专辑封面
+    await batchFillNetEaseCovers(currentDiscoverSongs);
+
+    // 5. 更新顶部黑胶唱片的随机推荐曲目流
     const freshTop = [...currentDiscoverSongs].sort(() => 0.5 - Math.random()).slice(0, 10);
     topRecommendedTracks = freshTop;
     activeTopTrackIndex = 0;
@@ -6964,27 +7031,7 @@ async function refreshRecommendations(showToast = false) {
     updateFixedRadioCardUI();
 
     renderDiscoverPane();
-    if (showToast) toast('已更新推荐曲目');
-
-    // 异步拉取真实封面，使长方形卡片与唱片展示精美专辑画报
-    const needPicSongs = currentDiscoverSongs.filter(s => !s.cover && (s.pic_id || s.url_id || s.id));
-    if (needPicSongs.length > 0) {
-      Promise.all(needPicSongs.slice(0, 18).map(async song => {
-        try {
-          const url = await resolveSongCoverUrl(song);
-          if (url) {
-            song.cover = url;
-            const tIdx = topRecommendedTracks.indexOf(song);
-            if (tIdx !== -1) {
-              updateStreamDiscCover(tIdx, url);
-            }
-          }
-        } catch(e) {}
-      })).then(() => {
-        renderDiscoverPane();
-        updateFixedRadioCardUI();
-      });
-    }
+    if (showToast) toast('已为您换了一批精选好歌');
   } catch (err) {
     console.warn('推荐生成异常:', err);
     if (showToast) toast('网络连接较慢，推荐获取失败');
