@@ -1,6 +1,6 @@
 {
   "versionCode": 86,
   "versionName": "2.5.3",
-  "changelog": "彻底移除小众宝藏静态硬编码青花瓷与空谷幽兰回退，全面净化推荐仅限优质中文歌曲，解除发现页误跳乐库手势与返回键干扰",
+  "changelog": "动态检测用户是否收听外文歌曲并自适应校验语言偏好，彻底消除小众宝藏静态数据残留，解除发现页误跳乐库手势与返回键干扰",
   "downloadUrl": "https://ghfast.top/https://github.com/visitor315/lingxi-music/releases/download/v1.4.0/LingXiMusic.apk"
 }

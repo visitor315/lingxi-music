@@ -6898,7 +6898,23 @@ function extractSongBaseKey(title) {
     .toLowerCase();
 }
 
-function isQualityMusic(song) {
+function checkUserListensToEnglish() {
+  const songs = [...(ALL_LIBRARY_SONGS || [])];
+  (VINYL_ALBUMS || []).forEach(a => {
+    if (a.songs) songs.push(...a.songs);
+  });
+  if (songs.length === 0) return false;
+  // 遍历用户所有曲目，只要有任意一首纯外文/英文歌（歌名与歌手均无汉字），判定为听英文歌
+  return songs.some(s => {
+    const title = (s.title || s.name || '').trim();
+    const artist = (s.artist || '').trim();
+    if (!title && !artist) return false;
+    const hasChinese = /[\u4e00-\u9fa5]/.test(title) || /[\u4e00-\u9fa5]/.test(artist);
+    return !hasChinese;
+  });
+}
+
+function isQualityMusic(song, allowEnglish = true) {
   if (!song) return false;
   const name = (song.name || song.title || '').trim();
   const artist = (song.artist || '').trim();
@@ -6910,9 +6926,11 @@ function isQualityMusic(song) {
   const junkKws = ['试听', '片段', '铃声', '30s', '30秒', '副歌', '高潮版', '截取', '伴奏', '纯伴奏', 'inst', 'instrumental'];
   if (junkKws.some(k => lowName.includes(k) || lowArtist.includes(k))) return false;
 
-  // 2. 严格杜绝外文/英文歌曲，专注高雅华语流行与国风（必须包含中文字符）
-  const hasChinese = /[\u4e00-\u9fa5]/.test(name) || /[\u4e00-\u9fa5]/.test(artist);
-  if (!hasChinese) return false;
+  // 2. 动态语言过滤：检测用户听不听英文歌，不听就加校验（必须包含中文字符），听就不加校验
+  if (!allowEnglish) {
+    const hasChinese = /[\u4e00-\u9fa5]/.test(name) || /[\u4e00-\u9fa5]/.test(artist);
+    if (!hasChinese) return false;
+  }
 
   // 3. 统一消毒间隔号，确保UI遵循无间隔点规范
   if (song.name) song.name = song.name.replace(/[\u00b7]/g, '-');
@@ -6936,6 +6954,9 @@ async function refreshRecommendations(showToast = false) {
   }
 
   try {
+    // 0. 检测使用者当前是否收听外文/英文歌曲
+    const userListensEnglish = checkUserListensToEnglish();
+
     // 1. 深度聚合使用者的真实多维偏好画像（喜爱歌手、收藏常听、搜索足迹）
     const artistScores = {};
     const searchCandidates = [];
@@ -6946,8 +6967,7 @@ async function refreshRecommendations(showToast = false) {
       if (s.artist && s.artist !== '未知歌手') {
         const parts = s.artist.split(/[\/,、&]/).map(a => a.trim()).filter(Boolean);
         parts.forEach(a => {
-          // 仅聚焦中文歌手，杜绝外文歌手污染
-          if (/[\u4e00-\u9fa5]/.test(a)) {
+          if (userListensEnglish || /[\u4e00-\u9fa5]/.test(a)) {
             artistScores[a] = (artistScores[a] || 0) + weight;
           }
         });
@@ -6960,7 +6980,7 @@ async function refreshRecommendations(showToast = false) {
         if (s.artist && s.artist !== '未知歌手') {
           const parts = s.artist.split(/[\/,、&]/).map(a => a.trim()).filter(Boolean);
           parts.forEach(a => {
-            if (/[\u4e00-\u9fa5]/.test(a)) {
+            if (userListensEnglish || /[\u4e00-\u9fa5]/.test(a)) {
               artistScores[a] = (artistScores[a] || 0) + 2;
             }
           });
@@ -6968,13 +6988,15 @@ async function refreshRecommendations(showToast = false) {
       });
     });
 
-    // 统计搜索历史（仅采纳中文关键词）
+    // 统计搜索历史
     (searchHistory || []).forEach(kw => {
       const trimmed = (kw || '').trim();
-      if (trimmed.length >= 2 && trimmed.length <= 20 && /[\u4e00-\u9fa5]/.test(trimmed)) {
-        searchCandidates.push(trimmed);
-        if (artistScores[trimmed] !== undefined) {
-          artistScores[trimmed] += 4;
+      if (trimmed.length >= 2 && trimmed.length <= 20) {
+        if (userListensEnglish || /[\u4e00-\u9fa5]/.test(trimmed)) {
+          searchCandidates.push(trimmed);
+          if (artistScores[trimmed] !== undefined) {
+            artistScores[trimmed] += 4;
+          }
         }
       }
     });
@@ -7018,14 +7040,23 @@ async function refreshRecommendations(showToast = false) {
       }
     }
 
-    // 冷启动兜底：若偏好数据不足 6 个，使用多样化华语经典歌手池补充（全部为中文名家，绝无英文歌手）
-    const CHINESE_CLASSIC_ARTISTS = [
-      '周杰伦', '许嵩', '陈奕迅', '林俊杰', '薛之谦', '毛不易',
-      '王菲', '李健', '朴树', '胡夏', '伦桑', '银临', '双笙',
-      '汪苏泷', '郁可唯', '司南', '房东的猫', '蔡健雅', '郭顶',
-      '梁静茹', '孙燕姿', '张惠妹', '陶喆', '莫文蔚', '赵雷', '许巍'
-    ];
-    const shuffledFallbacks = [...CHINESE_CLASSIC_ARTISTS].sort(() => 0.5 - Math.random());
+    // 冷启动兜底：若偏好数据不足 6 个，根据用户是否收听英文歌动态选择对应流派的歌手池
+    const DIVERSE_FALLBACK_ARTISTS = userListensEnglish
+      ? [
+          '周杰伦', 'Taylor Swift', '林俊杰', 'Ed Sheeran', '毛不易',
+          'Coldplay', '陈奕迅', 'Adele', '薛之谦', 'Billie Eilish',
+          '王菲', 'Maroon 5', '许嵩', 'OneRepublic', '李健',
+          'Michael Jackson', '朴树', 'Bruno Mars', '胡夏', 'Post Malone',
+          '双笙', 'Avril Lavigne', '伦桑', 'Katy Perry', '汪苏泷'
+        ]
+      : [
+          '周杰伦', '许嵩', '陈奕迅', '林俊杰', '薛之谦', '毛不易',
+          '王菲', '李健', '朴树', '胡夏', '伦桑', '银临', '双笙',
+          '汪苏泷', '郁可唯', '司南', '房东的猫', '蔡健雅', '郭顶',
+          '梁静茹', '孙燕姿', '张惠妹', '陶喆', '莫文蔚', '赵雷', '许巍'
+        ];
+
+    const shuffledFallbacks = [...DIVERSE_FALLBACK_ARTISTS].sort(() => 0.5 - Math.random());
     for (const fbArt of shuffledFallbacks) {
       if (selectedSeeds.length >= 6) break;
       const low = fbArt.toLowerCase().trim();
@@ -7086,7 +7117,7 @@ async function refreshRecommendations(showToast = false) {
             continue;
           }
 
-          if (!seenOnlineIds.has(songKey) && isQualityMusic(song)) {
+          if (!seenOnlineIds.has(songKey) && isQualityMusic(song, userListensEnglish)) {
             seenOnlineIds.add(songKey);
             seenBaseSongTitles.add(baseTitleKey);
             seedSongCount[sIdx] = (seedSongCount[sIdx] || 0) + 1;
@@ -7101,9 +7132,11 @@ async function refreshRecommendations(showToast = false) {
       if (merged.length >= 24) break;
     }
 
-    // 若依然不足 18 首，循环使用优质华语词汇连续补充直至填满 18 首
+    // 若依然不足 18 首，循环使用优质词汇连续补充直至填满 18 首
     if (merged.length < 18) {
-      const fallbackKws = ['国风雅韵', '经典华语', '深情好歌', '诗意古风', '清欢民谣'];
+      const fallbackKws = userListensEnglish
+        ? ['经典流行', '热门金曲', '悠扬旋律', '宝藏好歌', '流行榜单']
+        : ['国风雅韵', '经典华语', '深情好歌', '诗意古风', '清欢民谣'];
       for (const fbKw of fallbackKws) {
         if (merged.length >= 18) break;
         const fallbackList = await requestOnlineSearch(fbKw, 25, Math.floor(Math.random() * 3) + 1, true);
@@ -7122,7 +7155,7 @@ async function refreshRecommendations(showToast = false) {
             const exceedsLimit = artists.some(a => (artistSongCount[a] || 0) >= 2);
             if (exceedsLimit) continue;
 
-            if (!seenOnlineIds.has(songKey) && isQualityMusic(fbSong)) {
+            if (!seenOnlineIds.has(songKey) && isQualityMusic(fbSong, userListensEnglish)) {
               seenOnlineIds.add(songKey);
               seenBaseSongTitles.add(baseTitleKey);
               artists.forEach(a => {
