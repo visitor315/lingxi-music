@@ -1,6 +1,6 @@
 {
-  "versionCode": 90,
-  "versionName": "2.5.7",
-  "changelog": "修复曲库渲染闭合标签解析异常，彻底解决界面点击无响应问题；优化搜索歌曲进入全部歌曲后的官方高清封面自动解析与历史补全；精修发现页与交互体验。",
+  "versionCode": 91,
+  "versionName": "2.5.8",
+  "changelog": "新增发现页与歌曲推荐，随心探索心选好歌；全面精修水墨宣纸美学UI，界面更清雅流畅；优化搜歌专辑封面展示与加载体验；支持长按乐库歌单胶囊管理自建歌单。",
   "downloadUrl": "https://ghfast.top/https://github.com/visitor315/lingxi-music/releases/download/v1.4.0/LingXiMusic.apk"
 }
