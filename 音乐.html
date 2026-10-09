@@ -3534,7 +3534,7 @@ body.night .create-playlist-sheet-confirm {
               </div>
               <div class="item-content">
                 <span class="item-main-title">检查版本更新</span>
-                <span class="item-subtitle-tight" id="aboutAppVersionDesc">v2.5.5</span>
+                <span class="item-subtitle-tight" id="aboutAppVersionDesc">v2.5.6</span>
               </div>
             </div>
             <svg class="item-arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
@@ -4184,7 +4184,7 @@ body.night .create-playlist-sheet-confirm {
       </div>
       <div style="display:flex; flex-direction:column; align-items:center; padding:4px 0 14px;">
         <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px;">
-          <span style="font-size:18px; font-weight:700; color:var(--ink-black);" id="updateVersionTitle">v2.5.5</span>
+          <span style="font-size:18px; font-weight:700; color:var(--ink-black);" id="updateVersionTitle">v2.5.6</span>
           <span style="font-size:11px; font-weight:600; background:rgba(35,75,184,0.08); color:var(--brand-blue); padding:2px 8px; border-radius:10px;" id="updateVersionBadge">最新版本</span>
         </div>
         <div id="updateChangelogBox" style="width:100%; box-sizing:border-box; background:var(--claude-pill-bg, rgba(20,20,19,0.03)); border:none; border-radius:14px; padding:14px 16px; font-size:13.5px; line-height:1.65; color:var(--ink-gray); white-space:pre-line; max-height:36vh; overflow-y:auto;"></div>
@@ -4608,7 +4608,7 @@ const OTHER_AVATAR_SVG = `<svg width="14" height="14" viewBox="0 0 24 24" fill="
 
 const APP_CONFIG = {
   name: '灵犀音乐',
-  version: '2.5.5',
+  version: '2.5.6',
   build: '2026.10.09',
   codename: 'Pure Sound'
 };
@@ -4736,6 +4736,18 @@ function loadPersistedData() {
     if (alb.songs) alb.songs.forEach(cleanExpiredUrls);
   });
 
+  // 清理带 param=300y300 等失效或导致404的旧封面缓存
+  const cleanBadCovers = (song) => {
+    if (!song) return;
+    if (song.cover && song.cover.includes('param=300y300')) {
+      song.cover = '';
+    }
+  };
+  ALL_LIBRARY_SONGS.forEach(cleanBadCovers);
+  VINYL_ALBUMS.forEach(alb => {
+    if (alb.songs) alb.songs.forEach(cleanBadCovers);
+  });
+
   // 保证全部歌曲和我喜欢与 ALL_LIBRARY_SONGS 动态实时同步
   if (VINYL_ALBUMS[0]) {
     VINYL_ALBUMS[0].songs = ALL_LIBRARY_SONGS;
@@ -4746,6 +4758,16 @@ function loadPersistedData() {
     VINYL_ALBUMS[1].author = "我";
     VINYL_ALBUMS[1].songs = ALL_LIBRARY_SONGS.filter(s => s.isFav);
   }
+
+  // 启动后台静默补全曲库封面
+  setTimeout(() => {
+    if (typeof batchFillNetEaseCovers === 'function') {
+      batchFillNetEaseCovers(ALL_LIBRARY_SONGS).then(() => {
+        persistData();
+        if (typeof renderSongList === 'function') renderSongList();
+      });
+    }
+  }, 1000);
 }
 
 function initDefaultAlbums() {
@@ -5124,8 +5146,17 @@ function renderSongList() {
           </div>
         </div>
       </div>
-    `;
   }).join('');
+
+  // 静默排查并补全无封面或失效封面的曲目
+  if (useExtractedCover) {
+    const needCovers = songs.filter(s => s && (!s.cover || s.cover.includes('param=300y300') || s.cover.includes('injahow.cn')));
+    if (needCovers.length > 0) {
+      setTimeout(() => {
+        batchFillNetEaseCovers(needCovers.slice(0, 30));
+      }, 300);
+    }
+  }
 }
 
 /* 渲染播放队列抽屉 */
@@ -5503,7 +5534,7 @@ function playSongAtQueue(idx) {
   stopPlaybackLoop();
 
   // 1. 自动补全歌曲封面（高可用解析真实高清封面）
-  if (!song.cover || !song.cover.startsWith('http') || song.cover.includes('injahow.cn/meting/?server=')) {
+  if (!song.cover || !song.cover.startsWith('http') || song.cover.includes('injahow.cn/meting/?server=') || song.cover.includes('param=300y300')) {
     ensureSongCover(song);
   } else {
     applySongCoverToUI(song.cover);
@@ -5971,17 +6002,22 @@ async function executeSearch(keyword) {
 async function batchFillNetEaseCovers(songList) {
   if (!Array.isArray(songList) || songList.length === 0) return;
   const targetSongs = songList.filter(s => {
+    if (!s) return false;
     const isNetease = (!s.source || s.source === 'netease');
-    const hasBadCover = !s.cover || s.cover.includes('param=300y300') || !s.cover.startsWith('http');
-    const songId = s.url_id || s.id;
-    return isNetease && hasBadCover && songId && /^\d+$/.test(String(songId));
+    const hasBadCover = !s.cover || s.cover.includes('param=300y300') || s.cover.includes('injahow.cn') || !s.cover.startsWith('http');
+    const rawId = s.onlineId || s.url_id || (s.id ? String(s.id).replace('online_', '').replace('init_', '') : '');
+    return isNetease && hasBadCover && rawId && /^\d+$/.test(String(rawId));
   });
 
   if (targetSongs.length === 0) return;
 
   for (let i = 0; i < targetSongs.length; i += 30) {
     const chunk = targetSongs.slice(i, i + 30);
-    const ids = chunk.map(s => Number(s.url_id || s.id));
+    const ids = chunk.map(s => {
+      const rawId = s.onlineId || s.url_id || (s.id ? String(s.id).replace('online_', '').replace('init_', '') : '');
+      return Number(rawId);
+    }).filter(id => !isNaN(id) && id > 0);
+    if (ids.length === 0) continue;
     const idsParam = '%5B' + ids.join('%2C') + '%5D';
     const url = `https://music.163.com/api/song/detail/?ids=${idsParam}`;
     try {
@@ -5990,15 +6026,19 @@ async function batchFillNetEaseCovers(songList) {
         const data = await res.json();
         const songs = data.songs || [];
         const coverMap = new Map();
+        const picIdMap = new Map();
         songs.forEach(item => {
           if (item && item.id && item.album && item.album.picUrl) {
             coverMap.set(String(item.id), item.album.picUrl);
+            if (item.album.picId) picIdMap.set(String(item.id), String(item.album.picId));
           }
         });
         chunk.forEach(s => {
-          const sid = String(s.url_id || s.id);
+          const sid = String(s.onlineId || s.url_id || (s.id ? String(s.id).replace('online_', '').replace('init_', '') : ''));
           if (coverMap.has(sid)) {
             s.cover = coverMap.get(sid);
+            if (picIdMap.has(sid)) s.pic_id = picIdMap.get(sid);
+            updateSongRowCover(s);
           }
         });
       }
@@ -6174,9 +6214,12 @@ async function playOnlineTrack(idx) {
 
   // 1. 立即构建歌曲对象并入队，瞬间展开全屏播放页，提供丝滑即时反馈
   const initialCover = item.cover || '';
+  const cleanOnlineId = String(item.url_id || item.id || '').replace('online_', '');
   const trackObj = {
-    id: 'online_' + item.id,
-    onlineId: item.url_id || item.id,
+    id: 'online_' + cleanOnlineId,
+    onlineId: cleanOnlineId,
+    url_id: cleanOnlineId,
+    pic_id: item.pic_id || '',
     source: item.source || 'netease',
     title: item.name,
     artist: item.artist,
@@ -6190,10 +6233,12 @@ async function playOnlineTrack(idx) {
 
   // 插入曲库与播放队列
   const existingIdx = ALL_LIBRARY_SONGS.findIndex(s => s.id === trackObj.id || (s.title === trackObj.title && s.artist === trackObj.artist));
+  let libSong = trackObj;
   if (existingIdx !== -1) {
     const [removed] = ALL_LIBRARY_SONGS.splice(existingIdx, 1);
     Object.assign(removed, trackObj);
     ALL_LIBRARY_SONGS.unshift(removed);
+    libSong = removed;
   } else {
     ALL_LIBRARY_SONGS.unshift(trackObj);
   }
@@ -6202,10 +6247,12 @@ async function playOnlineTrack(idx) {
   }
 
   let qIdx = currentPlaybackQueue.findIndex(s => s.id === trackObj.id || (s.title === trackObj.title && s.artist === trackObj.artist));
+  let queueSong = trackObj;
   if (qIdx !== -1) {
     const [removed] = currentPlaybackQueue.splice(qIdx, 1);
     Object.assign(removed, trackObj);
     currentPlaybackQueue.unshift(removed);
+    queueSong = removed;
   } else {
     currentPlaybackQueue.unshift(trackObj);
   }
@@ -6242,16 +6289,23 @@ async function playOnlineTrack(idx) {
 
   // 3. 异步获取真实封面
   let coverUrl = initialCover;
-  if (!coverUrl) {
-    coverUrl = await resolveSongCoverUrl(item);
+  if (!coverUrl || coverUrl.includes('param=300y300') || coverUrl.includes('injahow.cn')) {
+    coverUrl = await resolveSongCoverUrl(libSong) || initialCover;
   }
 
   // 4. 更新歌曲数据并启动播放
   item.cover = coverUrl;
   trackObj.fileUrl = realAudioUrl;
   trackObj.urlFetchedAt = Date.now();
+  libSong.fileUrl = realAudioUrl;
+  libSong.urlFetchedAt = Date.now();
+  queueSong.fileUrl = realAudioUrl;
+  queueSong.urlFetchedAt = Date.now();
   if (coverUrl) {
     trackObj.cover = coverUrl;
+    libSong.cover = coverUrl;
+    queueSong.cover = coverUrl;
+    updateSongRowCover(libSong);
   }
 
   // 5. 异步拉取歌词
@@ -6433,9 +6487,11 @@ function openSearchResultMenu(e, idx) {
   const item = currentSearchResults[idx];
   if (!item) return;
   window._isSearchResultMenu = true;
+  const cleanOnlineId = String(item.url_id || item.id || '').replace('online_', '');
   currentActionSong = {
-    id: 'online_' + item.id,
-    onlineId: item.url_id || item.id,
+    id: 'online_' + cleanOnlineId,
+    onlineId: cleanOnlineId,
+    url_id: cleanOnlineId,
     pic_id: item.pic_id || '',
     source: item.source || 'netease',
     title: item.name,
@@ -6867,18 +6923,51 @@ function updateStreamDiscCover(idx, coverUrl) {
 
 async function resolveSongCoverUrl(song) {
   if (!song) return '';
-  if (song.cover && song.cover.startsWith('http') && !song.cover.includes('injahow.cn/meting/?server=')) {
+  if (song.cover && song.cover.startsWith('http') && !song.cover.includes('injahow.cn/meting/?server=') && !song.cover.includes('param=300y300')) {
     return song.cover;
   }
-  const id = song.pic_id || song.url_id || song.id;
-  if (!id) return song.cover || '';
-  const cleanId = String(id).replace('online_', '').replace('init_', '');
   const source = song.source || 'netease';
+  const rawSongId = song.onlineId || song.url_id || (song.id ? String(song.id).replace('online_', '').replace('init_', '') : '');
+  const cleanSongId = (rawSongId && /^\d+$/.test(String(rawSongId))) ? String(rawSongId) : '';
+  const picId = song.pic_id ? String(song.pic_id).replace('online_', '') : '';
 
-  // 1. 如果配置了非 injahow 的自定义或聚合接口，优先尝试
-  if (currentApiBase && !currentApiBase.includes('injahow')) {
+  // 1. 对于网易云音乐，直接通过官方歌曲详情接口拉取真实专辑高清大图，100% 官方有效且绝不 404
+  if ((!source || source === 'netease') && cleanSongId) {
     try {
-      const picApi = `${currentApiBase}?types=pic&id=${cleanId}&source=${source}`;
+      const detailRes = await universalFetch(`https://music.163.com/api/song/detail/?ids=%5B${cleanSongId}%5D`, { timeout: 2500 });
+      if (detailRes.ok) {
+        const detailData = await detailRes.json();
+        const songs = detailData.songs || [];
+        if (songs.length > 0 && songs[0].album && songs[0].album.picUrl) {
+          const picUrl = songs[0].album.picUrl;
+          if (picUrl && picUrl.startsWith('http')) {
+            song.cover = picUrl;
+            if (songs[0].album.picId) song.pic_id = String(songs[0].album.picId);
+            return picUrl;
+          }
+        }
+      }
+    } catch(e) {}
+  }
+
+  // 2. 如果存在真实的 picId，尝试通过 GDStudio 获取 300x300 高清图直链（必须传 picId，严禁传 songId 防 404）
+  if (picId && /^\d+$/.test(picId)) {
+    try {
+      const gdRes = await universalFetch(`https://music-api.gdstudio.xyz/api.php?types=pic&id=${picId}&source=${source}`, { timeout: 2500 });
+      if (gdRes.ok) {
+        const gdData = await gdRes.json();
+        if (gdData && gdData.url && gdData.url.startsWith('http')) {
+          song.cover = gdData.url;
+          return gdData.url;
+        }
+      }
+    } catch(e) {}
+  }
+
+  // 3. 用户自建或备用聚合接口（仅当 picId 有效时）
+  if (currentApiBase && !currentApiBase.includes('injahow') && picId) {
+    try {
+      const picApi = `${currentApiBase}?types=pic&id=${picId}&source=${source}`;
       const res = await universalFetch(picApi, { timeout: 2500 });
       if (res.ok) {
         const d = await res.json();
@@ -6890,22 +6979,15 @@ async function resolveSongCoverUrl(song) {
     } catch(e) {}
   }
 
-  // 2. 尝试从 GDStudio 获取 300x300 高清图直链
-  try {
-    const gdRes = await universalFetch(`https://music-api.gdstudio.xyz/api.php?types=pic&id=${cleanId}&source=${source}`, { timeout: 2500 });
-    if (gdRes.ok) {
-      const gdData = await gdRes.json();
-      if (gdData && gdData.url && gdData.url.startsWith('http')) {
-        song.cover = gdData.url;
-        return gdData.url;
-      }
-    }
-  } catch(e) {}
+  // 4. Fallback 到 Injahow 302 直链（优先用 picId，其次用 cleanSongId）
+  const finalId = picId || cleanSongId;
+  if (finalId) {
+    const metingUrl = `https://api.injahow.cn/meting/?server=${source}&type=pic&id=${finalId}`;
+    song.cover = metingUrl;
+    return metingUrl;
+  }
 
-  // 3. Fallback 到 Injahow 302 直链
-  const metingUrl = `https://api.injahow.cn/meting/?server=${source}&type=pic&id=${cleanId}`;
-  song.cover = metingUrl;
-  return metingUrl;
+  return song.cover || '';
 }
 
 function fetchCoversForBatch(batch) {

@@ -1,6 +1,6 @@
 {
-  "versionCode": 88,
-  "versionName": "2.5.5",
-  "changelog": "新增发现页与个性化歌曲推荐，支持长按乐库歌单胶囊管理自建歌单；全面精修水墨宣纸美学UI与动效交互，体验更加清雅流畅。",
+  "versionCode": 89,
+  "versionName": "2.5.6",
+  "changelog": "修复搜索歌曲加入全部歌曲后封面丢失的问题，重构网易云官方专辑原图无损解析链路并自动补全历史曲库封面；新增发现页与个性化推荐；全面精修UI与交互。",
   "downloadUrl": "https://ghfast.top/https://github.com/visitor315/lingxi-music/releases/download/v1.4.0/LingXiMusic.apk"
 }
