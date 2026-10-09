@@ -1,6 +1,6 @@
 {
-  "versionCode": 83,
-  "versionName": "2.5.0",
-  "changelog": "修复设置页独立滑动，严格过滤纯英文与杂音歌曲全面回归高雅华语经典与国风，刷新后唱片轮播自动复位第一张",
+  "versionCode": 84,
+  "versionName": "2.5.1",
+  "changelog": "重构发现推荐引擎：基于用户收藏与搜索偏好多维画像动态推荐，彻底解除语言限制，引入同歌手2首上限熔断机制，实现多元百花齐放",
   "downloadUrl": "https://ghfast.top/https://github.com/visitor315/lingxi-music/releases/download/v1.4.0/LingXiMusic.apk"
 }
