@@ -1,6 +1,6 @@
 {
-  "versionCode": 86,
-  "versionName": "2.5.3",
-  "changelog": "动态检测用户是否收听外文歌曲并自适应校验语言偏好，彻底消除小众宝藏静态数据残留，解除发现页误跳乐库手势与返回键干扰",
+  "versionCode": 87,
+  "versionName": "2.5.4",
+  "changelog": "新增乐库歌单胶囊长按删除功能（仅限自建歌单），支持触感震动反馈与双药丸删除确认",
   "downloadUrl": "https://ghfast.top/https://github.com/visitor315/lingxi-music/releases/download/v1.4.0/LingXiMusic.apk"
 }

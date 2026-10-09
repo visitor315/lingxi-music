@@ -721,6 +721,9 @@ body.night .stream-disc.stream-disc-add { border-color: #444 !important; }
   box-shadow: none !important;
   transition: all 0.18s ease;
   flex-shrink: 0;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
 }
 .library-album-pill:active { transform: none !important; }
 .library-album-pill.active {
@@ -3531,7 +3534,7 @@ body.night .create-playlist-sheet-confirm {
               </div>
               <div class="item-content">
                 <span class="item-main-title">检查版本更新</span>
-                <span class="item-subtitle-tight" id="aboutAppVersionDesc">v2.5.3</span>
+                <span class="item-subtitle-tight" id="aboutAppVersionDesc">v2.5.4</span>
               </div>
             </div>
             <svg class="item-arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
@@ -4181,7 +4184,7 @@ body.night .create-playlist-sheet-confirm {
       </div>
       <div style="display:flex; flex-direction:column; align-items:center; padding:4px 0 14px;">
         <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px;">
-          <span style="font-size:18px; font-weight:700; color:var(--ink-black);" id="updateVersionTitle">v2.5.3</span>
+          <span style="font-size:18px; font-weight:700; color:var(--ink-black);" id="updateVersionTitle">v2.5.4</span>
           <span style="font-size:11px; font-weight:600; background:rgba(35,75,184,0.08); color:var(--brand-blue); padding:2px 8px; border-radius:10px;" id="updateVersionBadge">最新版本</span>
         </div>
         <div id="updateChangelogBox" style="width:100%; box-sizing:border-box; background:var(--claude-pill-bg, rgba(20,20,19,0.03)); border:none; border-radius:14px; padding:14px 16px; font-size:13.5px; line-height:1.65; color:var(--ink-gray); white-space:pre-line; max-height:36vh; overflow-y:auto;"></div>
@@ -4605,7 +4608,7 @@ const OTHER_AVATAR_SVG = `<svg width="14" height="14" viewBox="0 0 24 24" fill="
 
 const APP_CONFIG = {
   name: '灵犀音乐',
-  version: '2.5.3',
+  version: '2.5.4',
   build: '2026.10.09',
   codename: 'Pure Sound'
 };
@@ -6475,13 +6478,155 @@ function openSearchResultMenu(e, idx) {
 let currentDiscoverSeeds = [];
 let isDiscoverLoading = false;
 
+/* ================== 乐库歌单药丸长按删除交互 ================== */
+let pillLongPressTimer = null;
+let pillLongPressTriggered = false;
+let pillTouchStartX = 0;
+let pillTouchStartY = 0;
+
+function handlePillTouchStart(e, idx) {
+  pillLongPressTriggered = false;
+  if (e.touches && e.touches.length > 0) {
+    pillTouchStartX = e.touches[0].clientX;
+    pillTouchStartY = e.touches[0].clientY;
+  }
+  if (pillLongPressTimer) clearTimeout(pillLongPressTimer);
+  pillLongPressTimer = setTimeout(() => {
+    pillLongPressTriggered = true;
+    if (navigator.vibrate) {
+      try { navigator.vibrate(30); } catch(err) {}
+    }
+    handlePillLongPress(idx);
+    setTimeout(() => {
+      pillLongPressTriggered = false;
+    }, 600);
+  }, 500);
+}
+
+function handlePillTouchMove(e) {
+  if (!pillLongPressTimer) return;
+  if (e.touches && e.touches.length > 0) {
+    const dx = Math.abs(e.touches[0].clientX - pillTouchStartX);
+    const dy = Math.abs(e.touches[0].clientY - pillTouchStartY);
+    if (dx > 8 || dy > 8) {
+      clearTimeout(pillLongPressTimer);
+      pillLongPressTimer = null;
+    }
+  }
+}
+
+function handlePillTouchEnd() {
+  if (pillLongPressTimer) {
+    clearTimeout(pillLongPressTimer);
+    pillLongPressTimer = null;
+  }
+}
+
+function handlePillMouseDown(e, idx) {
+  if (e.button !== 0) return;
+  if (e.sourceCapabilities && e.sourceCapabilities.firesTouchEvents) return;
+  pillLongPressTriggered = false;
+  pillTouchStartX = e.clientX;
+  pillTouchStartY = e.clientY;
+  if (pillLongPressTimer) clearTimeout(pillLongPressTimer);
+  pillLongPressTimer = setTimeout(() => {
+    pillLongPressTriggered = true;
+    handlePillLongPress(idx);
+    setTimeout(() => {
+      pillLongPressTriggered = false;
+    }, 600);
+  }, 500);
+}
+
+function handlePillMouseMove(e) {
+  if (!pillLongPressTimer) return;
+  const dx = Math.abs(e.clientX - pillTouchStartX);
+  const dy = Math.abs(e.clientY - pillTouchStartY);
+  if (dx > 8 || dy > 8) {
+    clearTimeout(pillLongPressTimer);
+    pillLongPressTimer = null;
+  }
+}
+
+function handlePillMouseUp() {
+  if (pillLongPressTimer) {
+    clearTimeout(pillLongPressTimer);
+    pillLongPressTimer = null;
+  }
+}
+
+function handlePillContextMenu(e, idx) {
+  e.preventDefault();
+  e.stopPropagation();
+  if (pillLongPressTriggered) return false;
+  handlePillLongPress(idx);
+  return false;
+}
+
+function handlePillClick(e, idx) {
+  if (pillLongPressTriggered) {
+    pillLongPressTriggered = false;
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    return;
+  }
+  selectLibraryAlbum(idx);
+}
+
+function handlePillLongPress(idx) {
+  if (typeof isHomeMultiSelectMode !== 'undefined' && isHomeMultiSelectMode) return;
+  if (idx < 0 || idx >= VINYL_ALBUMS.length) return;
+  const alb = VINYL_ALBUMS[idx];
+  if (!alb) return;
+
+  const isDefaultAlbum = (alb.id === 'alb_all' || alb.id === 'alb_fav' || alb.id === 'alb_local' || idx <= 2);
+  if (isDefaultAlbum) {
+    toast('系统默认歌单不可删除');
+    return;
+  }
+
+  openUniversalConfirm({
+    title: '删除歌单',
+    desc: `确定要删除自建歌单「${alb.title}」吗？其中的歌曲仍将保留在全部歌曲中。`,
+    confirmText: '删除歌单',
+    isDanger: true,
+    onConfirm: () => {
+      const wasActive = (activeRadioIndex === idx);
+      VINYL_ALBUMS.splice(idx, 1);
+      if (wasActive) {
+        activeRadioIndex = 0;
+      } else if (activeRadioIndex > idx) {
+        activeRadioIndex--;
+      }
+      persistData();
+      renderLibraryAlbumPills();
+      renderVinylDiscs();
+      renderSongList();
+      if (typeof renderDrawerList === 'function') renderDrawerList();
+      toast(`已删除歌单「${alb.title}」`);
+    }
+  });
+}
+
 function renderLibraryAlbumPills() {
   const bar = document.getElementById('libraryAlbumPills');
   if (!bar) return;
   const albumPillsHtml = VINYL_ALBUMS.map((alb, idx) => {
     const isActive = (activeRadioIndex === idx);
     const count = (alb.songs ? alb.songs.length : 0);
-    return `<div class="library-album-pill ${isActive ? 'active' : ''}" onclick="selectLibraryAlbum(${idx})">${escapeHtml(alb.title)} (${count})</div>`;
+    return `<div class="library-album-pill ${isActive ? 'active' : ''}"
+      data-idx="${idx}"
+      onclick="handlePillClick(event, ${idx})"
+      oncontextmenu="handlePillContextMenu(event, ${idx})"
+      ontouchstart="handlePillTouchStart(event, ${idx})"
+      ontouchmove="handlePillTouchMove(event)"
+      ontouchend="handlePillTouchEnd(event)"
+      ontouchcancel="handlePillTouchEnd(event)"
+      onmousedown="handlePillMouseDown(event, ${idx})"
+      onmousemove="handlePillMouseMove(event)"
+      onmouseup="handlePillMouseUp(event)">${escapeHtml(alb.title)} (${count})</div>`;
   }).join('');
 
   const addPillHtml = `<div class="library-album-pill" onclick="openCreatePlaylistPrompt()" style="display:inline-flex; align-items:center; gap:3px;"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>新建歌单</div>`;
@@ -6490,6 +6635,7 @@ function renderLibraryAlbumPills() {
 }
 
 function selectLibraryAlbum(idx) {
+  if (typeof exitHomeMultiSelectMode === 'function') exitHomeMultiSelectMode();
   activeRadioIndex = idx;
   renderLibraryAlbumPills();
   renderSongList();
@@ -9442,11 +9588,14 @@ function handleDeletePlaylistMenu() {
     isDanger: true,
     onConfirm: () => {
       VINYL_ALBUMS.splice(activeRadioIndex, 1);
+      activeRadioIndex = 0;
       persistData();
+      renderLibraryAlbumPills();
       renderVinylDiscs();
       closePlaylistDetail();
       renderSongList();
-      toast("歌单已删除");
+      if (typeof renderDrawerList === 'function') renderDrawerList();
+      toast(`已删除歌单「${alb.title}」`);
     }
   });
 }
