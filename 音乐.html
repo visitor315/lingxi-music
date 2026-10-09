@@ -52,6 +52,7 @@
   
   --inner-divider: #ECEBE6;
   --divider: rgba(24, 26, 28, 0.065);
+  --border-line: rgba(24, 26, 28, 0.09);
   --border-input: #E0E0DC;
   --modal-input-focus: #C0532C;
   --card-border: rgba(24, 26, 28, 0.08);
@@ -87,6 +88,7 @@ body.night {
 
   --inner-divider: #242422;
   --divider: rgba(255, 255, 255, 0.08);
+  --border-line: rgba(255, 255, 255, 0.08);
   --border-input: #383834;
   --modal-input-focus: #C86A4B;
   --card-border: rgba(255, 255, 255, 0.08);
@@ -3226,8 +3228,11 @@ body.night .create-playlist-sheet-confirm {
         </div>
       </div>
 
-      <!-- 第一页：发现与灵犀推荐（默认主页，顶部精选唱片推荐 + 底部板块流推荐） -->
-      <div id="paneDiscover" style="display:block;">
+      <!-- 发现与乐库横向滑动主容器（无闪烁物理平移） -->
+      <div class="home-tab-slider" id="homeTabSlider" style="width:100%; overflow:hidden;">
+        <div class="home-tab-track" id="homeTabTrack" style="display:flex; width:200%; transition:transform 0.28s cubic-bezier(0.25, 1, 0.5, 1); will-change:transform; align-items:flex-start;">
+          <!-- 第一页：发现与灵犀推荐（默认主页，顶部精选唱片推荐 + 底部板块流推荐） -->
+          <div id="paneDiscover" style="width:50%; flex-shrink:0; box-sizing:border-box;">
         <div class="radio-stage-viewport">
           <div class="radio-stage-inner">
             <div class="fixed-radio-card" onclick="openCurrentRadioAlbum()">
@@ -3266,7 +3271,7 @@ body.night .create-playlist-sheet-confirm {
       </div>
 
       <!-- 第二页：乐库与歌曲列表（承载本地曲库、歌单切换与批量管理） -->
-      <div id="paneListen" style="display:none;">
+      <div id="paneListen" style="width:50%; flex-shrink:0; box-sizing:border-box; height:0; overflow:hidden;">
         <div class="library-album-pills-bar" id="libraryAlbumPills"></div>
 
         <div class="song-list-panel">
@@ -3305,6 +3310,8 @@ body.night .create-playlist-sheet-confirm {
           </div>
           <!-- 此处始终显示完整的私人专属曲目库，永不丢失截断 -->
           <div id="songsContainer"></div>
+        </div>
+      </div>
         </div>
       </div>
 
@@ -3486,7 +3493,7 @@ body.night .create-playlist-sheet-confirm {
               </div>
               <div class="item-content">
                 <span class="item-main-title">检查版本更新</span>
-                <span class="item-subtitle-tight" id="aboutAppVersionDesc">v2.4.6</span>
+                <span class="item-subtitle-tight" id="aboutAppVersionDesc">v2.4.7</span>
               </div>
             </div>
             <svg class="item-arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
@@ -4125,7 +4132,7 @@ body.night .create-playlist-sheet-confirm {
 
   <!-- 8.56 应用内版本更新升级弹窗（底部滑出、高级卡片、下载进度平滑展示） -->
   <div class="choose-playlist-modal" id="appUpdateModal" onclick="closeAppUpdateModal(event)">
-    <div class="choose-playlist-card" onclick="event.stopPropagation()" style="max-height:85vh;">
+    <div class="choose-playlist-card" onclick="event.stopPropagation()" style="max-height:85vh; padding: 0 22px calc(20px + var(--safe-bottom, 14px)) !important; max-width: 440px; margin: 0 auto;">
       <div class="add-sheet-drag-handle"></div>
       <div class="choose-sheet-header">
         <button class="choose-sheet-close-btn" onclick="closeAppUpdateModalDirect()" title="关闭">
@@ -4134,19 +4141,19 @@ body.night .create-playlist-sheet-confirm {
         <div class="choose-sheet-title">发现新版本</div>
         <div style="width:32px;"></div>
       </div>
-      <div style="display:flex; flex-direction:column; align-items:center; padding:6px 0 14px;">
-        <div style="display:flex; align-items:center; gap:8px; margin-bottom:10px;">
-          <span style="font-size:18px; font-weight:700; color:var(--ink-black);" id="updateVersionTitle">v2.0.7</span>
-          <span style="font-size:11.5px; font-weight:600; background:rgba(33,150,243,0.12); color:var(--brand-blue); padding:2px 8px; border-radius:12px;" id="updateVersionBadge">最新版本</span>
+      <div style="display:flex; flex-direction:column; align-items:center; padding:4px 0 14px;">
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px;">
+          <span style="font-size:18px; font-weight:700; color:var(--ink-black);" id="updateVersionTitle">v2.4.7</span>
+          <span style="font-size:11px; font-weight:600; background:rgba(35,75,184,0.08); color:var(--brand-blue); padding:2px 8px; border-radius:10px;" id="updateVersionBadge">最新版本</span>
         </div>
-        <div id="updateChangelogBox" style="width:100%; box-sizing:border-box; background:var(--card-bg); border:1px solid var(--border-input); border-radius:16px; padding:12px 14px; font-size:13.5px; line-height:1.65; color:var(--ink-gray); white-space:pre-line; max-height:36vh; overflow-y:auto;"></div>
+        <div id="updateChangelogBox" style="width:100%; box-sizing:border-box; background:var(--claude-pill-bg, rgba(20,20,19,0.03)); border:none; border-radius:14px; padding:14px 16px; font-size:13.5px; line-height:1.65; color:var(--ink-gray); white-space:pre-line; max-height:36vh; overflow-y:auto;"></div>
       </div>
-      <div style="display:flex; flex-direction:column; gap:10px; width:100%; padding-bottom:4px;">
-        <button id="btnStartAppUpdate" class="choose-capsule-btn" onclick="executeAppUpdate()" style="background:var(--brand-blue); border-color:var(--brand-blue); color:#FFFFFF; font-weight:600;">立即升级</button>
-        <button id="btnCancelAppUpdate" class="choose-capsule-btn" onclick="closeAppUpdateModalDirect()" style="background:transparent; border:none; box-shadow:none; color:var(--ink-light); font-size:13.5px; height:36px; margin-top:-4px;">稍后再说</button>
+      <div style="display:flex; flex-direction:column; gap:8px; width:100%; padding-bottom:4px;">
+        <button id="btnStartAppUpdate" class="create-playlist-sheet-confirm ripple-btn" onclick="executeAppUpdate()">立即升级</button>
+        <button id="btnCancelAppUpdate" class="update-sheet-cancel-btn" onclick="closeAppUpdateModalDirect()" style="background:transparent; border:none; box-shadow:none; color:var(--ink-light); font-size:13px; height:36px; cursor:pointer;">稍后再说</button>
         <div id="updateProgressWrap" style="display:none; width:100%; flex-direction:column; gap:6px;">
-          <div style="width:100%; height:8px; background:var(--border-input); border-radius:999px; overflow:hidden;">
-            <div id="updateProgressBar" style="width:0%; height:100%; background:var(--brand-blue); border-radius:999px; transition:width 0.15s ease;"></div>
+          <div style="width:100%; height:6px; background:var(--claude-pill-bg); border-radius:999px; overflow:hidden;">
+            <div id="updateProgressBar" style="width:0%; height:100%; background:var(--ink-black); border-radius:999px; transition:width 0.15s ease;"></div>
           </div>
           <div style="display:flex; justify-content:space-between; font-size:12px; color:var(--ink-light);">
             <span id="updateProgressPercent">下载中 0%</span>
@@ -4560,7 +4567,7 @@ const OTHER_AVATAR_SVG = `<svg width="14" height="14" viewBox="0 0 24 24" fill="
 
 const APP_CONFIG = {
   name: '灵犀音乐',
-  version: '2.4.6',
+  version: '2.4.7',
   build: '2026.10.09',
   codename: 'Pure Sound'
 };
@@ -4916,34 +4923,24 @@ function init() {
   defaultHomeTab = defTab;
   currentHomeTab = defTab;
   if (defTab === 'library') {
-    const tabNavLibrary = document.getElementById('tabNavLibrary');
-    const tabNavDiscover = document.getElementById('tabNavDiscover');
-    const paneListen = document.getElementById('paneListen');
-    const paneDiscover = document.getElementById('paneDiscover');
-    if (tabNavLibrary) tabNavLibrary.classList.add('active');
-    if (tabNavDiscover) tabNavDiscover.classList.remove('active');
-    if (paneListen) paneListen.style.display = 'block';
-    if (paneDiscover) paneDiscover.style.display = 'none';
+    switchHomeNavTab('library', true);
+  } else {
+    switchHomeNavTab('discover', true);
   }
   updateDefaultHomeTabUI();
 
   renderVinylDiscs();
   renderSongList();
   renderLibraryAlbumPills();
-  if (defTab === 'discover') {
-    renderDiscoverPane();
-  }
+  renderDiscoverPane();
+
   setTimeout(() => {
     const initNeedPicSongs = currentDiscoverSongs.filter(s => !s.cover && (s.pic_id || s.url_id));
     if (initNeedPicSongs.length > 0) {
       Promise.all(initNeedPicSongs.slice(0, 18).map(async song => {
         try {
-          const targetId = song.pic_id || song.url_id || song.id;
-          const picRes = await universalFetch(`${currentApiBase}?types=pic&id=${targetId}&source=${song.source || 'netease'}`, { timeout: 2500 });
-          if (picRes.ok) {
-            const pData = await picRes.json();
-            if (pData && pData.url) song.cover = pData.url;
-          }
+          const url = await resolveSongCoverUrl(song);
+          if (url) song.cover = url;
         } catch(e) {}
       })).then(() => {
         if (currentHomeTab === 'discover') renderDiscoverPane();
@@ -6150,20 +6147,8 @@ async function playOnlineTrack(idx) {
 
   // 3. 异步获取真实封面
   let coverUrl = initialCover;
-  if (!coverUrl && item.pic_id) {
-    try {
-      const picApi = `${currentApiBase}?types=pic&id=${item.pic_id}&source=${item.source}`;
-      const picRes = await universalFetch(picApi, { timeout: 2500 });
-      if (picRes.ok) {
-        const picData = await picRes.json();
-        if (picData && picData.url) {
-          coverUrl = picData.url;
-        }
-      }
-    } catch(e) {}
-  }
-  if (!coverUrl && (item.url_id || item.id)) {
-    coverUrl = `https://api.injahow.cn/meting/?server=${item.source || 'netease'}&type=pic&id=${item.url_id || item.id}`;
+  if (!coverUrl) {
+    coverUrl = await resolveSongCoverUrl(item);
   }
 
   // 4. 更新歌曲数据并启动播放
@@ -6419,101 +6404,98 @@ function selectLibraryAlbum(idx) {
 }
 
 let isHomeTabAnimating = false;
+let homeDiscoverScrollTop = 0;
+let homeLibraryScrollTop = 0;
 
 function switchHomeNavTab(tab, immediate = false) {
-  if (tab === currentHomeTab) return;
-  if (isHomeTabAnimating) return;
-
+  if (tab === currentHomeTab && !immediate) return;
   const previousTab = currentHomeTab;
   currentHomeTab = tab;
+
   const tabNavLibrary = document.getElementById('tabNavLibrary');
   const tabNavDiscover = document.getElementById('tabNavDiscover');
-  const paneListen = document.getElementById('paneListen');
+  const homeTabTrack = document.getElementById('homeTabTrack');
   const paneDiscover = document.getElementById('paneDiscover');
+  const paneListen = document.getElementById('paneListen');
+  const scrollEl = document.querySelector('.xianyin-content-scroll');
 
   if (tab === 'library') {
     exitHomeMultiSelectMode();
     if (tabNavLibrary) tabNavLibrary.classList.add('active');
     if (tabNavDiscover) tabNavDiscover.classList.remove('active');
-  } else {
-    exitHomeMultiSelectMode();
-    if (tabNavLibrary) tabNavLibrary.classList.remove('active');
-    if (tabNavDiscover) tabNavDiscover.classList.add('active');
-  }
-
-  if (immediate || !paneListen || !paneDiscover) {
-    if (tab === 'library') {
-      if (paneListen) paneListen.style.display = 'block';
-      if (paneDiscover) paneDiscover.style.display = 'none';
-      renderLibraryAlbumPills();
-      renderSongList();
-      renderDrawerList();
-    } else {
-      if (paneListen) paneListen.style.display = 'none';
-      if (paneDiscover) paneDiscover.style.display = 'block';
-      renderVinylDiscs();
-      if (currentDiscoverSections.length === 0 || currentDiscoverSongs.length === 0) {
-        refreshRecommendations(false);
-      } else {
-        renderDiscoverPane();
-      }
-    }
-    return;
-  }
-
-  isHomeTabAnimating = true;
-  const isMovingForward = (tab === 'library');
-  const outgoingPane = isMovingForward ? paneDiscover : paneListen;
-  const incomingPane = isMovingForward ? paneListen : paneDiscover;
-
-  if (tab === 'library') {
     renderLibraryAlbumPills();
     renderSongList();
     renderDrawerList();
   } else {
-    renderVinylDiscs();
+    exitHomeMultiSelectMode();
+    if (tabNavLibrary) tabNavLibrary.classList.remove('active');
+    if (tabNavDiscover) tabNavDiscover.classList.add('active');
     if (currentDiscoverSections.length === 0 || currentDiscoverSongs.length === 0) {
       refreshRecommendations(false);
-    } else {
-      renderDiscoverPane();
     }
   }
 
-  const offset = isMovingForward ? 30 : -30;
-  incomingPane.style.display = 'block';
-  incomingPane.style.transition = 'none';
-  incomingPane.style.transform = `translate3d(${offset}px, 0, 0)`;
-  incomingPane.style.opacity = '0';
+  if (!homeTabTrack || !paneDiscover || !paneListen) return;
 
-  outgoingPane.style.transition = 'none';
-  outgoingPane.style.transform = 'translate3d(0, 0, 0)';
-  outgoingPane.style.opacity = '1';
+  const targetTranslate = (tab === 'library') ? '-50%' : '0%';
 
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      const animCurve = 'cubic-bezier(0.2, 0.9, 0.3, 1)';
-      incomingPane.style.transition = `transform 0.22s ${animCurve}, opacity 0.22s ${animCurve}`;
-      outgoingPane.style.transition = `transform 0.22s ${animCurve}, opacity 0.22s ${animCurve}`;
+  if (immediate) {
+    homeTabTrack.style.transition = 'none';
+    homeTabTrack.style.transform = `translate3d(${targetTranslate}, 0, 0)`;
+    if (tab === 'library') {
+      paneDiscover.style.height = '0';
+      paneDiscover.style.overflow = 'hidden';
+      paneListen.style.height = 'auto';
+      paneListen.style.overflow = '';
+      if (scrollEl) scrollEl.scrollTop = homeLibraryScrollTop;
+    } else {
+      paneListen.style.height = '0';
+      paneListen.style.overflow = 'hidden';
+      paneDiscover.style.height = 'auto';
+      paneDiscover.style.overflow = '';
+      if (scrollEl) scrollEl.scrollTop = homeDiscoverScrollTop;
+    }
+    return;
+  }
 
-      incomingPane.style.transform = 'translate3d(0, 0, 0)';
-      incomingPane.style.opacity = '1';
+  if (isHomeTabAnimating) return;
+  isHomeTabAnimating = true;
 
-      outgoingPane.style.transform = `translate3d(${-offset}px, 0, 0)`;
-      outgoingPane.style.opacity = '0';
+  // 记录切页前的当前滚动位置
+  if (scrollEl) {
+    if (previousTab === 'discover') homeDiscoverScrollTop = scrollEl.scrollTop;
+    else homeLibraryScrollTop = scrollEl.scrollTop;
+  }
 
-      setTimeout(() => {
-        outgoingPane.style.display = 'none';
-        outgoingPane.style.transform = '';
-        outgoingPane.style.opacity = '';
-        outgoingPane.style.transition = '';
+  // 准备平移动画：两页都展开为完整高度，直接物理平移，绝无透明度闪烁
+  paneDiscover.style.height = 'auto';
+  paneDiscover.style.overflow = '';
+  paneListen.style.height = 'auto';
+  paneListen.style.overflow = '';
 
-        incomingPane.style.transform = '';
-        incomingPane.style.opacity = '';
-        incomingPane.style.transition = '';
-        isHomeTabAnimating = false;
-      }, 230);
-    });
-  });
+  homeTabTrack.style.transition = 'transform 0.28s cubic-bezier(0.25, 1, 0.5, 1)';
+  homeTabTrack.style.transform = `translate3d(${targetTranslate}, 0, 0)`;
+
+  // 平滑恢复目标页滚动条
+  if (scrollEl) {
+    const targetScroll = (tab === 'library') ? homeLibraryScrollTop : homeDiscoverScrollTop;
+    scrollEl.scrollTo({ top: targetScroll, behavior: 'smooth' });
+  }
+
+  setTimeout(() => {
+    if (currentHomeTab === 'library') {
+      paneDiscover.style.height = '0';
+      paneDiscover.style.overflow = 'hidden';
+      paneListen.style.height = 'auto';
+      paneListen.style.overflow = '';
+    } else {
+      paneListen.style.height = '0';
+      paneListen.style.overflow = 'hidden';
+      paneDiscover.style.height = 'auto';
+      paneDiscover.style.overflow = '';
+    }
+    isHomeTabAnimating = false;
+  }, 290);
 }
 
 function formatCleanTitle(title) {
@@ -6641,18 +6623,20 @@ function appendTracksToTopAndQueue(batch) {
     // 增量追加卡片至 #vinylDiscStream
     if (container) {
       const coverUrl = song.cover || song.pic || '';
-      const hasCover = !!coverUrl;
-      const discOuterStyle = hasCover
-        ? `background: url('${coverUrl}') center/cover no-repeat; border: none !important;`
-        : '';
       const cardHtml = `
         <div class="vinyl-stream-card" onclick="handleStreamCardClick(${newTopIdx})">
-          <div class="stream-disc" id="streamDisc${newTopIdx}" style="${discOuterStyle}">
-            ${hasCover ? '' : `
-              <div class="stream-disc-core">
-                <svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
-              </div>
-            `}
+          <div class="stream-disc" id="streamDisc${newTopIdx}" style="position:relative; overflow:hidden;">
+            <div class="stream-disc-core" style="${coverUrl ? 'display:none;' : ''}">
+              <svg viewBox="0 0 24 24" fill="none" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>
+              </svg>
+            </div>
+            ${coverUrl ? `
+              <img class="stream-disc-cover-img" src="${coverUrl}" alt="" loading="lazy"
+                onload="const core=this.previousElementSibling; if(core) core.style.display='none';"
+                onerror="this.style.display='none'; const core=this.previousElementSibling; if(core) core.style.display='flex';"
+                style="position:absolute; inset:0; width:100%; height:100%; border-radius:50%; object-fit:cover; pointer-events:none; z-index:2;" />
+            ` : ''}
           </div>
         </div>
       `;
@@ -6680,31 +6664,82 @@ function appendTracksToTopAndQueue(batch) {
   fetchCoversForBatch(batch);
 }
 
+function updateStreamDiscCover(idx, coverUrl) {
+  const disc = document.getElementById(`streamDisc${idx}`);
+  if (!disc || !coverUrl) return;
+  const core = disc.querySelector('.stream-disc-core');
+  let img = disc.querySelector('.stream-disc-cover-img');
+  if (!img) {
+    img = document.createElement('img');
+    img.className = 'stream-disc-cover-img';
+    img.alt = '';
+    img.style.cssText = 'position:absolute; inset:0; width:100%; height:100%; border-radius:50%; object-fit:cover; pointer-events:none; z-index:2;';
+    img.onload = () => { if (core) core.style.display = 'none'; };
+    img.onerror = () => { img.style.display = 'none'; if (core) core.style.display = 'flex'; };
+    disc.appendChild(img);
+  }
+  img.src = coverUrl;
+  img.style.display = 'block';
+}
+
+async function resolveSongCoverUrl(song) {
+  if (!song) return '';
+  if (song.cover && song.cover.startsWith('http') && !song.cover.includes('injahow.cn/meting/?server=')) {
+    return song.cover;
+  }
+  const id = song.pic_id || song.url_id || song.id;
+  if (!id) return song.cover || '';
+  const cleanId = String(id).replace('online_', '').replace('init_', '');
+  const source = song.source || 'netease';
+
+  // 1. 如果配置了非 injahow 的自定义或聚合接口，优先尝试
+  if (currentApiBase && !currentApiBase.includes('injahow')) {
+    try {
+      const picApi = `${currentApiBase}?types=pic&id=${cleanId}&source=${source}`;
+      const res = await universalFetch(picApi, { timeout: 2500 });
+      if (res.ok) {
+        const d = await res.json();
+        if (d && d.url && d.url.startsWith('http')) {
+          song.cover = d.url;
+          return d.url;
+        }
+      }
+    } catch(e) {}
+  }
+
+  // 2. 尝试从 GDStudio 获取 300x300 高清图直链
+  try {
+    const gdRes = await universalFetch(`https://music-api.gdstudio.xyz/api.php?types=pic&id=${cleanId}&source=${source}`, { timeout: 2500 });
+    if (gdRes.ok) {
+      const gdData = await gdRes.json();
+      if (gdData && gdData.url && gdData.url.startsWith('http')) {
+        song.cover = gdData.url;
+        return gdData.url;
+      }
+    }
+  } catch(e) {}
+
+  // 3. Fallback 到 Injahow 302 直链
+  const metingUrl = `https://api.injahow.cn/meting/?server=${source}&type=pic&id=${cleanId}`;
+  song.cover = metingUrl;
+  return metingUrl;
+}
+
 function fetchCoversForBatch(batch) {
   const needPicSongs = batch.filter(s => !s.cover && (s.pic_id || s.url_id || s.id));
   if (needPicSongs.length === 0) return;
 
   Promise.all(needPicSongs.map(async song => {
     try {
-      const targetId = song.pic_id || song.url_id || song.id;
-      const picRes = await universalFetch(`${currentApiBase}?types=pic&id=${targetId}&source=${song.source || 'netease'}`, { timeout: 2500 });
-      if (picRes.ok) {
-        const pData = await picRes.json();
-        if (pData && pData.url) {
-          song.cover = pData.url;
-          const idx = topRecommendedTracks.indexOf(song);
-          if (idx !== -1) {
-            const disc = document.getElementById(`streamDisc${idx}`);
-            if (disc) {
-              disc.style.background = `url('${pData.url}') center/cover no-repeat`;
-              disc.style.border = 'none';
-              const core = disc.querySelector('.stream-disc-core');
-              if (core) core.remove();
-            }
-          }
-          const qItem = currentPlaybackQueue.find(q => isSameSongIdentifier(q, song));
-          if (qItem) qItem.cover = pData.url;
+      const url = await resolveSongCoverUrl(song);
+      if (url) {
+        song.cover = url;
+        const idx = topRecommendedTracks.indexOf(song);
+        if (idx !== -1) {
+          updateStreamDiscCover(idx, url);
         }
+        const qItem = currentPlaybackQueue.find(q => isSameSongIdentifier(q, song));
+        if (qItem) qItem.cover = url;
       }
     } catch(e) {}
   }));
@@ -6751,34 +6786,34 @@ const INITIAL_DISCOVER_SECTIONS = [
   {
     title: '灵犀新推 - 今日佳作',
     songs: [
-      { id: 'init_1', name: '愿我', artist: '伦桑', album: '愿我', source: 'netease', duration: 252, url_id: '1815967406', reason: '伦桑心选' },
-      { id: 'init_2', name: '断桥残雪', artist: '许嵩', album: '断桥残雪', source: 'netease', duration: 226, url_id: '167827', reason: '经典流传' },
-      { id: 'init_3', name: '云与海', artist: '胡夏', album: '云与海', source: 'netease', duration: 241, url_id: '1492323898', reason: '温润治愈' },
-      { id: 'init_4', name: '山有木兮', artist: '伦桑', album: '橙光《人鱼传说》', source: 'netease', duration: 260, url_id: '426804563', reason: '古风雅韵' },
-      { id: 'init_5', name: '故梦', artist: '双笙', album: '故梦', source: 'netease', duration: 288, url_id: '436514315', reason: '水墨诗画' },
-      { id: 'init_6', name: '红马', artist: '王琪', album: '红马', source: 'netease', duration: 245, url_id: '1475330366', reason: '清亮静听' }
+      { id: 'init_1', name: '愿我', artist: '伦桑', album: '愿我', source: 'netease', duration: 252, url_id: '1815967406', cover: 'https://p2.music.126.net/0ssby7R8XSAerCHD0rzNAQ==/1815967406.jpg?param=300y300', reason: '伦桑心选' },
+      { id: 'init_2', name: '断桥残雪', artist: '许嵩', album: '断桥残雪', source: 'netease', duration: 226, url_id: '167827', cover: 'https://p2.music.126.net/iACrp_pvjMzJsieLzqvSxg==/167827.jpg?param=300y300', reason: '经典流传' },
+      { id: 'init_3', name: '云与海', artist: '胡夏', album: '云与海', source: 'netease', duration: 241, url_id: '1492323898', cover: 'https://p2.music.126.net/oeuKN5R2MOddawZT0f9UiA==/1492323898.jpg?param=300y300', reason: '温润治愈' },
+      { id: 'init_4', name: '山有木兮', artist: '伦桑', album: '橙光《人鱼传说》', source: 'netease', duration: 260, url_id: '426804563', cover: 'https://p2.music.126.net/kV9-l9t2rnQWQNzfIXLijg==/426804563.jpg?param=300y300', reason: '古风雅韵' },
+      { id: 'init_5', name: '故梦', artist: '双笙', album: '故梦', source: 'netease', duration: 288, url_id: '436514315', cover: 'https://p2.music.126.net/RGiouClsNZ-naVlP4PRYRA==/436514315.jpg?param=300y300', reason: '水墨诗画' },
+      { id: 'init_6', name: '红马', artist: '王琪', album: '红马', source: 'netease', duration: 245, url_id: '1475330366', cover: 'https://p2.music.126.net/TCDVXlkBMMQbxkt6iG4Aqg==/1475330366.jpg?param=300y300', reason: '清亮静听' }
     ]
   },
   {
     title: '私人专属好歌',
     songs: [
-      { id: 'init_7', name: '冬天的秘密', artist: '张仲谋', album: '冬天的秘密', source: 'netease', duration: 265, url_id: '1859245776', reason: '深情低语' },
-      { id: 'init_8', name: '花季', artist: '鱼儿七', album: '花季', source: 'netease', duration: 218, url_id: '1888497678', reason: '空灵清澈' },
-      { id: 'init_9', name: '消失的黎明', artist: 'Babystop_山竹 / 糯米Nomi', album: '消失的黎明', source: 'netease', duration: 232, url_id: '1878345712', reason: '宝藏小众' },
-      { id: 'init_10', name: '起风了', artist: '买辣椒也用券', album: '起风了', source: 'netease', duration: 325, url_id: '1330348068', reason: '清雅悠远' },
-      { id: 'init_11', name: '晴天', artist: '周杰伦', album: '叶惠美', source: 'netease', duration: 269, url_id: '186016', reason: '青春心选' },
-      { id: 'init_12', name: '像风一样', artist: '薛之谦', album: '渡', source: 'netease', duration: 255, url_id: '516657051', reason: '伴茶细酌' }
+      { id: 'init_7', name: '冬天的秘密', artist: '张仲谋', album: '冬天的秘密', source: 'netease', duration: 265, url_id: '1859245776', cover: 'https://p2.music.126.net/Z1TMALh_Zp2NtrWSER5gRg==/1859245776.jpg?param=300y300', reason: '深情低语' },
+      { id: 'init_8', name: '花季', artist: '鱼儿七', album: '花季', source: 'netease', duration: 218, url_id: '1888497678', cover: 'https://p2.music.126.net/8AaoH5IW8pJoF4LybIoN7A==/1888497678.jpg?param=300y300', reason: '空灵清澈' },
+      { id: 'init_9', name: '消失的黎明', artist: 'Babystop_山竹 / 糯米Nomi', album: '消失的黎明', source: 'netease', duration: 232, url_id: '1878345712', cover: 'https://p2.music.126.net/OaJEns0EYd9vxL2BJ2tHSg==/1878345712.jpg?param=300y300', reason: '宝藏小众' },
+      { id: 'init_10', name: '起风了', artist: '买辣椒也用券', album: '起风了', source: 'netease', duration: 325, url_id: '1330348068', cover: 'https://p2.music.126.net/JepSQXobNAmGBy_8C6G1Sw==/1330348068.jpg?param=300y300', reason: '清雅悠远' },
+      { id: 'init_11', name: '晴天', artist: '周杰伦', album: '叶惠美', source: 'netease', duration: 269, url_id: '186016', cover: 'https://p2.music.126.net/ptEo27PvaiFwd8AbKXiPIQ==/186016.jpg?param=300y300', reason: '青春心选' },
+      { id: 'init_12', name: '像风一样', artist: '薛之谦', album: '渡', source: 'netease', duration: 255, url_id: '516657051', cover: 'https://p2.music.126.net/PX0ruhvVdU5pdhuMKRWIuA==/516657051.jpg?param=300y300', reason: '伴茶细酌' }
     ]
   },
   {
     title: '小众宝藏佳作',
     songs: [
-      { id: 'init_13', name: '空谷幽兰', artist: '阿鲲', album: '新萧十一郎', source: 'netease', duration: 186, url_id: '405485307', reason: '古典意境' },
-      { id: 'init_14', name: '千度', artist: '许嵩', album: '苏格拉没有底', source: 'netease', duration: 247, url_id: '167876', reason: '细腻婉转' },
-      { id: 'init_15', name: '青花瓷', artist: '周杰伦', album: '我很忙', source: 'netease', duration: 239, url_id: '185997', reason: '余韵悠长' },
-      { id: 'init_16', name: '水星记', artist: '郭顶', album: '飞行器的执行周期', source: 'netease', duration: 325, url_id: '441491828', reason: '深夜独享' },
-      { id: 'init_17', name: '借月', artist: '王宇宙 / 乔浚丞', album: '借月', source: 'netease', duration: 220, url_id: '1969248538', reason: '月色温柔' },
-      { id: 'init_18', name: '琵琶行', artist: '奇然 / 沈谧仁', album: '高考背诵曲目', source: 'netease', duration: 312, url_id: '504262174', reason: '弦音如诉' }
+      { id: 'init_13', name: '空谷幽兰', artist: '阿鲲', album: '新萧十一郎', source: 'netease', duration: 186, url_id: '405485307', cover: 'https://p2.music.126.net/g4e5bIxSMq4yfMFw4mqlfA==/405485307.jpg?param=300y300', reason: '古典意境' },
+      { id: 'init_14', name: '千度', artist: '许嵩', album: '苏格拉没有底', source: 'netease', duration: 247, url_id: '167876', cover: 'https://p2.music.126.net/Y1qn6HVOIUsObGeOPRo1_g==/167876.jpg?param=300y300', reason: '细腻婉转' },
+      { id: 'init_15', name: '青花瓷', artist: '周杰伦', album: '我很忙', source: 'netease', duration: 239, url_id: '185997', cover: 'https://p2.music.126.net/P6ywVu3u6j33urffy7Dbpg==/185997.jpg?param=300y300', reason: '余韵悠长' },
+      { id: 'init_16', name: '水星记', artist: '郭顶', album: '飞行器的执行周期', source: 'netease', duration: 325, url_id: '441491828', cover: 'https://p2.music.126.net/iSBc8Y8p1k4Rg_LPqobnmQ==/441491828.jpg?param=300y300', reason: '深夜独享' },
+      { id: 'init_17', name: '借月', artist: '王宇宙 / 乔浚丞', album: '借月', source: 'netease', duration: 220, url_id: '1969248538', cover: 'https://p2.music.126.net/qILSvrfpcmz8gL95whKMrQ==/1969248538.jpg?param=300y300', reason: '月色温柔' },
+      { id: 'init_18', name: '琵琶行', artist: '奇然 / 沈谧仁', album: '高考背诵曲目', source: 'netease', duration: 312, url_id: '504262174', cover: 'https://p2.music.126.net/b4amV-Y9WmAsm5Asbz_96w==/504262174.jpg?param=300y300', reason: '弦音如诉' }
     ]
   }
 ];
@@ -6948,22 +6983,21 @@ async function refreshRecommendations(showToast = false) {
     if (showToast) toast('已更新推荐曲目');
 
     // 异步拉取真实封面，使长方形卡片与唱片展示精美专辑画报
-    const needPicSongs = currentDiscoverSongs.filter(s => !s.cover && (s.pic_id || s.url_id));
+    const needPicSongs = currentDiscoverSongs.filter(s => !s.cover && (s.pic_id || s.url_id || s.id));
     if (needPicSongs.length > 0) {
       Promise.all(needPicSongs.slice(0, 18).map(async song => {
         try {
-          const targetId = song.pic_id || song.url_id || song.id;
-          const picRes = await universalFetch(`${currentApiBase}?types=pic&id=${targetId}&source=${song.source || 'netease'}`, { timeout: 2500 });
-          if (picRes.ok) {
-            const pData = await picRes.json();
-            if (pData && pData.url) {
-              song.cover = pData.url;
+          const url = await resolveSongCoverUrl(song);
+          if (url) {
+            song.cover = url;
+            const tIdx = topRecommendedTracks.indexOf(song);
+            if (tIdx !== -1) {
+              updateStreamDiscCover(tIdx, url);
             }
           }
         } catch(e) {}
       })).then(() => {
         renderDiscoverPane();
-        renderVinylDiscs();
         updateFixedRadioCardUI();
       });
     }
@@ -7923,18 +7957,20 @@ function renderVinylDiscs() {
       (curPlayingSong.title === (song.name || song.title) && curPlayingSong.artist === song.artist)
     );
     const coverUrl = song.cover || song.pic || '';
-    const hasCover = !!coverUrl;
-    const discOuterStyle = hasCover
-      ? `background: url('${coverUrl}') center/cover no-repeat; border: none !important;`
-      : '';
     return `
       <div class="vinyl-stream-card" onclick="handleStreamCardClick(${idx})">
-        <div class="stream-disc ${isThisPlaying ? 'playing' : ''}" id="streamDisc${idx}" style="${discOuterStyle}">
-          ${hasCover ? '' : `
-            <div class="stream-disc-core">
-              <svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
-            </div>
-          `}
+        <div class="stream-disc ${isThisPlaying ? 'playing' : ''}" id="streamDisc${idx}" style="position:relative; overflow:hidden;">
+          <div class="stream-disc-core" style="${coverUrl ? 'display:none;' : ''}">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>
+            </svg>
+          </div>
+          ${coverUrl ? `
+            <img class="stream-disc-cover-img" src="${coverUrl}" alt="" loading="lazy"
+              onload="const core=this.previousElementSibling; if(core) core.style.display='none';"
+              onerror="this.style.display='none'; const core=this.previousElementSibling; if(core) core.style.display='flex';"
+              style="position:absolute; inset:0; width:100%; height:100%; border-radius:50%; object-fit:cover; pointer-events:none; z-index:2;" />
+          ` : ''}
         </div>
       </div>
     `;
@@ -11579,25 +11615,18 @@ function updateSongRowCover(song) {
 async function ensureSongCover(song) {
   if (!song) return '';
   if (song.cover && song.cover.startsWith('http') && !song.cover.includes('injahow.cn/meting/?server=')) {
+    applySongCoverToUI(song.cover);
     return song.cover;
   }
 
-  // 1. 如果有 pic_id，直接从当前音乐 API 解析高清真实封面
-  if (song.pic_id) {
-    try {
-      const picApi = `${currentApiBase}?types=pic&id=${song.pic_id}&source=${song.source || 'netease'}`;
-      const res = await universalFetch(picApi, { timeout: 3000 });
-      if (res.ok) {
-        const data = await res.json();
-        if (data && data.url && data.url.startsWith('http')) {
-          song.cover = data.url;
-          applySongCoverToUI(song.cover);
-          persistData();
-          updateSongRowCover(song);
-          return song.cover;
-        }
-      }
-    } catch(e) {}
+  // 1. 优先通过 GDStudio 或 Injahow 302 直接提取真实高清封面
+  const directCover = await resolveSongCoverUrl(song);
+  if (directCover && directCover.startsWith('http')) {
+    song.cover = directCover;
+    applySongCoverToUI(song.cover);
+    persistData();
+    updateSongRowCover(song);
+    return song.cover;
   }
 
   // 2. 通过标题与歌手在线检索匹配 pic_id 与封面
@@ -11607,22 +11636,15 @@ async function ensureSongCover(song) {
       const matches = await requestOnlineSearch(query, 1);
       if (matches && matches.length) {
         const match = matches[0];
-        if (match.pic_id) {
-          song.pic_id = match.pic_id;
-          try {
-            const picApi = `${currentApiBase}?types=pic&id=${match.pic_id}&source=${match.source || 'netease'}`;
-            const res = await universalFetch(picApi, { timeout: 3000 });
-            if (res.ok) {
-              const data = await res.json();
-              if (data && data.url && data.url.startsWith('http')) {
-                song.cover = data.url;
-                applySongCoverToUI(song.cover);
-                persistData();
-                updateSongRowCover(song);
-                return song.cover;
-              }
-            }
-          } catch(e) {}
+        if (match.pic_id || match.url_id || match.id) {
+          const matchedCover = await resolveSongCoverUrl(match);
+          if (matchedCover) {
+            song.cover = matchedCover;
+            applySongCoverToUI(song.cover);
+            persistData();
+            updateSongRowCover(song);
+            return song.cover;
+          }
         }
         if (match.cover) {
           song.cover = match.cover;
@@ -12409,6 +12431,8 @@ function switchBottomTab(tab) {
   const settingsNavTitles = document.getElementById('settingsNavTitles');
   const headerActions = document.querySelector('.listen-header-actions');
 
+  const homeTabSlider = document.getElementById('homeTabSlider');
+
   if (tab === 'listen') {
     if (homeNavTitles) homeNavTitles.style.display = 'flex';
     if (settingsNavTitles) settingsNavTitles.style.display = 'none';
@@ -12419,22 +12443,11 @@ function switchBottomTab(tab) {
     btnSettings.classList.remove('active');
     triggerListenWaveTap();
 
-    if (currentHomeTab === 'discover') {
-      if (paneListen) paneListen.style.display = 'none';
-      if (paneDiscover) paneDiscover.style.display = 'block';
-      renderVinylDiscs();
-      renderDiscoverPane();
-    } else {
-      if (paneListen) paneListen.style.display = 'block';
-      if (paneDiscover) paneDiscover.style.display = 'none';
-      renderLibraryAlbumPills();
-      renderSongList();
-      renderDrawerList();
-    }
+    if (homeTabSlider) homeTabSlider.style.display = 'block';
+    switchHomeNavTab(currentHomeTab, true);
   } else {
     exitHomeMultiSelectMode();
-    if (paneListen) paneListen.style.display = 'none';
-    if (paneDiscover) paneDiscover.style.display = 'none';
+    if (homeTabSlider) homeTabSlider.style.display = 'none';
     headerBar.style.display = 'flex';
     if (homeNavTitles) homeNavTitles.style.display = 'none';
     if (settingsNavTitles) settingsNavTitles.style.display = 'flex';
@@ -12530,19 +12543,14 @@ async function openCoverPreviewModal(song) {
     if (saveBtn) saveBtn.style.display = 'none';
 
     try {
-      const targetId = song.pic_id || song.onlineId;
-      const source = song.source || 'netease';
-      const picRes = await fetch(`${currentApiBase}?types=pic&id=${targetId}&source=${source}`);
-      if (picRes.ok) {
-        const picData = await picRes.json();
-        if (picData && picData.url) {
-          song.cover = picData.url;
-          const libSong = ALL_LIBRARY_SONGS.find(s => s.id === song.id);
-          if (libSong) libSong.cover = picData.url;
-          persistData();
-          applySongCoverToUI(picData.url);
-          renderSongList();
-        }
+      const fetchedUrl = await resolveSongCoverUrl(song);
+      if (fetchedUrl) {
+        song.cover = fetchedUrl;
+        const libSong = ALL_LIBRARY_SONGS.find(s => s.id === song.id);
+        if (libSong) libSong.cover = fetchedUrl;
+        persistData();
+        applySongCoverToUI(fetchedUrl);
+        renderSongList();
       }
     } catch(e) {
       console.warn('On-demand cover fetch failed', e);
@@ -13065,9 +13073,9 @@ window.addEventListener('load', () => {
       const absY = Math.abs(diffY);
 
       if (absX > 45 && absX > absY * 1.3) {
-        if (currentHomeTab === 'discover') {
+        if (currentHomeTab === 'discover' && diffX < -45) {
           switchHomeNavTab('library');
-        } else if (currentHomeTab === 'library') {
+        } else if (currentHomeTab === 'library' && diffX > 45) {
           switchHomeNavTab('discover');
         }
       }

@@ -1,6 +1,6 @@
 {
-  "versionCode": 79,
-  "versionName": "2.4.6",
-  "changelog": "优化发现页爱心局部刷新，恢复底栏顶部分割线与贴底布局，丝滑主页切页转场",
-  "downloadUrl": "https://ghfast.top/https://github.com/visitor315/lingxi-music/releases/download/v2.4.6/LingXiMusic.apk"
+  "versionCode": 80,
+  "versionName": "2.4.7",
+  "changelog": "重构发现与乐库无闪烁物理平滑平移，唱片封面双通道高可用提取与音乐SVG占位兜底，显现底栏水墨分割线，升级弹窗水墨风重构与下载加速",
+  "downloadUrl": "https://ghfast.top/https://github.com/visitor315/lingxi-music/releases/download/v1.4.0/LingXiMusic.apk"
 }
