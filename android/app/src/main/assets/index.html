@@ -810,10 +810,12 @@ body.night .library-album-pill.active {
 .view-settings-page {
   display: none;
   flex-direction: column;
+  height: 100% !important;
+  box-sizing: border-box !important;
   padding: 14px 14px 84px;
   gap: 14px;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch !important;
   background: var(--settings-bg, #F8F8F6) !important;
 }
 .view-settings-page.active { display: flex; }
@@ -2877,6 +2879,10 @@ body.in-pip-mode .view-player-full {
 }
 
 .view-settings-page {
+  height: 100% !important;
+  box-sizing: border-box !important;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch !important;
   padding-top: 10px !important;
   padding-bottom: calc(84px + var(--safe-bottom, 0px)) !important;
 }
@@ -2923,6 +2929,10 @@ body.in-pip-mode .view-player-full {
 }
 
 .view-settings-page {
+  height: 100% !important;
+  box-sizing: border-box !important;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch !important;
   padding-top: 10px !important;
   padding-bottom: calc(84px + var(--safe-bottom, 0px)) !important;
 }
@@ -3521,7 +3531,7 @@ body.night .create-playlist-sheet-confirm {
               </div>
               <div class="item-content">
                 <span class="item-main-title">检查版本更新</span>
-                <span class="item-subtitle-tight" id="aboutAppVersionDesc">v2.4.9</span>
+                <span class="item-subtitle-tight" id="aboutAppVersionDesc">v2.5.0</span>
               </div>
             </div>
             <svg class="item-arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
@@ -4171,7 +4181,7 @@ body.night .create-playlist-sheet-confirm {
       </div>
       <div style="display:flex; flex-direction:column; align-items:center; padding:4px 0 14px;">
         <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px;">
-          <span style="font-size:18px; font-weight:700; color:var(--ink-black);" id="updateVersionTitle">v2.4.9</span>
+          <span style="font-size:18px; font-weight:700; color:var(--ink-black);" id="updateVersionTitle">v2.5.0</span>
           <span style="font-size:11px; font-weight:600; background:rgba(35,75,184,0.08); color:var(--brand-blue); padding:2px 8px; border-radius:10px;" id="updateVersionBadge">最新版本</span>
         </div>
         <div id="updateChangelogBox" style="width:100%; box-sizing:border-box; background:var(--claude-pill-bg, rgba(20,20,19,0.03)); border:none; border-radius:14px; padding:14px 16px; font-size:13.5px; line-height:1.65; color:var(--ink-gray); white-space:pre-line; max-height:36vh; overflow-y:auto;"></div>
@@ -4595,7 +4605,7 @@ const OTHER_AVATAR_SVG = `<svg width="14" height="14" viewBox="0 0 24 24" fill="
 
 const APP_CONFIG = {
   name: '灵犀音乐',
-  version: '2.4.9',
+  version: '2.5.0',
   build: '2026.10.09',
   codename: 'Pure Sound'
 };
@@ -6878,6 +6888,24 @@ const DISCOVER_NOTE_TEMPLATES = [
   '深情治愈'
 ];
 
+function isCleanChineseSong(song) {
+  if (!song) return false;
+  const name = song.name || song.title || '';
+  const artist = song.artist || '';
+
+  // 1. 严格过滤纯英文/纯外文歌曲（要求歌名或歌手必须包含中文字符）
+  const hasChinese = /[\u4e00-\u9fa5]/.test(name) || /[\u4e00-\u9fa5]/.test(artist);
+  if (!hasChinese) return false;
+
+  // 2. 严格过滤非正式曲目、恶搞、DJ、纯电音伴奏等杂质
+  const lowName = name.toLowerCase();
+  const lowArtist = artist.toLowerCase();
+  const junkKws = ['试听', '片段', '铃声', '30s', '30秒', '副歌', '高潮版', '截取', '学狗叫', 'dj', 'remix', 'dance', '伴奏', '纯伴奏', 'inst', 'instrumental', 'sped up', 'slowed'];
+  if (junkKws.some(k => lowName.includes(k) || lowArtist.includes(k))) return false;
+
+  return true;
+}
+
 async function refreshRecommendations(showToast = false) {
   if (isDiscoverLoading) return;
   isDiscoverLoading = true;
@@ -6892,10 +6920,10 @@ async function refreshRecommendations(showToast = false) {
   }
 
   try {
-    // 1. 构建多样化种子推荐池（混合常听、多元流派与精选音乐人）
+    // 1. 构建优质华语与常听歌手种子推荐池
     const artistScores = {};
     (ALL_LIBRARY_SONGS || []).forEach(s => {
-      if (s.artist && s.artist !== '未知歌手') {
+      if (s.artist && s.artist !== '未知歌手' && /[\u4e00-\u9fa5]/.test(s.artist)) {
         const parts = s.artist.split(/[\/,、&]/).map(a => a.trim()).filter(Boolean);
         parts.forEach(a => {
           const weight = s.isFav ? 3 : 1;
@@ -6907,23 +6935,29 @@ async function refreshRecommendations(showToast = false) {
     const sortedArtists = Object.keys(artistScores).sort((a, b) => artistScores[b] - artistScores[a]);
     let selectedSeeds = [];
     if (sortedArtists.length > 0) {
-      const pool = sortedArtists.slice(0, 10);
+      const pool = sortedArtists.slice(0, 8);
       const shuffled = [...pool].sort(() => 0.5 - Math.random());
       selectedSeeds = shuffled.slice(0, 2);
     }
 
-    const DIVERSE_SEED_PACKS = [
-      ['周杰伦', '许嵩', '陈奕迅'],
-      ['毛不易', '林俊杰', '薛之谦'],
-      ['国风', '伦桑', '银临'],
-      ['流行热歌', '邓紫棋', '张韶涵'],
-      ['民谣', '李健', '朴树'],
-      ['古风', '双笙', '音频怪物'],
-      ['治愈', '阿鲲', '赵海洋'],
-      ['新歌精选', '单依纯', '周深'],
-      ['经典金曲', '王菲', '张学友']
+    const CHINESE_PREMIUM_SEED_PACKS = [
+      ['许嵩', '断桥残雪', '清明雨上'],
+      ['周杰伦', '青花瓷', '稻香'],
+      ['林俊杰', '江南', '愿与愁'],
+      ['毛不易', '消愁', '像我这样的人'],
+      ['薛之谦', '像风一样', '演员'],
+      ['陈奕迅', '富士山下', '红玫瑰'],
+      ['银临', '山有木兮', '牵丝戏'],
+      ['双笙', '故梦', '琴师'],
+      ['王菲', '如愿', '红豆'],
+      ['李健', '贝加尔湖畔', '传奇'],
+      ['朴树', '平凡之路', '白桦林'],
+      ['胡夏', '知否知否', '云与海'],
+      ['伦桑', '山外小楼夜听雨', '愿我'],
+      ['汪苏泷', '年轮', '有点甜'],
+      ['阿鲲', '风犬少年的天空', '九儿']
     ];
-    const randomPack = DIVERSE_SEED_PACKS[Math.floor(Math.random() * DIVERSE_SEED_PACKS.length)];
+    const randomPack = CHINESE_PREMIUM_SEED_PACKS[Math.floor(Math.random() * CHINESE_PREMIUM_SEED_PACKS.length)];
     randomPack.forEach(k => {
       if (selectedSeeds.length < 3 && !selectedSeeds.includes(k)) {
         selectedSeeds.push(k);
@@ -6932,8 +6966,8 @@ async function refreshRecommendations(showToast = false) {
 
     currentDiscoverSeeds = selectedSeeds;
 
-    // 2. 并行拉取线上优质曲目（随机分页偏移，绕过旧缓存，确保每次都是全新曲目）
-    const randomPage = Math.floor(Math.random() * 4) + 1;
+    // 2. 并行拉取线上优质曲目（高品质前1~2页，绕过旧缓存，确保每次都是全新曲目）
+    const randomPage = Math.floor(Math.random() * 2) + 1;
     const searchPromises = selectedSeeds.map(seed => requestOnlineSearch(seed, 20, randomPage, true));
     const resultsLists = await Promise.all(searchPromises);
 
@@ -6953,7 +6987,7 @@ async function refreshRecommendations(showToast = false) {
           const song = list[i];
           const lowTitle = (song.name || '').trim().toLowerCase();
           const songKey = `${song.source || ''}_${song.url_id || song.id}`;
-          if (!localSongSet.has(lowTitle) && !seenOnlineIds.has(songKey)) {
+          if (!localSongSet.has(lowTitle) && !seenOnlineIds.has(songKey) && isCleanChineseSong(song)) {
             seenOnlineIds.add(songKey);
             song.reason = `${selectedSeeds[sIdx]}心选`;
             merged.push(song);
@@ -6963,16 +6997,16 @@ async function refreshRecommendations(showToast = false) {
       if (merged.length >= 24) break;
     }
 
-    // 若依然不足 18 首，使用流行备用词继续补充
+    // 若依然不足 18 首，使用纯正华语金曲备用词继续补充
     if (merged.length < 18) {
-      const fallbackKws = ['流行', '热歌', '新歌', '精选'];
+      const fallbackKws = ['国风雅韵', '经典华语', '深情好歌', '诗意古风'];
       const fbKw = fallbackKws[Math.floor(Math.random() * fallbackKws.length)];
-      const fallbackList = await requestOnlineSearch(fbKw, 30, Math.floor(Math.random() * 3) + 1, true);
+      const fallbackList = await requestOnlineSearch(fbKw, 30, Math.floor(Math.random() * 2) + 1, true);
       if (Array.isArray(fallbackList)) {
         for (const fbSong of fallbackList) {
           const lowTitle = (fbSong.name || '').trim().toLowerCase();
           const songKey = `${fbSong.source || ''}_${fbSong.url_id || fbSong.id}`;
-          if (!localSongSet.has(lowTitle) && !seenOnlineIds.has(songKey)) {
+          if (!localSongSet.has(lowTitle) && !seenOnlineIds.has(songKey) && isCleanChineseSong(fbSong)) {
             seenOnlineIds.add(songKey);
             const template = DISCOVER_NOTE_TEMPLATES[(merged.length) % DISCOVER_NOTE_TEMPLATES.length];
             fbSong.reason = template;
@@ -7023,12 +7057,16 @@ async function refreshRecommendations(showToast = false) {
     // 立即通过网易云原生批量接口补齐全部曲目的高清专辑封面
     await batchFillNetEaseCovers(currentDiscoverSongs);
 
-    // 5. 更新顶部黑胶唱片的随机推荐曲目流
+    // 5. 更新顶部黑胶唱片的随机推荐曲目流，并自动滚动回第一张唱片
     const freshTop = [...currentDiscoverSongs].sort(() => 0.5 - Math.random()).slice(0, 10);
     topRecommendedTracks = freshTop;
     activeTopTrackIndex = 0;
     renderVinylDiscs();
-    updateFixedRadioCardUI();
+    if (typeof scrollVinylToTrack === 'function') {
+      scrollVinylToTrack(0, false);
+    } else {
+      updateFixedRadioCardUI();
+    }
 
     renderDiscoverPane();
     if (showToast) toast('已为您换了一批精选好歌');
