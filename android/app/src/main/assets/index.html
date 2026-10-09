@@ -505,8 +505,38 @@ body.night .discover-section-play-btn {
 }
 .icon-btn svg { width: 20px; height: 20px; stroke-width: 1.35; stroke: currentColor; fill: none; }
 
-.xianyin-content-scroll { flex: 1; overflow-y: auto; padding-bottom: 74px; -webkit-overflow-scrolling: touch; }
+.xianyin-content-scroll {
+  flex: 1;
+  height: 100%;
+  overflow: hidden;
+  position: relative;
+  box-sizing: border-box;
+}
 .xianyin-content-scroll::-webkit-scrollbar { display: none; }
+
+.home-tab-slider {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  position: relative;
+}
+.home-tab-track {
+  display: flex;
+  width: 200%;
+  height: 100%;
+  transition: transform 0.28s cubic-bezier(0.25, 1, 0.5, 1);
+  will-change: transform;
+}
+.home-page-pane {
+  width: 50%;
+  height: 100%;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  box-sizing: border-box;
+  overscroll-behavior-y: contain;
+  padding-bottom: calc(84px + var(--safe-bottom, 0px));
+}
+.home-page-pane::-webkit-scrollbar { display: none; }
 
 /* 顶部光盘专栏（光盘本身即歌单） */
 .radio-stage-viewport { position: relative; width: 100%; padding: 4px 0 10px; overflow: hidden; }
@@ -1068,14 +1098,14 @@ body.night .blue-toggle-switch { background: #383834; }
   background: var(--bg-page) !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
-  border-top: 1px solid var(--border-line) !important;
+  border: none !important;
   box-shadow: none !important;
   display: flex; align-items: center; justify-content: space-around;
   padding: 0 24px; z-index: 60;
 }
 body.night .xianyin-bottom-nav {
   background: var(--bg-page) !important;
-  border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border: none !important;
   box-shadow: none !important;
 }
 .bottom-tab-item {
@@ -2696,16 +2726,15 @@ body.apk-mode .xianyin-bottom-nav {
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
   border: none !important;
-  border-top: 1px solid var(--border-line) !important;
   box-shadow: none !important;
   box-sizing: border-box !important;
 }
 body.night .xianyin-bottom-nav {
-  border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border: none !important;
 }
 
 body.apk-mode .xianyin-content-scroll {
-  padding-bottom: calc(86px + var(--safe-bottom, 0px)) !important;
+  padding-bottom: 0 !important;
 }
 
 @media screen and (max-width: 600px), (display-mode: standalone) {
@@ -2759,13 +2788,12 @@ body.apk-mode .xianyin-content-scroll {
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
     border: none !important;
-    border-top: 1px solid var(--border-line) !important;
     box-shadow: none !important;
     box-sizing: border-box !important;
   }
 
   .xianyin-content-scroll {
-    padding-bottom: calc(86px + var(--safe-bottom, 0px)) !important;
+    padding-bottom: 0 !important;
   }
 }
 
@@ -3214,64 +3242,64 @@ body.night .create-playlist-sheet-confirm {
     </header>
 
     <div class="xianyin-content-scroll">
-      <!-- 发现页真实弹性下拉刷新交互指示器 -->
-      <div class="pull-refresh-indicator" id="discoverPullRefresh">
-        <div class="pull-refresh-content">
-          <svg class="pull-refresh-spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
-            <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
-          </svg>
-          <svg class="pull-refresh-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="12" y1="5" x2="12" y2="19"></line>
-            <polyline points="19 12 12 19 5 12"></polyline>
-          </svg>
-          <span class="pull-refresh-text" id="discoverPullRefreshText">下拉刷新推荐</span>
-        </div>
-      </div>
-
-      <!-- 发现与乐库横向滑动主容器（无闪烁物理平移） -->
-      <div class="home-tab-slider" id="homeTabSlider" style="width:100%; overflow:hidden;">
-        <div class="home-tab-track" id="homeTabTrack" style="display:flex; width:200%; transition:transform 0.28s cubic-bezier(0.25, 1, 0.5, 1); will-change:transform; align-items:flex-start;">
-          <!-- 第一页：发现与灵犀推荐（默认主页，顶部精选唱片推荐 + 底部板块流推荐） -->
-          <div id="paneDiscover" style="width:50%; flex-shrink:0; box-sizing:border-box;">
-        <div class="radio-stage-viewport">
-          <div class="radio-stage-inner">
-            <div class="fixed-radio-card" onclick="openCurrentRadioAlbum()">
-              <div>
-                <div class="radio-card-header">
-                  <span id="dynamicCardTitle">全部歌曲</span>
-                </div>
-                <div class="radio-card-sub" id="dynamicCardSub">灵犀漫步 - 遇见知音</div>
+      <!-- 发现与乐库横向滑动主容器（无闪烁物理平移，两页具备独立自滚动容器，切换零跳动） -->
+      <div class="home-tab-slider" id="homeTabSlider">
+        <div class="home-tab-track" id="homeTabTrack">
+          <!-- 第一页：发现与灵犀推荐（独立自滚动容器） -->
+          <div id="paneDiscover" class="home-page-pane">
+            <!-- 发现页真实弹性下拉刷新交互指示器 -->
+            <div class="pull-refresh-indicator" id="discoverPullRefresh">
+              <div class="pull-refresh-content">
+                <svg class="pull-refresh-spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+                  <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+                </svg>
+                <svg class="pull-refresh-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="12" y1="5" x2="12" y2="19"></line>
+                  <polyline points="19 12 12 19 5 12"></polyline>
+                </svg>
+                <span class="pull-refresh-text" id="discoverPullRefreshText">下拉刷新推荐</span>
               </div>
-              <div class="radio-card-bottom">
-                <div class="radio-live-bars">
-                  <div class="radio-live-bar"></div>
-                  <div class="radio-live-bar"></div>
-                  <div class="radio-live-bar"></div>
-                  <div class="radio-live-bar"></div>
+            </div>
+
+            <div class="radio-stage-viewport">
+              <div class="radio-stage-inner">
+                <div class="fixed-radio-card" onclick="openCurrentRadioAlbum()">
+                  <div>
+                    <div class="radio-card-header">
+                      <span id="dynamicCardTitle">全部歌曲</span>
+                    </div>
+                    <div class="radio-card-sub" id="dynamicCardSub">灵犀漫步 - 遇见知音</div>
+                  </div>
+                  <div class="radio-card-bottom">
+                    <div class="radio-live-bars">
+                      <div class="radio-live-bar"></div>
+                      <div class="radio-live-bar"></div>
+                      <div class="radio-live-bar"></div>
+                      <div class="radio-live-bar"></div>
+                    </div>
+                    <div class="radio-play-btn-circle" id="radioPlayBtnCircle" onclick="event.stopPropagation(); togglePlayCurrentRadioAlbum();" title="播放">
+                      <svg viewBox="0 0 24 24"><polygon points="7 4 20 12 7 20 7 4"/></svg>
+                    </div>
+                  </div>
                 </div>
-                <div class="radio-play-btn-circle" id="radioPlayBtnCircle" onclick="event.stopPropagation(); togglePlayCurrentRadioAlbum();" title="播放">
-                  <svg viewBox="0 0 24 24"><polygon points="7 4 20 12 7 20 7 4"/></svg>
+
+                <div class="vinyl-scroll-channel" id="vinylScrollChannel" onscroll="handleVinylScroll(this)">
+                  <div class="vinyl-initial-offset"></div>
+                  <div class="vinyl-disc-stream" id="vinylDiscStream">
+                    <!-- 光盘由 renderVinylDiscs 动态填充 -->
+                  </div>
                 </div>
               </div>
             </div>
 
-            <div class="vinyl-scroll-channel" id="vinylScrollChannel" onscroll="handleVinylScroll(this)">
-              <div class="vinyl-initial-offset"></div>
-              <div class="vinyl-disc-stream" id="vinylDiscStream">
-                <!-- 光盘由 renderVinylDiscs 动态填充 -->
-              </div>
+            <!-- 推荐多板块流：宝藏故事、私人专属好歌等 -->
+            <div style="padding: 0 16px 40px;">
+              <div id="discoverSectionsContainer"></div>
             </div>
           </div>
-        </div>
 
-        <!-- 推荐多板块流：宝藏故事、私人专属好歌等 -->
-        <div style="padding: 0 16px 40px;">
-          <div id="discoverSectionsContainer"></div>
-        </div>
-      </div>
-
-      <!-- 第二页：乐库与歌曲列表（承载本地曲库、歌单切换与批量管理） -->
-      <div id="paneListen" style="width:50%; flex-shrink:0; box-sizing:border-box; height:0; overflow:hidden;">
+          <!-- 第二页：乐库与歌曲列表（独立自滚动容器） -->
+          <div id="paneListen" class="home-page-pane">
         <div class="library-album-pills-bar" id="libraryAlbumPills"></div>
 
         <div class="song-list-panel">
@@ -3493,7 +3521,7 @@ body.night .create-playlist-sheet-confirm {
               </div>
               <div class="item-content">
                 <span class="item-main-title">检查版本更新</span>
-                <span class="item-subtitle-tight" id="aboutAppVersionDesc">v2.4.7</span>
+                <span class="item-subtitle-tight" id="aboutAppVersionDesc">v2.4.8</span>
               </div>
             </div>
             <svg class="item-arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
@@ -4143,7 +4171,7 @@ body.night .create-playlist-sheet-confirm {
       </div>
       <div style="display:flex; flex-direction:column; align-items:center; padding:4px 0 14px;">
         <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px;">
-          <span style="font-size:18px; font-weight:700; color:var(--ink-black);" id="updateVersionTitle">v2.4.7</span>
+          <span style="font-size:18px; font-weight:700; color:var(--ink-black);" id="updateVersionTitle">v2.4.8</span>
           <span style="font-size:11px; font-weight:600; background:rgba(35,75,184,0.08); color:var(--brand-blue); padding:2px 8px; border-radius:10px;" id="updateVersionBadge">最新版本</span>
         </div>
         <div id="updateChangelogBox" style="width:100%; box-sizing:border-box; background:var(--claude-pill-bg, rgba(20,20,19,0.03)); border:none; border-radius:14px; padding:14px 16px; font-size:13.5px; line-height:1.65; color:var(--ink-gray); white-space:pre-line; max-height:36vh; overflow-y:auto;"></div>
@@ -4567,7 +4595,7 @@ const OTHER_AVATAR_SVG = `<svg width="14" height="14" viewBox="0 0 24 24" fill="
 
 const APP_CONFIG = {
   name: '灵犀音乐',
-  version: '2.4.7',
+  version: '2.4.8',
   build: '2026.10.09',
   codename: 'Pure Sound'
 };
@@ -5937,8 +5965,29 @@ async function requestOnlineSearch(keyword, count = 30) {
   const encodedKw = encodeURIComponent(keyword);
   const candidates = [];
 
-  // 1. 若配置了自定义 API 或非 injahow 聚合通道，优先尝试当前接口
-  if (currentApiBase && !currentApiBase.includes('injahow')) {
+  // 1. GDStudio 稳定极速公共网易云搜索通道（国内高可用CDN）
+  candidates.push({
+    url: `https://music-api.gdstudio.xyz/api.php?types=search&count=${count}&source=netease&name=${encodedKw}`,
+    defaultSource: 'netease',
+    timeout: 3600
+  });
+
+  // 2. Meting/Injahow 聚合搜索通道
+  candidates.push({
+    url: `https://api.injahow.cn/meting/?server=netease&type=search&id=${encodedKw}`,
+    defaultSource: 'netease',
+    timeout: 3600
+  });
+
+  // 3. GDStudio 腾讯音乐备用搜索通道
+  candidates.push({
+    url: `https://music-api.gdstudio.xyz/api.php?types=search&count=${count}&source=tencent&name=${encodedKw}`,
+    defaultSource: 'tencent',
+    timeout: 3600
+  });
+
+  // 4. 用户自建或备用自定义通道
+  if (currentApiBase && !currentApiBase.includes('injahow') && !currentApiBase.includes('gdstudio')) {
     candidates.push({
       url: `${currentApiBase}?types=search&count=${count}&source=netease&pages=1&name=${encodedKw}`,
       defaultSource: 'netease',
@@ -5946,23 +5995,9 @@ async function requestOnlineSearch(keyword, count = 30) {
     });
   }
 
-  // 2. Meting 高可用公共搜索解析通道（网易云平台）
-  candidates.push({
-    url: `https://api.i-meto.com/meting/api?server=netease&type=search&id=${encodedKw}`,
-    defaultSource: 'netease',
-    timeout: 3200
-  });
-
-  // 3. Meting 高可用公共搜索解析通道（QQ音乐备用源）
-  candidates.push({
-    url: `https://api.i-meto.com/meting/api?server=tencent&type=search&id=${encodedKw}`,
-    defaultSource: 'tencent',
-    timeout: 3200
-  });
-
   for (const c of candidates) {
     try {
-      const res = await universalFetch(c.url, { timeout: c.timeout || 3200 });
+      const res = await universalFetch(c.url, { timeout: c.timeout || 3600 });
       if (!res.ok) continue;
       const data = await res.json();
       if (!Array.isArray(data) || data.length === 0) continue;
@@ -5981,7 +6016,11 @@ async function requestOnlineSearch(keyword, count = 30) {
         const name = item.name || item.title || '未知歌曲';
         let artist = item.artist || item.author || '未知歌手';
         if (Array.isArray(artist)) artist = artist.join(' / ');
-        const cover = item.pic || item.cover || '';
+        const picId = item.pic_id || songId;
+        let cover = item.pic || item.cover || '';
+        if (!cover && picId) {
+          cover = `https://api.injahow.cn/meting/?server=${server}&type=pic&id=${picId}`;
+        }
         const dur = Number(item.duration || item.interval || item.length) || 0;
         return {
           id: String(songId || Math.random().toString(36).slice(2)),
@@ -6404,20 +6443,14 @@ function selectLibraryAlbum(idx) {
 }
 
 let isHomeTabAnimating = false;
-let homeDiscoverScrollTop = 0;
-let homeLibraryScrollTop = 0;
 
 function switchHomeNavTab(tab, immediate = false) {
   if (tab === currentHomeTab && !immediate) return;
-  const previousTab = currentHomeTab;
   currentHomeTab = tab;
 
   const tabNavLibrary = document.getElementById('tabNavLibrary');
   const tabNavDiscover = document.getElementById('tabNavDiscover');
   const homeTabTrack = document.getElementById('homeTabTrack');
-  const paneDiscover = document.getElementById('paneDiscover');
-  const paneListen = document.getElementById('paneListen');
-  const scrollEl = document.querySelector('.xianyin-content-scroll');
 
   if (tab === 'library') {
     exitHomeMultiSelectMode();
@@ -6435,67 +6468,18 @@ function switchHomeNavTab(tab, immediate = false) {
     }
   }
 
-  if (!homeTabTrack || !paneDiscover || !paneListen) return;
+  if (!homeTabTrack) return;
 
   const targetTranslate = (tab === 'library') ? '-50%' : '0%';
 
   if (immediate) {
     homeTabTrack.style.transition = 'none';
     homeTabTrack.style.transform = `translate3d(${targetTranslate}, 0, 0)`;
-    if (tab === 'library') {
-      paneDiscover.style.height = '0';
-      paneDiscover.style.overflow = 'hidden';
-      paneListen.style.height = 'auto';
-      paneListen.style.overflow = '';
-      if (scrollEl) scrollEl.scrollTop = homeLibraryScrollTop;
-    } else {
-      paneListen.style.height = '0';
-      paneListen.style.overflow = 'hidden';
-      paneDiscover.style.height = 'auto';
-      paneDiscover.style.overflow = '';
-      if (scrollEl) scrollEl.scrollTop = homeDiscoverScrollTop;
-    }
     return;
   }
 
-  if (isHomeTabAnimating) return;
-  isHomeTabAnimating = true;
-
-  // 记录切页前的当前滚动位置
-  if (scrollEl) {
-    if (previousTab === 'discover') homeDiscoverScrollTop = scrollEl.scrollTop;
-    else homeLibraryScrollTop = scrollEl.scrollTop;
-  }
-
-  // 准备平移动画：两页都展开为完整高度，直接物理平移，绝无透明度闪烁
-  paneDiscover.style.height = 'auto';
-  paneDiscover.style.overflow = '';
-  paneListen.style.height = 'auto';
-  paneListen.style.overflow = '';
-
   homeTabTrack.style.transition = 'transform 0.28s cubic-bezier(0.25, 1, 0.5, 1)';
   homeTabTrack.style.transform = `translate3d(${targetTranslate}, 0, 0)`;
-
-  // 平滑恢复目标页滚动条
-  if (scrollEl) {
-    const targetScroll = (tab === 'library') ? homeLibraryScrollTop : homeDiscoverScrollTop;
-    scrollEl.scrollTo({ top: targetScroll, behavior: 'smooth' });
-  }
-
-  setTimeout(() => {
-    if (currentHomeTab === 'library') {
-      paneDiscover.style.height = '0';
-      paneDiscover.style.overflow = 'hidden';
-      paneListen.style.height = 'auto';
-      paneListen.style.overflow = '';
-    } else {
-      paneListen.style.height = '0';
-      paneListen.style.overflow = 'hidden';
-      paneDiscover.style.height = 'auto';
-      paneDiscover.style.overflow = '';
-    }
-    isHomeTabAnimating = false;
-  }, 290);
 }
 
 function formatCleanTitle(title) {
@@ -11614,8 +11598,11 @@ function updateSongRowCover(song) {
 /* ================= 歌曲封面高可用解析保障 ================= */
 async function ensureSongCover(song) {
   if (!song) return '';
+  const curPlaying = currentPlaybackQueue[currentIndex];
+  const isCurPlaying = curPlaying && (curPlaying.id === song.id || (curPlaying.title === song.title && curPlaying.artist === song.artist));
+
   if (song.cover && song.cover.startsWith('http') && !song.cover.includes('injahow.cn/meting/?server=')) {
-    applySongCoverToUI(song.cover);
+    if (isCurPlaying) applySongCoverToUI(song.cover);
     return song.cover;
   }
 
@@ -11623,7 +11610,7 @@ async function ensureSongCover(song) {
   const directCover = await resolveSongCoverUrl(song);
   if (directCover && directCover.startsWith('http')) {
     song.cover = directCover;
-    applySongCoverToUI(song.cover);
+    if (isCurPlaying) applySongCoverToUI(song.cover);
     persistData();
     updateSongRowCover(song);
     return song.cover;
@@ -11640,7 +11627,7 @@ async function ensureSongCover(song) {
           const matchedCover = await resolveSongCoverUrl(match);
           if (matchedCover) {
             song.cover = matchedCover;
-            applySongCoverToUI(song.cover);
+            if (isCurPlaying) applySongCoverToUI(song.cover);
             persistData();
             updateSongRowCover(song);
             return song.cover;
@@ -11648,7 +11635,7 @@ async function ensureSongCover(song) {
         }
         if (match.cover) {
           song.cover = match.cover;
-          applySongCoverToUI(song.cover);
+          if (isCurPlaying) applySongCoverToUI(song.cover);
           persistData();
           updateSongRowCover(song);
           return song.cover;
@@ -13095,7 +13082,7 @@ window.addEventListener('load', () => {
 /* ================== 发现页真实弹性下拉刷新交互 (100% 灵敏稳定零概率失效) ================== */
 (function initDiscoverPulldownRefresh() {
   function bindPulldown() {
-    const scrollEl = document.querySelector('.xianyin-content-scroll');
+    const scrollEl = document.getElementById('paneDiscover');
     const indicator = document.getElementById('discoverPullRefresh');
     const textEl = document.getElementById('discoverPullRefreshText');
     if (!scrollEl || !indicator || !textEl) return;

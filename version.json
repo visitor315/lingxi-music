@@ -1,6 +1,6 @@
 {
-  "versionCode": 80,
-  "versionName": "2.4.7",
-  "changelog": "重构发现与乐库无闪烁物理平滑平移，唱片封面双通道高可用提取与音乐SVG占位兜底，显现底栏水墨分割线，升级弹窗水墨风重构与下载加速",
+  "versionCode": 81,
+  "versionName": "2.4.8",
+  "changelog": "彻底修复封面提取与推荐板块全刷新，发现与乐库独立自滚动消除切页上移跳动，移除底栏分割线，收藏歌曲避免影响唱片封面",
   "downloadUrl": "https://ghfast.top/https://github.com/visitor315/lingxi-music/releases/download/v1.4.0/LingXiMusic.apk"
 }
