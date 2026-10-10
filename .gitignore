@@ -8,3 +8,7 @@ Thumbs.db
 
 # Local Agent Workspace Rules
 AGENTS.md
+
+# Gradle & Build Cache
+.gradle/
+*.class
