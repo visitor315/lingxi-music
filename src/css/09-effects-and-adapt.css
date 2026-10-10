@@ -16,6 +16,7 @@ body.apk-mode .phone-viewport {
   border-radius: 0 !important;
   box-shadow: none !important;
   padding: 0 !important;
+  overflow: hidden !important;
 }
 
 body.apk-mode .view-xianyin {
@@ -207,7 +208,7 @@ body.in-pip-mode .view-player-full {
   box-sizing: border-box !important;
   overflow-y: auto !important;
   -webkit-overflow-scrolling: touch !important;
-  padding-top: calc(var(--safe-top, 38px) + 12px) !important;
+  padding-top: calc(var(--safe-top, 38px) + 8px) !important;
   padding-bottom: calc(84px + var(--safe-bottom, 0px)) !important;
 }
 
@@ -257,7 +258,7 @@ body.in-pip-mode .view-player-full {
   box-sizing: border-box !important;
   overflow-y: auto !important;
   -webkit-overflow-scrolling: touch !important;
-  padding-top: calc(var(--safe-top, 38px) + 12px) !important;
+  padding-top: calc(var(--safe-top, 38px) + 8px) !important;
   padding-bottom: calc(84px + var(--safe-bottom, 0px)) !important;
 }
 

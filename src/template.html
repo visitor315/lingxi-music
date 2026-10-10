@@ -158,17 +158,8 @@
         </div>
       </div>
 
-      <!-- 设置页 (对齐用户参考图：顶部圆形返回键 + 大标题设置 + 通用设置分类) -->
+      <!-- 设置页 -->
       <div class="view-settings-page" id="paneSettings">
-        <div class="settings-top-header">
-          <button class="settings-circular-back-btn ripple-btn" onclick="switchBottomTab('listen')" title="返回主页">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="15 18 9 12 15 6"></polyline>
-            </svg>
-          </button>
-          <h1 class="settings-page-main-title">设置</h1>
-        </div>
-
         <div class="subpage-group-title-standard">通用设置</div>
         <section class="group-menu-card">
           <div class="group-menu-item ripple-btn" onclick="toggleDefaultHomeTabSetting()">
@@ -1402,7 +1393,7 @@
         <div style="width: 32px;"></div>
       </div>
       <div class="create-playlist-input-wrap">
-        <input type="text" class="create-playlist-input" id="createPlaylistInput" placeholder="输入歌单名称..." maxlength="24" onkeydown="if(event.key==='Enter')submitCreatePlaylistModal()">
+        <input type="text" class="create-playlist-input" id="createPlaylistInput" placeholder="输入歌单名称..." maxlength="24" onkeydown="if(event.key==='Enter')submitCreatePlaylistModal()" onblur="if(typeof forceResetViewportScroll==='function')forceResetViewportScroll()">
       </div>
       <div class="create-playlist-sheet-actions">
         <button type="button" class="create-playlist-sheet-confirm ripple-btn" onclick="submitCreatePlaylistModal()">确定</button>

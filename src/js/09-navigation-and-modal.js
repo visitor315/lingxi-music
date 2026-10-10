@@ -98,6 +98,7 @@ function closePlayerFull() {
   if (typeof setDragProgressState === 'function') setDragProgressState(false);
   if (isPureLyrics) closePureLyricsView();
   closePlaylistDrawer();
+  if (typeof forceResetViewportScroll === 'function') forceResetViewportScroll();
   if (openedPlayerFromSearch) {
     openedPlayerFromSearch = false;
     // 搜索页始终在底层保持 active，绝不重复触发进入动画；若偶发未激活，则强制无动画瞬间归位

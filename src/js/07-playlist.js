@@ -1343,13 +1343,17 @@ function closeCreatePlaylistModal(e) {
 
 function closeCreatePlaylistModalDirect() {
   if (typeof blockGhostClicks === 'function') blockGhostClicks(450);
+  const input = document.getElementById('createPlaylistInput');
+  if (input) input.blur();
   const overlay = document.getElementById('createPlaylistModalOverlay');
   if (overlay) overlay.classList.remove('active');
   if (typeof closePlaylistDrawer === 'function') closePlaylistDrawer();
+  if (typeof forceResetViewportScroll === 'function') forceResetViewportScroll();
 }
 
 function submitCreatePlaylistModal() {
   const input = document.getElementById('createPlaylistInput');
+  if (input) input.blur();
   if (!input) return;
   const name = input.value.trim();
   if (!name) {

@@ -231,3 +231,32 @@ if (typeof document !== 'undefined') {
   }, true);
 }
 
+// 严防 Android 软键盘唤起与收起导致 WebView 视口滚动偏移暴露底层视图
+function forceResetViewportScroll() {
+  if (typeof window !== 'undefined') {
+    if (window.scrollY !== 0 || window.scrollX !== 0) {
+      window.scrollTo(0, 0);
+    }
+  }
+  if (typeof document !== 'undefined') {
+    if (document.body && document.body.scrollTop !== 0) {
+      document.body.scrollTop = 0;
+    }
+    if (document.documentElement && document.documentElement.scrollTop !== 0) {
+      document.documentElement.scrollTop = 0;
+    }
+    const vp = document.querySelector('.phone-viewport');
+    if (vp && vp.scrollTop !== 0) {
+      vp.scrollTop = 0;
+    }
+  }
+}
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('scroll', () => {
+    if (document.body && document.body.classList.contains('apk-mode')) {
+      forceResetViewportScroll();
+    }
+  }, { passive: true });
+}
+

@@ -3,10 +3,17 @@
   position: absolute; top: 0; left: 0; width: 100%; height: 100%;
   background: radial-gradient(circle at 50% 20%, #FAF9F7 0%, #EDEDEB 100%);
   z-index: 500; display: flex; flex-direction: column; justify-content: space-between;
-  transform: translateY(100%); transition: transform 0.28s cubic-bezier(0.2, 0.9, 0.3, 1); overflow: hidden;
+  transform: translateY(100%);
+  visibility: hidden;
+  transition: transform 0.28s cubic-bezier(0.2, 0.9, 0.3, 1), visibility 0.28s;
+  overflow: hidden;
   pointer-events: none;
 }
-.view-player-full.active { transform: translateY(0); pointer-events: auto; }
+.view-player-full.active {
+  transform: translateY(0);
+  visibility: visible;
+  pointer-events: auto;
+}
 
 .full-player-header {
   height: 80px; padding: 38px 16px 0; display: flex; align-items: center; justify-content: space-between;

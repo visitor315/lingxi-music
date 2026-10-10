@@ -4,7 +4,7 @@
   flex-direction: column;
   height: 100% !important;
   box-sizing: border-box !important;
-  padding: calc(var(--safe-top, 38px) + 12px) 14px calc(84px + var(--safe-bottom, 0px)) !important;
+  padding: calc(var(--safe-top, 38px) + 8px) 14px calc(84px + var(--safe-bottom, 0px)) !important;
   gap: 14px;
   overflow-y: auto !important;
   -webkit-overflow-scrolling: touch !important;
@@ -23,55 +23,6 @@ body.night .view-settings-page {
   display: flex;
   align-items: center;
   justify-content: space-between;
-}
-
-/* 设置页顶部返回与大标题导航区（对齐参考图：左上圆形返回键 + 下方大标题） */
-.settings-top-header {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  padding: 4px 2px 2px;
-  gap: 12px;
-}
-.settings-circular-back-btn {
-  width: 42px;
-  height: 42px;
-  border-radius: 50%;
-  background: var(--card-bg, #FFFFFF);
-  border: 1px solid var(--border-line, rgba(24, 26, 28, 0.09));
-  color: var(--ink-black);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
-  transition: transform 0.15s ease, background 0.15s ease;
-  padding: 0;
-  -webkit-tap-highlight-color: transparent;
-}
-.settings-circular-back-btn:active {
-  transform: scale(0.92);
-  background: var(--pinned-bg, #EDEDEB);
-}
-body.night .settings-circular-back-btn {
-  background: #232321;
-  border-color: rgba(255, 255, 255, 0.08);
-  color: #ECE9E2;
-}
-.settings-circular-back-btn svg {
-  width: 20px;
-  height: 20px;
-  stroke-width: 2.2;
-  margin-right: 1px;
-}
-.settings-page-main-title {
-  font-size: 22px;
-  font-weight: 600;
-  color: var(--ink-black);
-  letter-spacing: -0.3px;
-  line-height: 1.25;
-  margin: 0 0 2px 2px;
-  user-select: none;
 }
 
 /* 发现页真实弹性下拉刷新交互指示器 */
