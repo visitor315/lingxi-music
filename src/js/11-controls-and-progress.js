@@ -38,19 +38,25 @@ function initProgressBarDrag() {
     const curTimeEl = document.getElementById('curTime');
     if (curTimeEl) curTimeEl.textContent = formatTime(targetSec);
 
-    // 毫秒级歌词顺畅联动
-    if (LYRICS_DATA && LYRICS_DATA.length > 0) {
-      let scrubIdx = 0;
-      for (let i = 0; i < LYRICS_DATA.length; i++) {
-        if (targetSec >= LYRICS_DATA[i].time) scrubIdx = i;
-      }
-      if (scrubIdx !== lastActiveIdx || isCommit) {
-        lastActiveIdx = scrubIdx;
-        updateSimplePreviewLyricScrubbing(scrubIdx);
-        if (isPureLyrics) {
-          scrollLyricItemToCenter(scrubIdx);
+    // 毫秒级歌词顺畅联动（安全防护，绝不阻断寻道进度）
+    try {
+      if (LYRICS_DATA && LYRICS_DATA.length > 0) {
+        let scrubIdx = 0;
+        for (let i = 0; i < LYRICS_DATA.length; i++) {
+          if (targetSec >= LYRICS_DATA[i].time) scrubIdx = i;
+        }
+        if (scrubIdx !== lastActiveIdx || isCommit) {
+          lastActiveIdx = scrubIdx;
+          if (typeof updateSimplePreviewLyricScrubbing === 'function') {
+            updateSimplePreviewLyricScrubbing(scrubIdx);
+          }
+          if (isPureLyrics && typeof scrollLyricItemToCenter === 'function') {
+            scrollLyricItemToCenter(scrubIdx);
+          }
         }
       }
+    } catch(e) {
+      console.warn("Lyric scrub preview error:", e);
     }
 
     if (isCommit) {

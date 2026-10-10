@@ -10,8 +10,8 @@ android {
         applicationId "com.lingxi.music"
         minSdk 21
         targetSdk 34
-        versionCode 93
-        versionName "2.6.0"
+        versionCode 94
+        versionName "2.6.1"
     }
 
     signingConfigs {

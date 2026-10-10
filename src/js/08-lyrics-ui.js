@@ -516,15 +516,9 @@ function updateSimplePreviewLyric(targetIdx, isPending = false) {
     return;
   }
 
-function formatPreviewLyricHtml(item) {
-  if (!item) return '';
-  const cleanTxt = item.cleanText || item.text || '';
-  return `<span class="lyric-text-body">${escapeHtml(cleanTxt)}</span>`;
-}
-
-  const mainHtml = formatPreviewLyricHtml(LYRICS_DATA[targetIdx]);
+  const mainHtml = formatLyricItemHtml(LYRICS_DATA[targetIdx]);
   const subItem = LYRICS_DATA[targetIdx + 1];
-  const subTxt = subItem ? (subItem.cleanText || subItem.text) : '';
+  const subTxt = subItem ? (subItem.text || subItem.cleanText || '') : '';
 
   // 如果唱片页当前已展示该行（如从间奏静候无缝进入开唱），保持不动，绝不重复触发滚动跳跃
   if (displayedPreviewIdx === targetIdx) {
@@ -623,7 +617,7 @@ function updateSimplePreviewLyricScrubbing(targetIdx) {
   previewMain.style.transition = 'none';
   previewMain.style.opacity = '1';
   previewMain.classList.remove('pending');
-  previewMain.innerHTML = formatPreviewLyricHtml(LYRICS_DATA[targetIdx]);
+  previewMain.innerHTML = formatLyricItemHtml(LYRICS_DATA[targetIdx]);
   previewMain.style.setProperty('--fill-pct', '100%');
 
   if (previewSub) {
@@ -632,7 +626,7 @@ function updateSimplePreviewLyricScrubbing(targetIdx) {
     previewSub.style.opacity = '0.55';
     previewSub.style.color = '';
     const nextItem = LYRICS_DATA[targetIdx + 1];
-    previewSub.textContent = nextItem ? (nextItem.cleanText || nextItem.text) : '';
+    previewSub.textContent = nextItem ? (nextItem.text || nextItem.cleanText || '') : '';
   }
 }
 

@@ -39,9 +39,8 @@ function extractSingerPrefix(text) {
 
 function formatLyricItemHtml(item) {
   if (!item) return '';
-  const singerTag = item.singerTag ? `<span class="lyric-singer-tag">${escapeHtml(item.singerTag)}</span>` : '';
-  const cleanTxt = item.cleanText || item.text || '';
-  return `${singerTag}<span class="lyric-text-body">${escapeHtml(cleanTxt)}</span>`;
+  const text = item.text || item.cleanText || '';
+  return `<span class="lyric-text-body">${escapeHtml(text)}</span>`;
 }
 
 function parseLineWords(text, lineStartTime) {
