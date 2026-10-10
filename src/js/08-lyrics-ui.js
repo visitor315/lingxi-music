@@ -133,9 +133,8 @@ function seekToLyricLineByIndex(idx, e) {
   if (e && e.stopPropagation) e.stopPropagation();
   const item = LYRICS_DATA[idx];
   if (!item) return;
-  // 必须考虑 LYRIC_AUDIO_OFFSET：若有负偏移，播放器跳转目标需加上对应偏移补偿，确保解码后curTime刚好落入本句，绝不跳回上一句
-  const offsetComp = (typeof LYRIC_AUDIO_OFFSET === 'number') ? Math.abs(LYRIC_AUDIO_OFFSET) : 0.35;
-  seekToLyricLine(item.time + offsetComp + 0.05, e, idx);
+  const offsetComp = (typeof LYRIC_AUDIO_OFFSET === 'number') ? LYRIC_AUDIO_OFFSET : 0.0;
+  seekToLyricLine(item.time + offsetComp + 0.02, e, idx);
 }
 
 function seekToLyricLine(time, e, explicitIdx) {
@@ -267,12 +266,30 @@ function updateLyricProgress(forcedIdx) {
   updateLyricProgressSmooth(forcedIdx);
 }
 
-// 硬件音频输出缓冲与人声对齐校准时延（负值让歌词稍微延后，消除歌词比人声稍微偏快的时延错位）
-let LYRIC_AUDIO_OFFSET = -0.35;
+// 音频与歌词时间轴同步基准（标准零时延 0.0s，彻底杜绝起唱滞后）
+let LYRIC_AUDIO_OFFSET = 0.0;
 let lastInterludeNextIdx = -1;
 
+function findActiveLyricIndex(curTime) {
+  if (!LYRICS_DATA || LYRICS_DATA.length === 0) return -1;
+  if (curTime < LYRICS_DATA[0].time) return -1;
+  let low = 0;
+  let high = LYRICS_DATA.length - 1;
+  let ans = -1;
+  while (low <= high) {
+    const mid = (low + high) >> 1;
+    if (LYRICS_DATA[mid].time <= curTime) {
+      ans = mid;
+      low = mid + 1;
+    } else {
+      high = mid - 1;
+    }
+  }
+  return ans;
+}
+
 function updateLyricProgressSmooth(forcedIdx) {
-  if (document.hidden) return; // 切后台彻底跳过歌词 DOM 渲染与重排计算！
+  if (document.hidden) return; // 切后台彻底跳过歌词 DOM 渲染与重排计算
   if (!LYRICS_DATA || LYRICS_DATA.length === 0) return;
   const rawTime = isNativeAudioSupported
     ? (window.AndroidBridge.getNativePosition ? window.AndroidBridge.getNativePosition() : currentSec)
@@ -285,9 +302,7 @@ function updateLyricProgressSmooth(forcedIdx) {
   if (typeof forcedIdx === 'number' && forcedIdx >= 0 && forcedIdx < LYRICS_DATA.length) {
     activeIdx = forcedIdx;
   } else {
-    for (let i = 0; i < LYRICS_DATA.length; i++) {
-      if (curTime >= LYRICS_DATA[i].time) activeIdx = i;
-    }
+    activeIdx = findActiveLyricIndex(curTime);
   }
 
   // 1. 前奏判定：歌曲已开播但尚未起唱第一句（停在首句，0%填色，绝不提前染蓝）
@@ -333,11 +348,42 @@ function updateLyricProgressSmooth(forcedIdx) {
 
   const currentItem = LYRICS_DATA[activeIdx];
   let fillPct = 0;
-  if (currentItem && currentItem.duration > 0) {
+
+  // 3. 高精度推进进度计算：若自带词级逐字时间戳，走毫秒级真逐字推进；若为普通 LRC，走物理平滑线性流
+  if (currentItem && currentItem.words && currentItem.words.length > 0) {
+    const words = currentItem.words;
+    let totalChars = 0;
+    for (let w = 0; w < words.length; w++) {
+      totalChars += (words[w].text || '').length || 1;
+    }
+    let charAcc = 0;
+    for (let w = 0; w < words.length; w++) {
+      const word = words[w];
+      const wLen = (word.text || '').length || 1;
+      const wEnd = word.start + word.duration;
+      if (curTime >= wEnd) {
+        charAcc += wLen;
+      } else if (curTime >= word.start) {
+        const wElapsed = curTime - word.start;
+        const wRatio = Math.min(1.0, Math.max(0, wElapsed / word.duration));
+        charAcc += wRatio * wLen;
+        break;
+      } else {
+        break;
+      }
+    }
+    fillPct = totalChars > 0 ? Math.min(100, Math.max(0, (charAcc / totalChars) * 100)) : 0;
+  } else if (currentItem && currentItem.duration > 0) {
     const elapsed = Math.max(0, curTime - currentItem.time);
     const t = Math.min(1.0, Math.max(0, elapsed / currentItem.duration));
-    // 模拟人声歌唱律动：前中段咬字充盈自然，尾音舒缓延展
-    const smoothedRatio = t * 0.4 + Math.sin((t * Math.PI) / 2) * 0.6;
+    // 物理平滑线性流（参考 AMLL 与 lrc-file-parser）：消除陡峭正弦畸变，恒定匀速自然推进，仅首尾微幅平滑收放
+    let smoothedRatio = t;
+    if (t < 0.04) {
+      smoothedRatio = t * (t / 0.04);
+    } else if (t > 0.96) {
+      const rest = 1 - t;
+      smoothedRatio = 1 - rest * (rest / 0.04);
+    }
     fillPct = Math.min(100, Math.max(0, smoothedRatio * 100));
   }
 

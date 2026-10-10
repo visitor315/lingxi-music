@@ -67,10 +67,12 @@ function syncCurrentLyricToDesktop() {
       const rawTime = isNativeAudioSupported
         ? (window.AndroidBridge.getNativePosition ? window.AndroidBridge.getNativePosition() : currentSec)
         : ((!isSeekingAudio && !isNaN(audioPlayer.currentTime) && audioPlayer.currentTime > 0) ? audioPlayer.currentTime : currentSec);
-      const curTime = Math.max(0, rawTime + LYRIC_AUDIO_OFFSET);
-      let matchIdx = -1;
-      for (let i = 0; i < LYRICS_DATA.length; i++) {
-        if (curTime >= LYRICS_DATA[i].time) matchIdx = i;
+      const curTime = Math.max(0, rawTime + (typeof LYRIC_AUDIO_OFFSET === 'number' ? LYRIC_AUDIO_OFFSET : 0.0));
+      let matchIdx = (typeof findActiveLyricIndex === 'function') ? findActiveLyricIndex(curTime) : -1;
+      if (matchIdx === -1) {
+        for (let i = 0; i < LYRICS_DATA.length; i++) {
+          if (curTime >= LYRICS_DATA[i].time) matchIdx = i;
+        }
       }
       if (matchIdx >= 0 && LYRICS_DATA[matchIdx]) {
         lastActiveIdx = matchIdx;

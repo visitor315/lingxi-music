@@ -10,8 +10,8 @@ const OTHER_AVATAR_SVG = `<svg width="14" height="14" viewBox="0 0 24 24" fill="
 
 const APP_CONFIG = {
   name: '灵犀音乐',
-  version: '2.5.8',
-  build: '2026.10.09',
+  version: '2.5.9',
+  build: '2026.10.10',
   codename: 'Pure Sound'
 };
 
