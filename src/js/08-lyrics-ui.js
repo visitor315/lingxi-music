@@ -516,7 +516,13 @@ function updateSimplePreviewLyric(targetIdx, isPending = false) {
     return;
   }
 
-  const mainHtml = formatLyricItemHtml(LYRICS_DATA[targetIdx]);
+function formatPreviewLyricHtml(item) {
+  if (!item) return '';
+  const cleanTxt = item.cleanText || item.text || '';
+  return `<span class="lyric-text-body">${escapeHtml(cleanTxt)}</span>`;
+}
+
+  const mainHtml = formatPreviewLyricHtml(LYRICS_DATA[targetIdx]);
   const subItem = LYRICS_DATA[targetIdx + 1];
   const subTxt = subItem ? (subItem.cleanText || subItem.text) : '';
 
@@ -617,7 +623,7 @@ function updateSimplePreviewLyricScrubbing(targetIdx) {
   previewMain.style.transition = 'none';
   previewMain.style.opacity = '1';
   previewMain.classList.remove('pending');
-  previewMain.innerHTML = formatLyricItemHtml(LYRICS_DATA[targetIdx]);
+  previewMain.innerHTML = formatPreviewLyricHtml(LYRICS_DATA[targetIdx]);
   previewMain.style.setProperty('--fill-pct', '100%');
 
   if (previewSub) {

@@ -1,6 +1,6 @@
 {
-  "versionCode": 92,
-  "versionName": "2.5.9",
-  "changelog": "重构歌词推进引擎，消除起唱时延与正弦畸变；接入Enhanced LRC逐字歌词高精度解析；优化乐句发音区间与自适应间奏算法，推进更精准流畅。",
+  "versionCode": 93,
+  "versionName": "2.6.0",
+  "changelog": "优化唱片页双行歌词预览排版，彻底消除对唱歌曲第二句滚到第一句时人名突兀跳变的问题；保持主副两句文字连贯纯粹。",
   "downloadUrl": "https://ghfast.top/https://github.com/visitor315/lingxi-music/releases/download/v1.4.0/LingXiMusic.apk"
 }
