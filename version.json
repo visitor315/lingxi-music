@@ -1,6 +1,6 @@
 {
-  "versionCode": 95,
-  "versionName": "2.6.2",
-  "changelog": "重构声学人声吐字速率模型，使歌词颜色行进与发音速度自然契合；加入系统时钟平滑插值引擎消除阶梯抖动；设置中新增歌词时间轴校准调节。",
+  "versionCode": 96,
+  "versionName": "2.6.3",
+  "changelog": "彻底修复打开当前播放列表抽屉时自动滚动导致底部出现异常空白的问题；消除退出抽屉后歌曲详情页视口偏移的缺陷；优化列表内部平滑定位算法与视口防抖。",
   "downloadUrl": "https://ghfast.top/https://github.com/visitor315/lingxi-music/releases/download/v1.4.0/LingXiMusic.apk"
 }

@@ -1712,6 +1712,7 @@ body.night .edit-cover-thumbnail {
   visibility: hidden;
   transition: transform 0.28s cubic-bezier(0.2, 0.9, 0.3, 1), visibility 0.28s;
   overflow: hidden;
+  overflow-anchor: none;
   pointer-events: none;
 }
 .view-player-full.active {
@@ -2000,6 +2001,7 @@ body.night .edit-cover-thumbnail {
   border: none !important;
   touch-action: pan-down;
   overflow: hidden !important;
+  overflow-anchor: none !important;
   overscroll-behavior: none;
   z-index: 2050;
   opacity: 0 !important;
@@ -2237,6 +2239,7 @@ body.night .choose-sheet-confirm-btn {
 
 
 .playlist-items, .add-clean-list, .choose-playlist-list, #choosePlaylistItems {
+  position: relative !important;
   display: flex !important;
   flex-direction: column !important;
   gap: 0 !important;
@@ -2246,6 +2249,7 @@ body.night .choose-sheet-confirm-btn {
   box-sizing: border-box !important;
   overflow-y: auto !important;
   -webkit-overflow-scrolling: touch !important;
+  overflow-anchor: none !important;
   flex: 1 1 auto !important;
   min-height: 0 !important;
 }
@@ -4752,7 +4756,7 @@ const OTHER_AVATAR_SVG = `<svg width="14" height="14" viewBox="0 0 24 24" fill="
 
 const APP_CONFIG = {
   name: '灵犀音乐',
-  version: '2.6.2',
+  version: '2.6.3',
   build: '2026.10.10',
   codename: 'Pure Sound'
 };
@@ -4973,7 +4977,7 @@ if (typeof document !== 'undefined') {
   }, true);
 }
 
-// 严防 Android 软键盘唤起与收起导致 WebView 视口滚动偏移暴露底层视图
+// 严防 Android 软键盘唤起与抽屉滚动等导致 WebView 视口滚动偏移暴露底层视图
 function forceResetViewportScroll() {
   if (typeof window !== 'undefined') {
     if (window.scrollY !== 0 || window.scrollX !== 0) {
@@ -4991,16 +4995,30 @@ function forceResetViewportScroll() {
     if (vp && vp.scrollTop !== 0) {
       vp.scrollTop = 0;
     }
+    const pf = document.getElementById('viewPlayerFull');
+    if (pf && pf.scrollTop !== 0) {
+      pf.scrollTop = 0;
+    }
+    const px = document.getElementById('viewXianyin');
+    if (px && px.scrollTop !== 0) {
+      px.scrollTop = 0;
+    }
   }
 }
 
 if (typeof window !== 'undefined') {
-  window.addEventListener('scroll', () => {
+  window.addEventListener('scroll', (e) => {
     if (document.body && document.body.classList.contains('apk-mode')) {
-      forceResetViewportScroll();
+      const target = e.target;
+      if (target === window || target === document || target === document.body || target === document.documentElement) {
+        forceResetViewportScroll();
+      } else if (target && target.classList && (target.classList.contains('phone-viewport') || target.id === 'viewPlayerFull')) {
+        target.scrollTop = 0;
+      }
     }
-  }, { passive: true });
+  }, { passive: true, capture: true });
 }
+
 
 
 /* ================== 全网搜歌引擎与持久化状态 ================== */
@@ -10865,6 +10883,7 @@ function closeXianyin() {
 let openedPlayerFromSearch = false;
 
 function openPlayerFull() {
+  if (typeof forceResetViewportScroll === 'function') forceResetViewportScroll();
   collapseIslandCard();
   if (typeof setDragProgressState === 'function') setDragProgressState(false);
   document.getElementById('viewPlayerFull').classList.add('active');
@@ -10968,6 +10987,7 @@ function handleHeaderBackClick() {
 }
 
 function openPlaylistDrawer() {
+  if (typeof forceResetViewportScroll === 'function') forceResetViewportScroll();
   const drawer = document.getElementById('playlistDrawer');
   const backdrop = document.getElementById('playlistDrawerBackdrop');
   if (drawer) {
@@ -10977,16 +10997,22 @@ function openPlaylistDrawer() {
   }
   if (backdrop) backdrop.classList.add('open');
 
-  // 打开抽屉时平滑滚动居中定位当前播放曲目
+  // 打开抽屉时仅在抽屉列表容器内部平滑居中定位当前曲目，严禁调用 scrollIntoView 防止外层视口上浮移位
   requestAnimationFrame(() => {
     setTimeout(() => {
       const list = document.getElementById('drawerItemsList');
       if (list) {
         const activeRow = list.querySelector(`.song-row[data-song-idx="${currentIndex}"]`);
         if (activeRow) {
-          activeRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          const listHeight = list.clientHeight;
+          const targetTop = activeRow.offsetTop - (listHeight / 2) + (activeRow.clientHeight / 2);
+          list.scrollTo({
+            top: Math.max(0, targetTop),
+            behavior: 'smooth'
+          });
         }
       }
+      if (typeof forceResetViewportScroll === 'function') forceResetViewportScroll();
     }, 120);
   });
 }
@@ -11003,6 +11029,7 @@ function closePlaylistDrawer() {
     }, 300);
   }
   if (backdrop) backdrop.classList.remove('open');
+  if (typeof forceResetViewportScroll === 'function') forceResetViewportScroll();
 }
 
 function expandIslandCard() {}

@@ -10,7 +10,7 @@ const OTHER_AVATAR_SVG = `<svg width="14" height="14" viewBox="0 0 24 24" fill="
 
 const APP_CONFIG = {
   name: '灵犀音乐',
-  version: '2.6.2',
+  version: '2.6.3',
   build: '2026.10.10',
   codename: 'Pure Sound'
 };
@@ -231,7 +231,7 @@ if (typeof document !== 'undefined') {
   }, true);
 }
 
-// 严防 Android 软键盘唤起与收起导致 WebView 视口滚动偏移暴露底层视图
+// 严防 Android 软键盘唤起与抽屉滚动等导致 WebView 视口滚动偏移暴露底层视图
 function forceResetViewportScroll() {
   if (typeof window !== 'undefined') {
     if (window.scrollY !== 0 || window.scrollX !== 0) {
@@ -249,14 +249,28 @@ function forceResetViewportScroll() {
     if (vp && vp.scrollTop !== 0) {
       vp.scrollTop = 0;
     }
+    const pf = document.getElementById('viewPlayerFull');
+    if (pf && pf.scrollTop !== 0) {
+      pf.scrollTop = 0;
+    }
+    const px = document.getElementById('viewXianyin');
+    if (px && px.scrollTop !== 0) {
+      px.scrollTop = 0;
+    }
   }
 }
 
 if (typeof window !== 'undefined') {
-  window.addEventListener('scroll', () => {
+  window.addEventListener('scroll', (e) => {
     if (document.body && document.body.classList.contains('apk-mode')) {
-      forceResetViewportScroll();
+      const target = e.target;
+      if (target === window || target === document || target === document.body || target === document.documentElement) {
+        forceResetViewportScroll();
+      } else if (target && target.classList && (target.classList.contains('phone-viewport') || target.id === 'viewPlayerFull')) {
+        target.scrollTop = 0;
+      }
     }
-  }, { passive: true });
+  }, { passive: true, capture: true });
 }
+
 

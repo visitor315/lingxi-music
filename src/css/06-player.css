@@ -7,6 +7,7 @@
   visibility: hidden;
   transition: transform 0.28s cubic-bezier(0.2, 0.9, 0.3, 1), visibility 0.28s;
   overflow: hidden;
+  overflow-anchor: none;
   pointer-events: none;
 }
 .view-player-full.active {

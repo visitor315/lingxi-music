@@ -15,6 +15,7 @@ function closeXianyin() {
 let openedPlayerFromSearch = false;
 
 function openPlayerFull() {
+  if (typeof forceResetViewportScroll === 'function') forceResetViewportScroll();
   collapseIslandCard();
   if (typeof setDragProgressState === 'function') setDragProgressState(false);
   document.getElementById('viewPlayerFull').classList.add('active');
@@ -118,6 +119,7 @@ function handleHeaderBackClick() {
 }
 
 function openPlaylistDrawer() {
+  if (typeof forceResetViewportScroll === 'function') forceResetViewportScroll();
   const drawer = document.getElementById('playlistDrawer');
   const backdrop = document.getElementById('playlistDrawerBackdrop');
   if (drawer) {
@@ -127,16 +129,22 @@ function openPlaylistDrawer() {
   }
   if (backdrop) backdrop.classList.add('open');
 
-  // 打开抽屉时平滑滚动居中定位当前播放曲目
+  // 打开抽屉时仅在抽屉列表容器内部平滑居中定位当前曲目，严禁调用 scrollIntoView 防止外层视口上浮移位
   requestAnimationFrame(() => {
     setTimeout(() => {
       const list = document.getElementById('drawerItemsList');
       if (list) {
         const activeRow = list.querySelector(`.song-row[data-song-idx="${currentIndex}"]`);
         if (activeRow) {
-          activeRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          const listHeight = list.clientHeight;
+          const targetTop = activeRow.offsetTop - (listHeight / 2) + (activeRow.clientHeight / 2);
+          list.scrollTo({
+            top: Math.max(0, targetTop),
+            behavior: 'smooth'
+          });
         }
       }
+      if (typeof forceResetViewportScroll === 'function') forceResetViewportScroll();
     }, 120);
   });
 }
@@ -153,6 +161,7 @@ function closePlaylistDrawer() {
     }, 300);
   }
   if (backdrop) backdrop.classList.remove('open');
+  if (typeof forceResetViewportScroll === 'function') forceResetViewportScroll();
 }
 
 function expandIslandCard() {}

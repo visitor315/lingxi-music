@@ -37,6 +37,7 @@
   border: none !important;
   touch-action: pan-down;
   overflow: hidden !important;
+  overflow-anchor: none !important;
   overscroll-behavior: none;
   z-index: 2050;
   opacity: 0 !important;
@@ -274,6 +275,7 @@ body.night .choose-sheet-confirm-btn {
 
 
 .playlist-items, .add-clean-list, .choose-playlist-list, #choosePlaylistItems {
+  position: relative !important;
   display: flex !important;
   flex-direction: column !important;
   gap: 0 !important;
@@ -283,6 +285,7 @@ body.night .choose-sheet-confirm-btn {
   box-sizing: border-box !important;
   overflow-y: auto !important;
   -webkit-overflow-scrolling: touch !important;
+  overflow-anchor: none !important;
   flex: 1 1 auto !important;
   min-height: 0 !important;
 }
