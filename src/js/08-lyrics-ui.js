@@ -180,6 +180,32 @@ function playAtTargetLyric(e) {
 
 let lyricRafId = null;
 let bgLyricInterval = null;
+let lastNativeSamplePos = -1;
+let lastNativeSamplePerf = 0;
+
+function getAccuratePlaybackSec() {
+  if (isSeekingAudio) return currentSec;
+  const now = performance.now();
+  if (isNativeAudioSupported && window.AndroidBridge && window.AndroidBridge.getNativePosition) {
+    const rawPos = window.AndroidBridge.getNativePosition();
+    if (typeof rawPos === 'number' && rawPos >= 0) {
+      if (rawPos !== lastNativeSamplePos) {
+        lastNativeSamplePos = rawPos;
+        lastNativeSamplePerf = now;
+        currentSec = rawPos;
+      } else if (isPlaying) {
+        // 底层 MediaPlayer 在 100ms 内尚未更新采样，用高精度系统时钟线性前插平滑（最大不超过0.25s）
+        const elapsedSinceSample = (now - lastNativeSamplePerf) / 1000;
+        if (elapsedSinceSample > 0 && elapsedSinceSample < 0.25) {
+          currentSec = rawPos + elapsedSinceSample;
+        }
+      }
+    }
+  } else if (!isNaN(audioPlayer.currentTime) && audioPlayer.currentTime >= 0) {
+    currentSec = audioPlayer.currentTime;
+  }
+  return currentSec;
+}
 
 function startLyricSmoothSync() {
   if (lyricRafId) cancelAnimationFrame(lyricRafId);
@@ -190,12 +216,7 @@ function startLyricSmoothSync() {
         return;
       }
       if (!isSeekingAudio) {
-        if (isNativeAudioSupported) {
-          const np = window.AndroidBridge.getNativePosition ? window.AndroidBridge.getNativePosition() : currentSec;
-          if (typeof np === 'number' && np >= 0) currentSec = np;
-        } else if (!isNaN(audioPlayer.currentTime) && audioPlayer.currentTime >= 0) {
-          currentSec = audioPlayer.currentTime;
-        }
+        currentSec = getAccuratePlaybackSec();
       }
       syncProgress();
       updateLyricProgressSmooth();
@@ -266,9 +287,45 @@ function updateLyricProgress(forcedIdx) {
   updateLyricProgressSmooth(forcedIdx);
 }
 
-// 音频与歌词时间轴同步基准（标准零时延 0.0s，彻底杜绝起唱滞后）
-let LYRIC_AUDIO_OFFSET = 0.0;
+// 音频与歌词时间轴同步基准（借鉴洛雪音乐 lrc-file-parser 经验值，默认提前 150ms 抵消视知觉延迟与硬件音频缓冲延迟，支持持久化自定义）
+let LYRIC_AUDIO_OFFSET = (function() {
+  const saved = localStorage.getItem('lingxi_lyric_offset');
+  if (saved !== null && !isNaN(parseFloat(saved))) return parseFloat(saved);
+  return 0.15;
+})();
 let lastInterludeNextIdx = -1;
+
+function setLyricAudioOffset(val) {
+  LYRIC_AUDIO_OFFSET = Number(val) || 0.0;
+  localStorage.setItem('lingxi_lyric_offset', String(LYRIC_AUDIO_OFFSET));
+}
+
+const LYRIC_OFFSET_PRESETS = [
+  { val: 0.15, label: '提前 0.15 秒 (推荐 - 抵消蓝牙与视听延迟)' },
+  { val: 0.25, label: '提前 0.25 秒 (高延迟蓝牙耳机)' },
+  { val: 0.35, label: '提前 0.35 秒 (车载蓝牙或远距音箱)' },
+  { val: 0.00, label: '标准 0.00 秒 (零时延有线耳机)' },
+  { val: -0.15, label: '延后 0.15 秒 (提前打轴音源)' }
+];
+
+function updateLyricOffsetSettingUI() {
+  const descEl = document.getElementById('lyricOffsetSettingDesc');
+  if (!descEl) return;
+  const cur = (typeof LYRIC_AUDIO_OFFSET === 'number') ? LYRIC_AUDIO_OFFSET : 0.15;
+  const found = LYRIC_OFFSET_PRESETS.find(p => Math.abs(p.val - cur) < 0.01);
+  descEl.textContent = found ? found.label : `自定义：${cur > 0 ? '提前' : '延后'} ${Math.abs(cur).toFixed(2)} 秒`;
+}
+
+function cycleLyricOffsetSetting() {
+  const cur = (typeof LYRIC_AUDIO_OFFSET === 'number') ? LYRIC_AUDIO_OFFSET : 0.15;
+  let idx = LYRIC_OFFSET_PRESETS.findIndex(p => Math.abs(p.val - cur) < 0.01);
+  if (idx === -1) idx = 0;
+  idx = (idx + 1) % LYRIC_OFFSET_PRESETS.length;
+  const target = LYRIC_OFFSET_PRESETS[idx];
+  setLyricAudioOffset(target.val);
+  updateLyricOffsetSettingUI();
+  toast(`已切换为：${target.label.split(' (')[0]}`);
+}
 
 function findActiveLyricIndex(curTime) {
   if (!LYRICS_DATA || LYRICS_DATA.length === 0) return -1;
@@ -291,9 +348,7 @@ function findActiveLyricIndex(curTime) {
 function updateLyricProgressSmooth(forcedIdx) {
   if (document.hidden) return; // 切后台彻底跳过歌词 DOM 渲染与重排计算
   if (!LYRICS_DATA || LYRICS_DATA.length === 0) return;
-  const rawTime = isNativeAudioSupported
-    ? (window.AndroidBridge.getNativePosition ? window.AndroidBridge.getNativePosition() : currentSec)
-    : ((!isSeekingAudio && !isNaN(audioPlayer.currentTime) && audioPlayer.currentTime > 0) ? audioPlayer.currentTime : currentSec);
+  const rawTime = (typeof getAccuratePlaybackSec === 'function') ? getAccuratePlaybackSec() : currentSec;
   const curTime = Math.max(0, rawTime + LYRIC_AUDIO_OFFSET);
 
   let activeIdx = -1;

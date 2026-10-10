@@ -34,6 +34,7 @@ window.addEventListener('load', () => {
     switchHomeNavTab('library');
   }
   if (typeof updateDefaultHomeTabUI === 'function') updateDefaultHomeTabUI();
+  if (typeof updateLyricOffsetSettingUI === 'function') updateLyricOffsetSettingUI();
   setTimeout(() => checkAppUpdate(false), 1500);
 });
 /* ================== 顶部唱片滑动切歌 (全区域左右滑动手势直接切换上下曲) ================== */

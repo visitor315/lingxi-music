@@ -1,6 +1,6 @@
 {
-  "versionCode": 94,
-  "versionName": "2.6.1",
-  "changelog": "恢复完整展示作词作曲与歌手前缀，杜绝信息被剥离误认；修复进度条拖动与点击寻道响应，交互丝滑灵敏。",
+  "versionCode": 95,
+  "versionName": "2.6.2",
+  "changelog": "重构声学人声吐字速率模型，使歌词颜色行进与发音速度自然契合；加入系统时钟平滑插值引擎消除阶梯抖动；设置中新增歌词时间轴校准调节。",
   "downloadUrl": "https://ghfast.top/https://github.com/visitor315/lingxi-music/releases/download/v1.4.0/LingXiMusic.apk"
 }

@@ -151,16 +151,16 @@ function parseLrc(lrcText) {
   if (!items.length) return null;
   items.sort((a, b) => a.time - b.time);
 
-  // 严格自适应乐句发音区间与间奏判定（参考 lrc-file-parser 与 AMLL 算法）
+  // 严格自适应乐句发音区间与间奏判定（基于声学人声吐字速率与 AMLL 自适应小节模型）
   for (let i = 0; i < items.length; i++) {
-    const rawGap = (i < items.length - 1) ? (items[i + 1].time - items[i].time) : 6.0;
+    const rawGap = (i < items.length - 1) ? (items[i + 1].time - items[i].time) : 5.0;
 
     // 若带有词级逐字时间戳，以实际词尾时间为准
     if (items[i].words && items[i].words.length > 0) {
       const lastWord = items[i].words[items[i].words.length - 1];
       const exactVocalDur = Math.max(0.6, (lastWord.start + lastWord.duration) - items[i].time);
       items[i].duration = exactVocalDur;
-      if (rawGap > exactVocalDur + 2.5) {
+      if (rawGap > exactVocalDur + 2.0) {
         items[i].hasInterludeAfter = true;
         items[i].interludeEndTime = (i < items.length - 1) ? items[i + 1].time : (items[i].time + exactVocalDur + 5);
       } else {
@@ -168,21 +168,19 @@ function parseLrc(lrcText) {
         items[i].interludeEndTime = items[i].time + exactVocalDur;
       }
     } else {
-      // 普通 LRC：以小节间隔为基准
-      // 若下一句间隔超过 6.0 秒，判定后续进入吉他 Solo、长过门或纯音乐间奏
-      if (rawGap > 6.0) {
-        const targetText = items[i].cleanText || items[i].text;
-        const charLen = targetText.replace(/\s+/g, '').length;
-        // 呼吸留白与合理乐句时长
-        const estVocalTime = Math.max(1.8, Math.min(rawGap - 1.5, Math.min(6.5, charLen * 0.32 + 0.8)));
+      // 普通 LRC：基于人声吐字声学速率基准（每个字 0.30s + 0.35s 自然起伏）
+      const cleanChars = (items[i].text || '').replace(/[^\u4e00-\u9fa5A-Za-z0-9]/g, '').length || (items[i].text || '').length || 4;
+      const naturalVocalTime = cleanChars * 0.30 + 0.35;
+      const maxAllowedVocalTime = Math.max(0.8, rawGap - Math.max(0.2, Math.min(0.45, rawGap * 0.12)));
+      const effectiveVocalDur = Math.min(naturalVocalTime, maxAllowedVocalTime);
+      items[i].duration = Math.max(0.8, effectiveVocalDur);
+
+      // 若两句实际间隔比唱词时长多出 1.5 秒以上，判定唱毕后进入伴奏/间奏
+      if (rawGap > items[i].duration + 1.5) {
         items[i].hasInterludeAfter = true;
-        items[i].duration = estVocalTime;
-        items[i].interludeEndTime = (i < items.length - 1) ? items[i + 1].time : (items[i].time + estVocalTime + 5);
+        items[i].interludeEndTime = (i < items.length - 1) ? items[i + 1].time : (items[i].time + items[i].duration + 4);
       } else {
-        // 常规连续演唱：全乐句推进，仅保留人声生理换气与下一句起唱留白（0.25s~0.35s）
-        const breathingGap = Math.max(0.18, Math.min(0.38, rawGap * 0.12));
         items[i].hasInterludeAfter = false;
-        items[i].duration = Math.max(0.8, rawGap - breathingGap);
         items[i].interludeEndTime = items[i].time + items[i].duration;
       }
     }
