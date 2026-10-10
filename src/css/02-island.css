@@ -1,0 +1,133 @@
+/* ================== 2. 灵动岛交互 ================== */
+.island-capsule {
+  position: absolute;
+  top: 8px; left: 50%;
+  transform: translateX(-50%) scale(0.9);
+  width: 136px; height: 32px;
+  background: #0E0F10; color: #FFFFFF;
+  border-radius: 20px; padding: 0 11px;
+  display: flex; align-items: center; justify-content: space-between;
+  z-index: 110; cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  transition: transform 0.36s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.26s ease;
+  opacity: 0; pointer-events: none;
+}
+.island-capsule.visible { opacity: 1; pointer-events: auto; transform: translateX(-50%) scale(1); }
+.island-capsule:active { transform: translateX(-50%) scale(0.95); }
+
+.island-capsule-left { display: flex; align-items: center; gap: 6px; }
+.island-cover-mini {
+  width: 20px; height: 20px; border-radius: 5px;
+  background: #252628;
+  border: 1px solid rgba(255,255,255,0.18);
+  display: flex; align-items: center; justify-content: center;
+}
+.island-cover-mini svg { width: 12px; height: 12px; stroke: var(--brand-terracotta); }
+
+.island-bars { display: flex; align-items: flex-end; gap: 2.5px; height: 14px; }
+.island-bar { width: 2.2px; border-radius: 1px; background: #50E3C2; animation: islandWave 0.8s ease-in-out infinite alternate; }
+.island-bar:nth-child(1) { height: 5px; animation-delay: 0.1s; }
+.island-bar:nth-child(2) { height: 13px; animation-delay: 0.35s; background: #4A90E2; }
+.island-bar:nth-child(3) { height: 8px; animation-delay: 0.2s; background: #6CE5A8; }
+.island-bar:nth-child(4) { height: 11px; animation-delay: 0.4s; }
+
+@keyframes islandWave { 0% { height: 3px; } 100% { height: 13px; } }
+
+.island-backdrop {
+  position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+  z-index: 118; background: transparent; display: none;
+}
+.island-backdrop.active { display: block; }
+
+.island-expanded-card {
+  position: absolute; top: 8px; left: 8px; right: 8px;
+  background: #151617; color: #FFFFFF; border-radius: 24px;
+  padding: 16px 18px; z-index: 120;
+  border: 1px solid rgba(255,255,255,0.09);
+  display: flex; flex-direction: column; gap: 14px;
+  transform-origin: 50% 16px;
+  transform: scale(0.34, 0.22);
+  opacity: 0; pointer-events: none;
+  transition: transform 0.38s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform, opacity;
+}
+.island-expanded-card.active { transform: scale(1, 1); opacity: 1; pointer-events: auto; }
+.island-card-top { display: flex; align-items: center; gap: 12px; }
+.island-card-cover {
+  width: 48px; height: 48px; border-radius: 12px;
+  background: #252628;
+  border: 1px solid rgba(255,255,255,0.12);
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.island-card-cover svg { width: 22px; height: 22px; stroke: var(--brand-terracotta); }
+.island-card-meta { flex: 1; min-width: 0; }
+.island-card-title { font-size: 15px; font-weight: 600; color: #FAF9F5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.island-card-artist { font-size: 12px; color: #8F8D84; margin-top: 3px; }
+
+.island-card-progress-wrap { display: flex; align-items: center; gap: 8px; }
+.island-time { font-size: 10.5px; color: #747779; width: 30px; text-align: center; }
+.island-progress-bar { flex: 1; height: 3px; background: rgba(255,255,255,0.15); border-radius: 2px; position: relative; cursor: pointer; }
+.island-progress-fill { height: 100%; width: 0%; background: #FAF9F5; border-radius: 2px; }
+
+.island-card-controls { display: flex; align-items: center; justify-content: space-between; padding: 0 4px; }
+.island-ctrl-btn {
+  background: none; border: none; color: #FAF9F5; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; width: 36px; height: 36px;
+}
+.island-ctrl-btn:active { transform: scale(0.9); }
+.island-ctrl-btn svg { width: 22px; height: 22px; fill: currentColor; }
+.island-ctrl-btn.stroke-btn svg { fill: none; stroke: currentColor; stroke-width: 1.4; }
+.island-ctrl-btn.fav.active { color: var(--brand-red); }
+
+/* ================== 3. 极简桌面（仅留音乐，灵动岛绝对吸睛） ================== */
+.view-desktop {
+  flex: 1; display: flex; flex-direction: column; position: relative;
+  padding-top: 50px; background: var(--bg-page); align-items: center;
+}
+.clock-section-clean {
+  width: 100%; text-align: center; margin-top: 40px;
+}
+.clock-time-clean {
+  font-size: 68px; font-weight: 200; color: var(--ink-black); letter-spacing: -2px; line-height: 1;
+}
+.clock-date-clean {
+  font-size: 14px; color: var(--ink-gray); margin-top: 6px; letter-spacing: 0.5px;
+}
+
+.desktop-single-app-area {
+  flex: 1; display: flex; align-items: center; justify-content: center;
+}
+.app-item-main {
+  display: flex; flex-direction: column; align-items: center; gap: 10px; cursor: pointer;
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+.app-item-main:active { transform: scale(0.9); opacity: 0.75; }
+.app-icon-main {
+  width: 64px; height: 64px; border-radius: 20px; background: var(--card-bg);
+  border: 1px solid var(--card-border); display: flex; align-items: center; justify-content: center;
+  color: var(--brand-terracotta);
+}
+.app-icon-main svg { width: 34px; height: 34px; stroke: currentColor; fill: none; stroke-width: 1.35; }
+.app-name-main { font-size: 13px; font-weight: 600; color: var(--ink-dark); letter-spacing: 0.5px; }
+
+/* ================== 4. 音乐 APP 页面 ================== */
+.view-xianyin {
+  position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+  background: var(--bg-page); z-index: 40; display: flex; flex-direction: column;
+  transform: none; overflow: hidden;
+  pointer-events: auto;
+}
+.view-xianyin.active { transform: none; pointer-events: auto; }
+
+.listen-header-bar {
+  height: 78px; padding: 38px 18px 0; display: flex; align-items: center;
+  justify-content: space-between; flex-shrink: 0;
+  background: var(--bg-page);
+  position: relative;
+  z-index: 10;
+}
+.listen-nav-titles { display: flex; align-items: center; gap: 16px; }
+.nav-tag-btn { font-size: 16px; color: var(--ink-light); cursor: pointer; transition: all 0.18s ease; user-select: none; }
+.nav-tag-btn:active { opacity: 0.75; }
+.nav-tag-btn.active { font-size: 19px; font-weight: 600; color: var(--ink-black); }
+

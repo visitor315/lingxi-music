@@ -1,0 +1,258 @@
+/* ================== 12. 全屏搜索页面（搜索视图） ================== */
+.view-search-full {
+  position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+  background: var(--bg-page); z-index: 80; display: flex; flex-direction: column;
+  transform: translateX(100%); transition: transform 0.28s cubic-bezier(0.2, 0.9, 0.3, 1); overflow: hidden;
+  pointer-events: none;
+}
+.view-search-full.active { transform: translateX(0); pointer-events: auto; }
+
+.search-header-nav {
+  height: auto !important;
+  min-height: 52px !important;
+  padding-top: calc(var(--safe-top, 38px) + 8px) !important;
+  padding-bottom: 8px !important;
+  padding-left: 14px;
+  padding-right: 14px;
+  display: flex; align-items: center; gap: 10px;
+  flex-shrink: 0; z-index: 10;
+  position: relative !important;
+}
+.search-back-btn {
+  width: 34px !important;
+  height: 34px !important;
+  border-radius: 50% !important;
+  background: var(--card-bg) !important;
+  border: none !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  color: var(--ink-dark) !important;
+  cursor: pointer !important;
+  flex-shrink: 0 !important;
+  padding: 0 !important;
+  box-shadow: none !important;
+  -webkit-tap-highlight-color: transparent !important;
+}
+.search-back-btn svg {
+  width: 18px !important;
+  height: 18px !important;
+  stroke: var(--ink-dark) !important;
+  stroke-width: 1.5 !important;
+}
+body.night .search-back-btn {
+  background: var(--card-bg) !important;
+  border: none !important;
+}
+body.night .search-back-btn svg {
+  stroke: #EDEDED !important;
+}
+.search-input-pill {
+  flex: 1; height: 34px; border-radius: 17px; background: var(--card-bg);
+  border: none !important; display: flex; align-items: center;
+  padding: 0 12px; gap: 7px; box-shadow: none !important;
+}
+.search-input-pill svg { width: 15px; height: 15px; stroke: var(--ink-light); fill: none; stroke-width: 1.6; flex-shrink: 0; }
+.search-real-input {
+  flex: 1; border: none; outline: none; background: transparent;
+  font-size: 13.5px; color: var(--ink-black); width: 100%; min-width: 0;
+}
+.search-real-input::-webkit-search-decoration,
+.search-real-input::-webkit-search-cancel-button,
+.search-real-input::-webkit-search-results-button,
+.search-real-input::-webkit-search-results-decoration {
+  -webkit-appearance: none;
+  appearance: none;
+  display: none !important;
+}
+.search-real-input::placeholder { color: var(--ink-light); }
+.search-clear-btn {
+  width: 18px; height: 18px; border-radius: 50%; background: var(--claude-pill-bg);
+  color: var(--ink-gray); border: none; display: none; align-items: center; justify-content: center;
+  font-size: 11px; cursor: pointer; flex-shrink: 0;
+}
+.search-clear-btn.visible { display: flex; }
+.search-submit-btn {
+  font-size: 13.5px; font-weight: 500; color: var(--ink-dark); background: none; border: none;
+  cursor: pointer; padding: 4px 4px; flex-shrink: 0;
+}
+.search-submit-btn:active { opacity: 0.7; }
+
+.search-scroll-content {
+  flex: 1; overflow-y: auto; padding: 12px 18px calc(76px + var(--safe-bottom, 20px));
+  display: flex; flex-direction: column; gap: 20px;
+}
+.search-scroll-content::-webkit-scrollbar { display: none; }
+
+.search-section { display: flex; flex-direction: column; gap: 10px; }
+.search-section-head {
+  display: flex; align-items: center; justify-content: space-between;
+  font-size: 13px; font-weight: 600; color: var(--ink-gray);
+}
+.search-clear-history-link { font-size: 11.5px; color: var(--ink-light); cursor: pointer; font-weight: 400; }
+.search-clear-history-link:active { color: var(--brand-red); }
+
+.search-tags-cluster { display: flex; flex-wrap: wrap; gap: 8px; }
+.search-chip-tag {
+  padding: 5px 11px; border-radius: 6px; background: rgba(24, 26, 28, 0.05);
+  border: none !important; font-size: 12.5px; color: var(--ink-dark);
+  cursor: pointer; transition: transform 0.1s ease, background 0.1s;
+}
+body.night .search-chip-tag { background: rgba(255, 255, 255, 0.08); color: #D8D8D6; }
+.search-chip-tag:active { transform: scale(0.95); background: rgba(24, 26, 28, 0.09); }
+body.night .search-chip-tag:active { background: rgba(255, 255, 255, 0.14); }
+.search-chip-tag.hot {
+  font-weight: 500; color: var(--ink-black); background: rgba(24, 26, 28, 0.07);
+}
+body.night .search-chip-tag.hot {
+  color: #F0EFEA; background: rgba(255, 255, 255, 0.12);
+}
+
+.search-loading-state, .search-empty-state {
+  display: none; flex-direction: column; align-items: center; justify-content: center;
+  padding: 50px 20px; gap: 14px; color: var(--ink-gray); text-align: center;
+}
+.search-loading-state.active, .search-empty-state.active { display: flex; }
+.search-wave-bars { display: flex; align-items: center; gap: 3.5px; height: 20px; }
+.search-wave-bar {
+  width: 3px; height: 6px; background: var(--brand-blue); border-radius: 2px;
+  animation: searchBarWave 0.7s ease-in-out infinite alternate;
+}
+.search-wave-bar:nth-child(1) { animation-delay: 0.1s; }
+.search-wave-bar:nth-child(2) { animation-delay: 0.25s; height: 16px; }
+.search-wave-bar:nth-child(3) { animation-delay: 0.4s; height: 10px; }
+.search-wave-bar:nth-child(4) { animation-delay: 0.15s; height: 18px; }
+@keyframes searchBarWave { 0% { height: 4px; } 100% { height: 20px; } }
+
+.search-results-box { display: flex; flex-direction: column; }
+.search-result-meta-tag {
+  font-size: 9.5px; padding: 1px 5px; border-radius: 4px;
+  background: var(--brand-blue-soft); color: var(--brand-blue);
+  margin-left: 6px; font-weight: 500;
+}
+
+/* ================== 参考设计图：高质感现代双药丸圆角弹窗 ================== */
+.modern-dialog-backdrop, .config-modal-backdrop {
+  position: absolute; inset: 0; background: rgba(0, 0, 0, 0.46); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+  z-index: 2200; display: none; align-items: center; justify-content: center; padding: 24px;
+}
+.modern-dialog-backdrop.active, .config-modal-backdrop.active { display: flex; animation: overlayFadeIn 0.22s cubic-bezier(0.2, 0, 0, 1); }
+#customApiModal { z-index: 2300 !important; }
+@keyframes dialogFadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes dialogCardScaleIn { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
+
+.modern-dialog-card, .config-modal-card {
+  width: 100%; max-width: 320px; background: #FFFFFF; border-radius: 22px;
+  padding: 20px 20px 17px; display: flex; flex-direction: column; gap: 6px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.2); border: 1px solid rgba(24, 26, 28, 0.06);
+  animation: dialogCardScaleIn 0.22s cubic-bezier(0.2, 0, 0, 1);
+}
+body.night .modern-dialog-card, body.night .config-modal-card {
+  background: #1E1E1C; border-color: rgba(255, 255, 255, 0.08); box-shadow: 0 16px 48px rgba(0, 0, 0, 0.6);
+}
+.modern-dialog-title, .config-modal-title {
+  font-size: 17px; font-weight: 700; color: var(--ink-black); line-height: 1.3;
+}
+.modern-dialog-desc, .config-modal-desc {
+  font-size: 13px; color: var(--ink-gray); line-height: 1.45; margin-bottom: 12px;
+}
+.config-modal-desc {
+  margin-bottom: 8px; font-size: 12.5px;
+}
+
+.modern-dialog-actions { display: flex; align-items: center; gap: 10px; }
+.modern-pill-btn {
+  flex: 1; height: 42px; min-height: 42px; border-radius: 21px; display: flex; align-items: center; justify-content: center;
+  font-size: 14px; font-weight: 600; cursor: pointer; transition: transform 0.12s ease, opacity 0.12s ease;
+  border: none;
+}
+.modern-pill-btn:active { transform: scale(0.95); opacity: 0.85; }
+.modern-pill-cancel {
+  background: var(--card-bg); border: 1px solid var(--border-input); color: var(--ink-black);
+}
+.modern-pill-danger {
+  background: var(--brand-red); color: #FFFFFF; border: none;
+}
+.modern-pill-primary {
+  background: var(--brand-blue); color: #FFFFFF; border: none;
+}
+
+/* 全站极简纯文字横线输入框（无圆形外框、纯文字底、单条底横线） */
+.config-input-box {
+  width: 100%;
+  box-sizing: border-box;
+  border: none;
+  border-bottom: 1.5px solid var(--border-input);
+  border-radius: 0;
+  padding: 8px 2px;
+  font-size: 13.5px;
+  color: var(--ink-black);
+  background: transparent;
+  transition: border-color 0.15s ease;
+  margin-bottom: 0;
+  outline: none;
+  font-family: inherit;
+}
+.config-input-box:focus {
+  border-bottom-color: var(--brand-blue);
+}
+.config-input-box::placeholder {
+  color: var(--ink-light);
+  font-size: 13px;
+}
+
+
+/* 新手滑动引导卡片与音质选项 */
+.guide-carousel-card {
+  width: 90%; max-width: 326px; padding: 18px 20px 16px; overflow: hidden; position: relative;
+}
+.guide-card-header {
+  display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;
+}
+.guide-step-tag {
+  font-size: 12px; font-weight: 600; color: var(--brand-blue); background: var(--claude-pill-bg);
+  padding: 3px 10px; border-radius: 12px; letter-spacing: 0.3px;
+}
+.guide-close-btn {
+  border: none; background: none; font-size: 15px; color: var(--ink-light); cursor: pointer; padding: 4px;
+}
+.guide-slides-viewport {
+  width: 100%; overflow: hidden; position: relative; min-height: 172px; touch-action: pan-y;
+}
+.guide-slides-track {
+  display: flex; width: 400%; transition: transform 0.28s cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+.guide-slide-item {
+  width: 25%; flex-shrink: 0; display: flex; flex-direction: column; gap: 6px; padding: 2px 2px 0;
+}
+.guide-slide-num {
+  font-size: 24px; font-weight: 800; color: var(--brand-blue); line-height: 1; opacity: 0.9;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+.guide-slide-title {
+  font-size: 16.5px; font-weight: 700; color: var(--ink-black); margin-bottom: 2px;
+}
+.guide-slide-text {
+  font-size: 13px; color: var(--ink-dark); line-height: 1.6;
+}
+.guide-slide-text b {
+  color: var(--ink-black); font-weight: 600;
+}
+.guide-dots-bar {
+  display: flex; justify-content: center; gap: 6px; margin: 14px 0 14px;
+}
+.guide-dot {
+  width: 6px; height: 6px; border-radius: 3px; background: rgba(24, 26, 28, 0.18);
+  transition: all 0.22s ease; cursor: pointer;
+}
+body.night .guide-dot { background: rgba(255, 255, 255, 0.2); }
+.guide-dot.active {
+  width: 18px; background: var(--brand-blue); border-radius: 3px;
+}
+.guide-actions-bar {
+  display: flex; align-items: center; gap: 10px; width: 100%;
+}
+.quality-check-mark {
+  color: var(--brand-blue); font-weight: 700; font-size: 15px;
+}
+

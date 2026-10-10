@@ -184,6 +184,7 @@ html, body {
 .status-battery-text { font-size: 11px; }
 .status-right svg { width: 13.5px; height: 13.5px; stroke: currentColor; stroke-width: 1.4; fill: none; }
 
+
 /* ================== 2. 灵动岛交互 ================== */
 .island-capsule {
   position: absolute;
@@ -316,6 +317,7 @@ html, body {
 .nav-tag-btn { font-size: 16px; color: var(--ink-light); cursor: pointer; transition: all 0.18s ease; user-select: none; }
 .nav-tag-btn:active { opacity: 0.75; }
 .nav-tag-btn.active { font-size: 19px; font-weight: 600; color: var(--ink-black); }
+
 
 /* ================== 灵犀推荐模块样式（古典文人水墨纸质风，绝无半透明橙色与橙色描边） ================== */
 /* ================== 灵犀推荐模块样式（完全对齐用户参考图2多板块推荐流） ================== */
@@ -809,6 +811,7 @@ body.night .library-album-pill.active {
 .more-dots-btn:active { transform: scale(0.85); color: var(--ink-dark); }
 .more-dots-btn svg { width: 18px; height: 18px; stroke-width: 1.8; stroke: currentColor; fill: none; }
 
+
 /* ================== 6. 设置页面 (1:1 严格复刻自 hhznx) ================== */
 .view-settings-page {
   display: none;
@@ -1207,6 +1210,7 @@ body.night .xianyin-bottom-nav {
 body.night .bottom-center-disc { border-color: #2E2E2C; }
 .bottom-center-disc.playing { animation-play-state: running; }
 .disc-center-dot { width: 12px; height: 12px; border-radius: 50%; background: var(--brand-terracotta); border: 1.2px solid #FFFFFF; }
+
 
 /* ================== 8. 歌单详情页（红心歌单专属玫瑰花、无下分割线） ================== */
 .view-playlist-detail {
@@ -1683,6 +1687,7 @@ body.night .edit-cover-thumbnail {
 }
 .edit-cell-textarea::placeholder { color: var(--ink-light); }
 
+
 /* ================== 10. 歌曲内部（全屏播放详情页） ================== */
 .view-player-full {
   position: absolute; top: 0; left: 0; width: 100%; height: 100%;
@@ -1932,6 +1937,7 @@ body.night .edit-cover-thumbnail {
 .ctrl-btn.filled svg { fill: currentColor; stroke: none; }
 .play-pause-big { width: 46px !important; height: 46px !important; }
 .play-pause-big svg { width: 34px !important; height: 34px !important; fill: var(--ink-black) !important; stroke: none !important; }
+
 
 /* ================== 11. 弹窗与抽屉（严格分层体系：操作菜单置于抽屉之上，避免层级遮挡） ================== */
 .playlist-drawer-backdrop {
@@ -2419,6 +2425,7 @@ body.night .choose-capsule-btn {
 }
 .toast-msg.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
+
 /* ================== 12. 全屏搜索页面（搜索视图） ================== */
 .view-search-full {
   position: absolute; top: 0; left: 0; width: 100%; height: 100%;
@@ -2676,6 +2683,7 @@ body.night .guide-dot { background: rgba(255, 255, 255, 0.2); }
 .quality-check-mark {
   color: var(--brand-blue); font-weight: 700; font-size: 15px;
 }
+
 
 /* ================= 封装 APK 原生全屏与真机零配置自适应规范 ================= */
 body.apk-mode .status-bar,
@@ -3211,6 +3219,7 @@ body.night .create-playlist-sheet-confirm {
 .confirm-modal-card {
   border-radius: 18px !important;
 }
+
 
 </style>
 </head>
@@ -4804,6 +4813,7 @@ let LYRICS_DATA = [
   { time: 172, duration: 14, text: "音乐停歇，余音仍在耳畔回响" }
 ];
 
+
 /* ================== 全网搜歌引擎与持久化状态 ================== */
 const DEFAULT_API_BASE = 'https://music-api.gdstudio.xyz/api.php';
 let currentApiBase = localStorage.getItem('yyrc_api_base') || DEFAULT_API_BASE;
@@ -5204,6 +5214,7 @@ function playFromLibrary(idx) {
   currentPlaybackQueue = [...ALL_LIBRARY_SONGS];
   playSongAtQueue(idx);
 }
+
 
 /* ================== 原生音频播放引擎与锁屏控制 ================== */
 let isSeekingAudio = false;
@@ -5739,6 +5750,7 @@ function handleTrackEnd() {
   }
 }
 
+
 /* ================== 标准 LRC 歌词时间轴解析器 ================== */
 
 /* ================== 歌词持久化与多层缓存机制 ================== */
@@ -5842,6 +5854,7 @@ function parseLrc(lrcText) {
   }
   return items;
 }
+
 
 /* ================== 全网音乐搜索业务核心逻辑 ================== */
 function openSearchView() {
@@ -6530,6 +6543,7 @@ function openSearchResultMenu(e, idx) {
   }
   document.getElementById('songMenuOverlay').classList.add('active');
 }
+
 
 /* ================== 灵犀推荐引擎与交互 ================== */
 let currentDiscoverSeeds = [];
@@ -8384,6 +8398,7 @@ function updateUI() {
   }
 }
 
+
 /* ================== 光碟与歌单交互 ================== */
 function getAlbumCover(alb) {
   if (!alb) return '';
@@ -9736,6 +9751,7 @@ function submitCreatePlaylistModal() {
   }
 }
 
+
 /* ================== 歌词逻辑 ================== */
 let targetSeekTime = 5;
 let autoCenterTimer = null;
@@ -10341,6 +10357,7 @@ function scrollActiveLyricToCenter() {
   const targetTop = activeLine.offsetTop - (containerHeight * 0.42) + (activeLine.clientHeight / 2);
   container.scrollTo({ top: Math.max(0, targetTop), behavior: 'smooth' });
 }
+
 
 /* ================== 页面导航与弹窗控制 ================== */
 function openXianyin() {
@@ -11296,6 +11313,7 @@ async function tryResolveAlternativeFullTrack(song) {
   toast(`《${song.title}》全网暂无免费完整版本，仅有试听片段`);
 }
 
+
 /* ================== 真实原生桌面悬浮歌词与画中画降级兼容 ================== */
 let isDesktopLyricsActive = false;
 
@@ -11457,6 +11475,7 @@ window.onLocalMusicScanned = function(scannedSongs) {
   if (countEl && alb) countEl.textContent = '(' + (alb.songs ? alb.songs.length : 0) + '首)';
   toast(`扫描完成，新增 ${addedCount} 首本地歌曲（共 ${alb.songs.length} 首）`);
 };
+
 
 /* ================== 歌曲进度条拖动核心引擎（支持触屏触摸滑动与鼠标平滑拖拽） ================== */
 let isDraggingProgressBar = false;
@@ -12067,6 +12086,7 @@ function updateSongRowCover(song) {
   });
 }
 
+
 /* ================= 歌曲封面高可用解析保障 ================= */
 async function ensureSongCover(song) {
   if (!song) return '';
@@ -12446,6 +12466,7 @@ function updateQualityDescText() {
     el.textContent = currentAudioQuality === '320' ? '极高音质 - 320 kbps (高清)' : '标准音质 - 128 kbps (流畅)';
   }
 }
+
 
 /* ================== 定时关闭功能 ================== */
 let currentSleepTimerType = 'off'; // 'off' | 'time' | 'track'
@@ -13346,9 +13367,7 @@ async function handleAudioImport(e) {
 init();
 if (typeof initProgressBarDrag === 'function') initProgressBarDrag();
 if (typeof updateDesktopLyricsUI === 'function') updateDesktopLyricsUI();
-</script>
 
-  <script>
 // ================== 全局 MediaSession 动作注册 ==================
 if ('mediaSession' in navigator) {
   try {
@@ -13839,6 +13858,7 @@ window.addEventListener('load', () => {
     }
   });
 })();
+
 
 </script>
 </body>

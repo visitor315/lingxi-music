@@ -1,0 +1,250 @@
+/* ================== 10. 歌曲内部（全屏播放详情页） ================== */
+.view-player-full {
+  position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+  background: radial-gradient(circle at 50% 20%, #FAF9F7 0%, #EDEDEB 100%);
+  z-index: 500; display: flex; flex-direction: column; justify-content: space-between;
+  transform: translateY(100%); transition: transform 0.28s cubic-bezier(0.2, 0.9, 0.3, 1); overflow: hidden;
+  pointer-events: none;
+}
+.view-player-full.active { transform: translateY(0); pointer-events: auto; }
+
+.full-player-header {
+  height: 80px; padding: 38px 16px 0; display: flex; align-items: center; justify-content: space-between;
+  flex-shrink: 0; z-index: 30;
+}
+.header-btn {
+  width: 42px; height: 42px; background: transparent !important; border: none; display: flex;
+  align-items: center; justify-content: center; color: var(--ink-dark); cursor: pointer;
+}
+.header-btn.back-large-btn svg { width: 24px; height: 24px; stroke-width: 1.65; stroke: currentColor; fill: none; }
+.header-title-box { text-align: center; flex: 1; min-width: 0; padding: 0 10px; }
+.song-main-title { font-size: 16px; font-weight: 600; color: var(--ink-black); letter-spacing: 0.2px; }
+.song-main-artist { font-size: 11px; color: var(--ink-gray); margin-top: 2px; }
+.header-right-placeholder { width: 42px; height: 42px; }
+
+.disc-stage {
+  flex: 1; position: relative; display: flex; flex-direction: column; align-items: center;
+  justify-content: flex-start; padding-top: 50px; padding-bottom: 20px; overflow: hidden;
+}
+
+.turntable-assembly {
+  position: relative; width: 250px; height: 250px; display: flex; align-items: center; justify-content: center;
+  margin-top: 16px; cursor: pointer;
+}
+.turntable-assembly::after {
+  content: ''; position: absolute; width: 236px; height: 236px; border-radius: 50%;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.05); pointer-events: none;
+}
+
+.turntable-plate {
+  width: 248px; height: 248px; border-radius: 50%;
+  background: radial-gradient(circle at 50% 50%, #292826 0%, #151413 70%, #1d1c1a 100%);
+  border: 7px solid rgba(226, 220, 208, 0.72) !important; display: flex; align-items: center; justify-content: center;
+  position: relative; z-index: 1; animation: rotateDisc 22s linear infinite; animation-play-state: running; overflow: hidden;
+}
+.turntable-plate::before {
+  content: ''; position: absolute; inset: 14px; border-radius: 50%;
+  border: 1px dashed rgba(255, 255, 255, 0.14);
+  box-shadow: inset 0 0 0 18px rgba(0, 0, 0, 0.4), inset 0 0 0 20px rgba(255, 255, 255, 0.05);
+  pointer-events: none; z-index: 3;
+}
+.turntable-plate::after {
+  content: ''; position: absolute; inset: 0; border-radius: 50%;
+  background: conic-gradient(from 35deg, rgba(255,255,255,0) 0deg, rgba(255,255,255,0.11) 32deg, rgba(255,255,255,0.22) 48deg, rgba(255,255,255,0.08) 64deg, rgba(255,255,255,0) 90deg, rgba(255,255,255,0) 180deg, rgba(255,255,255,0.11) 212deg, rgba(255,255,255,0.22) 228deg, rgba(255,255,255,0.08) 244deg, rgba(255,255,255,0) 270deg);
+  pointer-events: none; z-index: 4; mix-blend-mode: screen;
+}
+.turntable-plate.paused { animation-play-state: paused; }
+@keyframes rotateDisc { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+.turntable-center {
+  width: 86px; height: 86px; border-radius: 50%; background: #FFFFFF; border: 3px solid #1C1B19;
+  display: flex; align-items: center; justify-content: center; position: relative; z-index: 5;
+}
+.turntable-center svg { width: 34px; height: 34px; stroke: var(--brand-terracotta); }
+
+.tonearm-wrapper {
+  position: absolute; top: -20px; right: 14px; width: 78px; height: 144px;
+  transform-origin: 52px 14px; transform: rotate(4deg); transition: transform 0.42s cubic-bezier(0.2, 0.8, 0.25, 1);
+  pointer-events: none; z-index: 10;
+}
+.tonearm-wrapper.paused { transform: rotate(-26deg); }
+.tonearm-svg { width: 100%; height: 100%; }
+
+.lyrics-simple-preview {
+  margin-top: 26px; height: 56px; overflow: hidden; position: relative;
+  display: flex; align-items: center; justify-content: center; text-align: center; cursor: pointer; width: 90%; padding: 0 16px;
+}
+.preview-scroll-track {
+  display: flex; flex-direction: column; align-items: center; gap: 4px; width: 100%;
+}
+
+.lyric-row-main {
+  font-size: 15px; font-weight: 500; letter-spacing: 0.4px; height: 26px; line-height: 26px;
+  display: inline-block; white-space: nowrap; text-overflow: ellipsis; max-width: 100%; overflow: hidden;
+  color: var(--lyric-inactive);
+  transform: none !important;
+}
+.lyric-row-main .lyric-text-body {
+  background: linear-gradient(to right, var(--brand-blue) var(--fill-pct, 0%), var(--lyric-inactive) var(--fill-pct, 0%));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.lyric-row-main.pending {
+  color: var(--brand-blue) !important;
+  -webkit-text-fill-color: var(--brand-blue) !important;
+  transform: none !important;
+}
+.lyric-row-main.pending .lyric-singer-tag {
+  color: var(--brand-blue) !important;
+  -webkit-text-fill-color: var(--brand-blue) !important;
+  background: none !important;
+  -webkit-background-clip: initial !important;
+}
+.lyric-row-main.pending .lyric-text-body {
+  background: none !important;
+  -webkit-background-clip: initial !important;
+  -webkit-text-fill-color: var(--brand-blue) !important;
+  color: var(--brand-blue) !important;
+}
+.lyric-row-sub {
+  font-size: 15px; font-weight: 500; color: var(--ink-light); letter-spacing: 0.4px; height: 26px; line-height: 26px;
+  white-space: nowrap; text-overflow: ellipsis; max-width: 100%; overflow: hidden;
+  opacity: 0.55;
+  transform: none !important;
+}
+
+/* 纯歌词容器 */
+.pure-lyrics-scroll-container {
+  position: absolute; top: 20px; bottom: 20px; left: 0; right: 0; display: none; opacity: 0; overflow-y: auto;
+  -webkit-overflow-scrolling: touch; padding: 220px 0 280px; z-index: 15; cursor: pointer; transition: opacity 0.28s ease;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 14%, black 72%, transparent 95%);
+  mask-image: linear-gradient(to bottom, transparent 0%, black 14%, black 72%, transparent 95%);
+}
+.pure-lyrics-scroll-container::-webkit-scrollbar { display: none; }
+.pure-lyrics-scroll-container.active { display: block; opacity: 1; }
+
+.lyrics-items-list { display: flex; flex-direction: column; align-items: center; gap: 16px; text-align: center; min-height: 100%; width: 100%; pointer-events: auto; }
+
+.lyric-singer-tag {
+  display: inline;
+  font: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  letter-spacing: inherit;
+  color: inherit;
+  background: none !important;
+  border: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border-radius: 0 !important;
+  vertical-align: baseline !important;
+}
+.lyric-line-item.active .lyric-singer-tag {
+  color: var(--brand-blue);
+  -webkit-text-fill-color: var(--brand-blue);
+}
+.lyric-row-main .lyric-singer-tag {
+  display: inline;
+  font: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  letter-spacing: inherit;
+  color: var(--brand-blue);
+  -webkit-text-fill-color: var(--brand-blue);
+}
+
+.lyric-line-item {
+  font-size: 15px; line-height: 1.5; letter-spacing: 0.4px; padding: 5px 14px; pointer-events: auto; cursor: pointer;
+  color: var(--lyric-inactive);
+  transition: transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1), color 0.25s ease, opacity 0.2s ease;
+  position: relative; display: inline-block; user-select: none; will-change: transform;
+}
+.lyric-line-item:active { opacity: 0.55; }
+.lyric-line-item.active {
+  font-weight: 600; transform: scale(1.08);
+}
+.lyric-line-item.active .lyric-text-body {
+  background: linear-gradient(to right, var(--brand-blue) var(--fill-pct, 0%), var(--lyric-inactive) var(--fill-pct, 0%));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.lyric-line-item.active:not(:has(.lyric-text-body)) {
+  background: linear-gradient(to right, var(--brand-blue) var(--fill-pct, 0%), var(--lyric-inactive) var(--fill-pct, 0%));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+/* 间奏待唱静候状态：下一句已平稳就位，但尚未起唱，呈现典雅湛蓝高亮，提示即将开唱 */
+.lyric-line-item.pending-next {
+  font-weight: 600;
+  color: var(--brand-blue) !important;
+  -webkit-text-fill-color: var(--brand-blue) !important;
+  opacity: 1 !important;
+  transform: scale(1.05);
+}
+.lyric-line-item.pending-next .lyric-singer-tag {
+  color: var(--brand-blue) !important;
+  -webkit-text-fill-color: var(--brand-blue) !important;
+  background: none !important;
+  -webkit-background-clip: initial !important;
+}
+.lyric-line-item.pending-next .lyric-text-body {
+  color: var(--brand-blue) !important;
+  -webkit-text-fill-color: var(--brand-blue) !important;
+  background: none !important;
+  -webkit-background-clip: initial !important;
+}
+.lyric-line-item.passed { color: var(--lyric-inactive); opacity: 0.55; }
+
+.lyrics-seek-crossline {
+  position: absolute; left: 0; right: 0; top: 42%; transform: translateY(-50%); height: 32px;
+  display: flex; align-items: center; justify-content: space-between; padding: 0 16px;
+  pointer-events: none; opacity: 0; visibility: hidden; transition: opacity 0.25s ease; z-index: 18;
+}
+.lyrics-seek-crossline.visible { opacity: 1; visibility: visible; }
+.crossline-time-tag { font-size: 11px; color: var(--ink-light); width: 32px; text-align: left; }
+.crossline-gradient-left { width: 30px; height: 1.2px; margin-left: 6px; background: linear-gradient(to right, rgba(22, 23, 24, 0.42) 0%, rgba(22, 23, 24, 0) 100%); }
+.crossline-gradient-right { width: 30px; height: 1.2px; margin-right: 8px; background: linear-gradient(to left, rgba(22, 23, 24, 0.42) 0%, rgba(22, 23, 24, 0) 100%); }
+.crossline-play-btn {
+  width: 17px; height: 17px; border-radius: 50%; border: 1.1px solid #6C7075; color: #4D5054;
+  display: flex; align-items: center; justify-content: center; pointer-events: auto; cursor: pointer;
+}
+.crossline-play-btn svg { width: 10px; height: 10px; fill: currentColor; stroke: none; margin-left: 1.2px; }
+
+/* 详情页底部工具栏 */
+.player-controls-panel {
+  padding: 10px 24px calc(14px + var(--safe-bottom, 0px));
+  display: flex; flex-direction: column; gap: 20px; flex-shrink: 0; z-index: 30;
+}
+
+
+
+
+.btn-quality svg { width: 26.5px; height: 24px; stroke: currentColor; fill: none; }
+
+.btn-heart svg { width: 18.5px; height: 18.5px; fill: var(--heart-red) !important; stroke: var(--heart-red) !important; stroke-width: 1.2; transition: transform 0.2s ease, fill 0.2s ease; }
+.btn-heart.unfav svg { fill: none !important; stroke: #5C5E62 !important; }
+.header-btn.btn-heart:active svg { transform: scale(0.88); }
+.btn-more svg { width: 18px; height: 18px; stroke: #5C5E62; fill: none; stroke-width: 1.8; }
+
+.progress-container { display: flex; align-items: center; gap: 12px; }
+.time-label { font-size: 12px; color: var(--ink-light); width: 34px; text-align: center; }
+.seek-bar-wrap {
+  flex: 1; height: 28px; display: flex; align-items: center; cursor: pointer; position: relative;
+  touch-action: none; user-select: none; -webkit-user-select: none;
+}
+.seek-track { width: 100%; height: 3px; background: rgba(24, 26, 28, 0.12); border-radius: 1.5px; position: relative; overflow: hidden; pointer-events: none; }
+.seek-fill { height: 100%; width: 0%; background: var(--brand-blue); border-radius: 1.5px; pointer-events: none; }
+.seek-thumb {
+  position: absolute; left: 0%; top: 50%; transform: translate(-50%, -50%);
+  width: 12px; height: 12px; border-radius: 50%; background: #FFFFFF; border: 2px solid var(--brand-blue);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2); pointer-events: none; transition: transform 0.1s ease;
+}
+.seek-bar-wrap:active .seek-thumb {
+  transform: translate(-50%, -50%) scale(1.3);
+}
+
+.main-buttons-row { display: flex; align-items: center; justify-content: space-between; padding: 2px 6px 10px; }
+.ctrl-btn { background: transparent !important; border: none; cursor: pointer; color: var(--ink-dark); display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; }
+.ctrl-btn:active { opacity: 0.45; transform: scale(0.92); }
+.ctrl-btn svg { width: 23px; height: 23px; stroke-width: 1.4; stroke: currentColor; fill: none; }
+.ctrl-btn.filled svg { fill: currentColor; stroke: none; }
+.play-pause-big { width: 46px !important; height: 46px !important; }
+.play-pause-big svg { width: 34px !important; height: 34px !important; fill: var(--ink-black) !important; stroke: none !important; }
+

@@ -1,0 +1,1404 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>灵犀音乐</title>
+<link rel="icon" type="image/png" href="icon.png">
+<link rel="apple-touch-icon" href="icon.png">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#F7F7F5">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-screen-webfont@1.1.0/style.css">
+<style>
+/* {{STYLES}} */
+</style>
+</head>
+<body class="apk-mode">
+
+<div class="phone-viewport">
+  <input type="file" id="audioFileInput" accept="audio/*" multiple style="display:none;" onchange="handleAudioImport(event)">
+
+  <!-- 顶部状态栏 -->
+  <header class="status-bar">
+    <div class="status-left"><span id="status-time">06:09</span></div>
+    <div class="status-right">
+      <svg viewBox="0 0 24 24"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>
+      <span class="status-battery-text">100%</span>
+      <svg viewBox="0 0 24 24"><rect x="2" y="7" width="16" height="10" rx="2"/><path d="M22 11v2"/></svg>
+    </div>
+  </header>
+
+  <!-- 音乐 APP 页面 -->
+  <div class="view-xianyin active" id="viewXianyin">
+    <header class="listen-header-bar" id="listenHeaderBar">
+      <div class="listen-nav-titles" id="homeNavTitles">
+        <span class="nav-tag-btn active" id="tabNavDiscover" onclick="switchHomeNavTab('discover')">发现</span>
+        <span class="nav-tag-btn" id="tabNavLibrary" onclick="switchHomeNavTab('library')">乐库</span>
+      </div>
+      <div class="listen-nav-titles" id="settingsNavTitles" style="display:none;"><span class="nav-tag-btn active" style="cursor:default;">设置</span></div>
+      <div class="listen-header-actions">
+        <button class="icon-btn" onclick="openBeginnerGuideModal()" title="新手引导">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="9.5"></circle>
+            <path d="M9.5 9a2.5 2.5 0 0 1 4.5 1.5c0 1.5-2 2-2 3"></path>
+            <circle cx="12" cy="17" r="0.75" fill="currentColor"></circle>
+          </svg>
+        </button>
+        <button class="icon-btn" onclick="triggerFileImport()" title="导入音频">
+          <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        </button>
+        <button class="icon-btn" onclick="openSearchView()" title="全网搜歌">
+          <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7.5"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <div class="xianyin-content-scroll">
+      <!-- 发现与乐库横向滑动主容器（无闪烁物理平移，两页具备独立自滚动容器，切换零跳动） -->
+      <div class="home-tab-slider" id="homeTabSlider">
+        <div class="home-tab-track" id="homeTabTrack">
+          <!-- 第一页：发现与灵犀推荐（独立自滚动容器） -->
+          <div id="paneDiscover" class="home-page-pane">
+            <!-- 发现页真实弹性下拉刷新交互指示器 -->
+            <div class="pull-refresh-indicator" id="discoverPullRefresh">
+              <div class="pull-refresh-content">
+                <svg class="pull-refresh-spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+                  <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+                </svg>
+                <svg class="pull-refresh-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="12" y1="5" x2="12" y2="19"></line>
+                  <polyline points="19 12 12 19 5 12"></polyline>
+                </svg>
+                <span class="pull-refresh-text" id="discoverPullRefreshText">下拉刷新推荐</span>
+              </div>
+            </div>
+
+            <div class="radio-stage-viewport">
+              <div class="radio-stage-inner">
+                <div class="fixed-radio-card" onclick="openCurrentRadioAlbum()">
+                  <div>
+                    <div class="radio-card-header">
+                      <span id="dynamicCardTitle">全部歌曲</span>
+                    </div>
+                    <div class="radio-card-sub" id="dynamicCardSub">灵犀漫步 - 遇见知音</div>
+                  </div>
+                  <div class="radio-card-bottom">
+                    <div class="radio-live-bars">
+                      <div class="radio-live-bar"></div>
+                      <div class="radio-live-bar"></div>
+                      <div class="radio-live-bar"></div>
+                      <div class="radio-live-bar"></div>
+                    </div>
+                    <div class="radio-play-btn-circle" id="radioPlayBtnCircle" onclick="event.stopPropagation(); togglePlayCurrentRadioAlbum();" title="播放">
+                      <svg viewBox="0 0 24 24"><polygon points="7 4 20 12 7 20 7 4"/></svg>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="vinyl-scroll-channel" id="vinylScrollChannel" onscroll="handleVinylScroll(this)">
+                  <div class="vinyl-initial-offset"></div>
+                  <div class="vinyl-disc-stream" id="vinylDiscStream">
+                    <!-- 光盘由 renderVinylDiscs 动态填充 -->
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 推荐多板块流：宝藏故事、私人专属好歌等 -->
+            <div style="padding: 0 16px 40px;">
+              <div id="discoverSectionsContainer"></div>
+            </div>
+          </div>
+
+          <!-- 第二页：乐库与歌曲列表（独立自滚动容器） -->
+          <div id="paneListen" class="home-page-pane">
+        <div class="library-album-pills-bar" id="libraryAlbumPills"></div>
+
+        <div class="song-list-panel">
+          <div class="list-panel-header">
+            <!-- 正常状态标头 -->
+            <div id="homeNormalHeader" style="display:flex; align-items:center; justify-content:space-between; width:100%;">
+              <div class="discover-section-title-wrap" onclick="togglePlayCurrentLibraryAlbum()" style="display:flex; align-items:center; gap:8px; cursor:pointer;" title="播放当前歌单">
+                <span id="songListPanelTitle" style="font-size:16px; font-weight:600; color:var(--ink-black);">我的曲库</span>
+                <div class="discover-section-play-btn" style="width:20px; height:20px; border-radius:50%; background:var(--ink-black); color:#FFFFFF; display:inline-flex; align-items:center; justify-content:center; flex-shrink:0;">
+                  <svg viewBox="0 0 24 24" style="width:10px; height:10px; fill:#FFFFFF; stroke:none; margin-left:1px;"><polygon points="7 4 19 12 7 20 7 4"/></svg>
+                </div>
+              </div>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <button class="icon-btn" style="width:24px; height:24px; display:inline-flex; align-items:center; justify-content:center; color:var(--ink-gray); padding:0; background:none; border:none; cursor:pointer;" onclick="openCreatePlaylistPrompt()" title="新建歌单">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                    <line x1="12" y1="11" x2="12" y2="17"/>
+                    <line x1="9" y1="14" x2="15" y2="14"/>
+                  </svg>
+                </button>
+                <button class="icon-btn" id="homeMultiSelectBtn" style="width:24px; height:24px; display:inline-flex; align-items:center; justify-content:center; color:var(--ink-gray); padding:0; background:none; border:none; cursor:pointer;" onclick="enterHomeMultiSelectMode()" title="多选管理">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M9 6h11M9 12h11M9 18h11M4 6l1.5 1.5L8 5M4 12l1.5 1.5L8 11M4 18l1.5 1.5L8 17"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+            <!-- 多选状态控制栏 -->
+            <div id="homeMultiHeader" style="display:none; align-items:center; justify-content:space-between; width:100%;">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <button class="drawer-select-all-btn" id="homeMultiSelectAllToggleBtn" onclick="toggleHomeSelectAllSongs()">全选</button>
+                <span class="drawer-selected-count" id="homeMultiSelectedCountText">已选 0 首</span>
+              </div>
+              <button class="drawer-multi-cancel-btn" onclick="exitHomeMultiSelectMode()">完成</button>
+            </div>
+          </div>
+          <!-- 此处始终显示完整的私人专属曲目库，永不丢失截断 -->
+          <div id="songsContainer"></div>
+        </div>
+      </div>
+        </div>
+      </div>
+
+      <!-- 设置页 (1:1 严格复刻自 hhznx) -->
+      <div class="view-settings-page" id="paneSettings">
+        <section class="group-menu-card">
+          <div class="group-menu-item ripple-btn" onclick="toggleDefaultHomeTabSetting()">
+            <div class="item-left-main">
+              <div class="item-icon-wrap">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                  <polyline points="9 22 9 12 15 12 15 22"/>
+                </svg>
+              </div>
+              <div class="item-content">
+                <span class="item-main-title">启动默认主页</span>
+                <span class="item-subtitle-tight" id="defaultHomeTabDesc">当前：发现（精选推荐）</span>
+              </div>
+            </div>
+            <svg class="item-arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+          <div class="group-menu-item ripple-btn" onclick="openThemeSettingsSubpage()">
+            <div class="item-left-main">
+              <div class="item-icon-wrap">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"/>
+                  <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/>
+                  <path d="M2 12h20"/>
+                </svg>
+              </div>
+              <div class="item-content">
+                <span class="item-main-title">外观与个性化</span>
+                <span class="item-subtitle-tight" id="themeSettingsSummary">跟随系统 - 克莱因蓝</span>
+              </div>
+            </div>
+            <svg class="item-arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+        </section>
+
+        <div class="subpage-group-title-standard">播放与控制</div>
+        <section class="group-menu-card">
+          <div class="group-menu-item ripple-btn" onclick="openSleepTimerModal()">
+            <div class="item-left-main">
+              <div class="item-icon-wrap">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"/>
+                  <polyline points="12 6 12 12 16 14"/>
+                </svg>
+              </div>
+              <div class="item-content">
+                <span class="item-main-title">定时关闭</span>
+                <span class="item-subtitle-tight" id="sleepTimerSettingsDesc">未开启</span>
+              </div>
+            </div>
+            <svg class="item-arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+          <div class="cap-switch-row ripple-btn">
+            <div class="cap-switch-left">
+              <div class="cap-icon-box">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+                </svg>
+              </div>
+              <div class="cap-switch-texts">
+                <span class="cap-switch-title">通话与录音时自动暂停</span>
+              </div>
+            </div>
+            <div class="blue-toggle-switch active" id="audioFocusToggle" onclick="toggleAudioFocusSetting(); event.stopPropagation();"></div>
+          </div>
+        </section>
+
+        <div class="subpage-group-title-standard">曲库与存储</div>
+        <section class="group-menu-card">
+          <div class="group-menu-item ripple-btn" onclick="openQualityModal()">
+            <div class="item-left-main">
+              <div class="item-icon-wrap">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M3 18v-6a9 9 0 0 1 18 0v6"/>
+                  <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/>
+                </svg>
+              </div>
+              <div class="item-content">
+                <span class="item-main-title">播放音质</span>
+                <span class="item-subtitle-tight" id="currentQualityDesc">极高音质 - 320 kbps (高清)</span>
+              </div>
+            </div>
+            <svg class="item-arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+          <div class="group-menu-item ripple-btn" onclick="triggerFileImport()">
+            <div class="item-left-main">
+              <div class="item-icon-wrap">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                  <line x1="12" y1="11" x2="12" y2="17"/>
+                  <line x1="9" y1="14" x2="15" y2="14"/>
+                </svg>
+              </div>
+              <div class="item-content">
+                <span class="item-main-title">导入本地音频</span>
+              </div>
+            </div>
+            <svg class="item-arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+          <div class="group-menu-item ripple-btn" onclick="openPlaylistImportDialog()">
+            <div class="item-left-main">
+              <div class="item-icon-wrap">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+                  <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+                </svg>
+              </div>
+              <div class="item-content">
+                <span class="item-main-title">导入外部歌单</span>
+              </div>
+            </div>
+            <svg class="item-arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+          <div class="group-menu-item ripple-btn" onclick="openApiConfigModal()">
+            <div class="item-left-main">
+              <div class="item-icon-wrap">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="2" y="2" width="20" height="8" rx="2" ry="2"/>
+                  <rect x="2" y="14" width="20" height="8" rx="2" ry="2"/>
+                  <line x1="6" y1="6" x2="6.01" y2="6"/>
+                  <line x1="6" y1="18" x2="6.01" y2="18"/>
+                </svg>
+              </div>
+              <div class="item-content">
+                <span class="item-main-title">自定义音乐接口</span>
+              </div>
+            </div>
+            <svg class="item-arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+          <div class="group-menu-item ripple-btn" onclick="clearCachedMedia()">
+            <div class="item-left-main">
+              <div class="item-icon-wrap">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="3 6 5 6 21 6"/>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                </svg>
+              </div>
+              <div class="item-content">
+                <span class="item-main-title">清理播放缓存</span>
+              </div>
+            </div>
+            <svg class="item-arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+        </section>
+
+        <div class="subpage-group-title-standard">帮助指引</div>
+        <section class="group-menu-card">
+          <div class="group-menu-item ripple-btn" onclick="openBeginnerGuideModal()">
+            <div class="item-left-main">
+              <div class="item-icon-wrap">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"/>
+                  <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+                  <line x1="12" y1="17" x2="12.01" y2="17"/>
+                </svg>
+              </div>
+              <div class="item-content">
+                <span class="item-main-title">新手入门指南</span>
+              </div>
+            </div>
+            <svg class="item-arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+        </section>
+
+        <div class="subpage-group-title-standard">关于应用</div>
+        <section class="group-menu-card">
+          <div class="group-menu-item ripple-btn" onclick="checkAppUpdate(true)">
+            <div class="item-left-main">
+              <div class="item-icon-wrap">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M7 16a4 4 0 0 1-.88-7.903A5 5 0 1 1 15.9 6L16 6a5 5 0 0 1 1 9.9"/>
+                  <polyline points="9 14 12 17 15 14"/>
+                  <line x1="12" y1="10" x2="12" y2="17"/>
+                </svg>
+              </div>
+              <div class="item-content">
+                <span class="item-main-title">检查版本更新</span>
+                <span class="item-subtitle-tight" id="aboutAppVersionDesc">v2.5.8</span>
+              </div>
+            </div>
+            <svg class="item-arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+        </section>
+
+        <div class="subpage-group-title-standard">危险区域</div>
+        <section class="group-menu-card">
+          <div class="group-menu-item ripple-btn" onclick="promptResetAppData()">
+            <div class="item-left-main">
+              <div class="item-icon-wrap" style="color:var(--brand-red);">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                  <polyline points="3 3 3 8 8 8"/>
+                </svg>
+              </div>
+              <div class="item-content">
+                <span class="item-main-title" style="color:var(--brand-red);">重置灵犀音乐</span>
+              </div>
+            </div>
+            <svg class="item-arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <!-- 底部常驻栏（修正并对齐设置 SVG） -->
+    <nav class="xianyin-bottom-nav">
+      <div class="bottom-tab-item active" id="tabBtnListen" onclick="handleListenNavClick();">
+        <div class="nav-wave-bars" id="navWaveBars">
+          <span class="nav-wave-bar"></span>
+          <span class="nav-wave-bar"></span>
+          <span class="nav-wave-bar"></span>
+          <span class="nav-wave-bar"></span>
+        </div>
+        <span class="bottom-tab-title">听歌</span>
+      </div>
+      <div class="bottom-center-disc-wrap" onclick="openPlayerFull()" title="打开全屏播放">
+        <svg class="disc-progress-svg" viewBox="0 0 48 48"><circle class="progress-ring-fill" id="bottomDiscRing" cx="24" cy="24" r="22.5"></circle></svg>
+        <div class="bottom-center-disc" id="bottomDisc"><div class="disc-center-dot"></div></div>
+      </div>
+      <div class="bottom-tab-item" id="tabBtnSettings" onclick="switchBottomTab('settings'); triggerSettingsGearSpin();">
+        <svg class="nav-settings-svg" id="navSettingsSvg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+        <span class="bottom-tab-title">设置</span>
+      </div>
+    </nav>
+
+    <!-- 首页专属曲目多选底部操作底栏 -->
+    <div class="multi-select-action-dock home-dock" id="homeMultiSelectActionDock">
+      <button class="multi-dock-action-btn disabled" id="homeMultiDockPlayNextBtn" onclick="executeBatchPlayNext()">
+        <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" fill="none" stroke-width="1.8"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19"/></svg>
+        <span>下一首播放</span>
+      </button>
+      <button class="multi-dock-action-btn disabled" id="homeMultiDockAddPlaylistBtn" onclick="executeBatchAddToPlaylist()">
+        <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" fill="none" stroke-width="1.8"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+        <span>加入歌单</span>
+      </button>
+      <button class="multi-dock-action-btn danger disabled" id="homeMultiDockRemoveBtn" onclick="executeBatchRemoveFromPlaylist()">
+        <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" fill="none" stroke-width="1.8"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+        <span id="homeMultiDockRemoveBtnText">删除歌曲</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- 4. 歌单详情页（红心歌单展示玫瑰花，纯文本无 SVG 下拉菜单） -->
+  <div class="view-playlist-detail" id="viewPlaylistDetail">
+    <div class="playlist-header-nav">
+      <button class="nav-btn fine-back ripple-btn" onclick="closePlaylistDetail()" title="返回">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="19" y1="12" x2="5" y2="12"/>
+          <polyline points="12 19 5 12 12 5"/>
+        </svg>
+      </button>
+      <div class="playlist-nav-title">歌单</div>
+      <button class="icon-btn" onclick="togglePlaylistMenu(event)" title="更多选项">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8">
+          <circle cx="12" cy="7" r="2.2"></circle>
+          <circle cx="12" cy="17" r="2.2"></circle>
+        </svg>
+      </button>
+    </div>
+
+    <!-- 精巧下拉菜单：左侧 SVG 图标 + 紧实雅致排布 -->
+    <div class="menu-backdrop" id="playlistMenuBackdrop" onclick="closePlaylistMenu()"></div>
+    <div class="corner-popup-menu" id="playlistCornerMenu">
+      <div class="popup-menu-item" onclick="handleEditPlaylistMenu()">
+        <div class="popup-item-icon">
+          <svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+        </div>
+        <span class="popup-item-text">编辑歌单</span>
+      </div>
+      <div class="popup-menu-item" onclick="closePlaylistMenu(); exportCurrentPlaylistJson();">
+        <div class="popup-item-icon">
+          <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        </div>
+        <span class="popup-item-text">导出歌单</span>
+      </div>
+      <div class="popup-menu-item" onclick="closePlaylistMenu(); openPlaylistImportDialog();">
+        <div class="popup-item-icon">
+          <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        </div>
+        <span class="popup-item-text">导入歌单</span>
+      </div>
+      <div class="popup-menu-item" onclick="handleDeletePlaylistMenu()">
+        <div class="popup-item-icon" style="color: var(--brand-red);">
+          <svg viewBox="0 0 24 24" stroke="currentColor"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+        </div>
+        <span class="popup-item-text" style="color: var(--brand-red);">删除歌单</span>
+      </div>
+    </div>
+
+    <div class="playlist-page-scroll">
+      <div class="album-hero-presentation">
+        <!-- 封面：红心歌单展示专属玫瑰花，其余歌单展示纯净音乐 SVG -->
+        <div class="hero-main-cover-frame" id="heroArtBox"></div>
+        <div class="album-headline-wrap">
+          <span class="album-headline-title" id="heroTitle">灵犀精选</span>
+        </div>
+        <div class="album-creator-row">
+          <div class="creator-avatar-dot lingxi" id="heroCreatorDot">
+            <svg width="17" height="13" viewBox="50 85 300 220" fill="none" style="display:block;">
+              <g stroke="currentColor" stroke-width="20" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M104.613 165C62.4895 136.517 97.2059 92.081 125 137.46"/>
+                <path d="M259 133.798C279.706 100.527 328.781 104.891 298.253 150"/>
+                <path d="M161.153 159C160.362 154.1 162.845 149.364 164 145"/>
+                <path d="M194 165C194.409 156.616 194.948 148.211 196 140"/>
+                <path d="M228 159C228 154.661 228 150.329 228 146"/>
+                <path d="M153 223C160.473 220.915 168.386 220.023 176 219"/>
+                <path d="M225 219C232.895 217.426 240.281 217.931 248 219"/>
+                <path d="M188 256.005C221.5 238.742 217.338 264.602 191.479 260.565"/>
+                <path d="M201 267C199.054 288.306 181.973 290.175 167 283.734"/>
+                <path d="M200.041 267C198.864 295.299 223.581 291.006 237 277.407"/>
+                <path d="M111 243C96.3264 238.228 80.8117 237.965 66 236"/>
+                <path d="M116 267C99.8675 270.808 83.7433 273.752 68 279"/>
+                <path d="M293 233C304.501 229.96 315.688 225.62 327 222"/>
+                <path d="M297 261C308.857 259.497 322.138 260.027 333 260.429"/>
+              </g>
+            </svg>
+          </div><span class="creator-name-text" id="heroAuthor">灵犀音乐</span>
+        </div>
+        <div class="album-desc-text" id="heroDesc" style="font-size:12px; color:var(--ink-gray); line-height:1.45; margin-top:5px; text-align:center; max-width:240px; word-break:break-word; display:none;"></div>
+                <div class="hero-action-buttons-grid">
+          <div class="hero-circle-btn-item" onclick="exportCurrentPlaylistText()"><div class="hero-circle-icon"><svg viewBox="0 0 24 24"><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg></div><span class="hero-circle-label">分享</span></div>
+          <div class="hero-circle-btn-item" onclick="downloadCurrentPlaylist()"><div class="hero-circle-icon"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></div><span class="hero-circle-label">下载</span></div>
+        </div>
+      </div>
+
+      <div class="album-songs-drawer-card">
+        <!-- 默认控制栏 -->
+        <div class="album-drawer-control-bar" id="playlistNormalControlBar">
+          <div class="drawer-play-all-pill" onclick="playCuratedPlaylist()">
+            <div class="drawer-play-all-icon"><svg viewBox="0 0 24 24"><polygon points="6 4 20 12 6 20 6 4"/></svg></div>
+            <span class="drawer-play-title">播放全部</span>
+            <span class="drawer-song-count" id="heroTrackCount">(3首)</span>
+          </div>
+          <button class="drawer-multi-btn" id="playlistMultiSelectBtn" onclick="enterMultiSelectMode()" title="多选">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 6h11M9 12h11M9 18h11M4 6l1.5 1.5L8 5M4 12l1.5 1.5L8 11M4 18l1.5 1.5L8 17"/>
+            </svg>
+          </button>
+        </div>
+        <!-- 多选控制栏（方框勾选，绝无圆形选中效果） -->
+        <div class="album-drawer-control-bar" id="playlistMultiControlBar" style="display:none;">
+          <div class="drawer-multi-header-left">
+            <button class="drawer-select-all-btn" id="multiSelectAllToggleBtn" onclick="toggleSelectAllSongs()">全选</button>
+            <span class="drawer-selected-count" id="multiSelectedCountText">已选 0 首</span>
+          </div>
+          <button class="drawer-multi-cancel-btn" onclick="exitMultiSelectMode()">完成</button>
+        </div>
+        <div id="playlistSongsBox"></div>
+      </div>
+    </div>
+
+    <!-- 多选底部操作底栏 -->
+    <div class="multi-select-action-dock" id="multiSelectActionDock">
+      <button class="multi-dock-action-btn disabled" id="multiDockPlayNextBtn" onclick="executeBatchPlayNext()">
+        <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" fill="none" stroke-width="1.8"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19"/></svg>
+        <span>下一首播放</span>
+      </button>
+      <button class="multi-dock-action-btn disabled" id="multiDockAddPlaylistBtn" onclick="executeBatchAddToPlaylist()">
+        <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" fill="none" stroke-width="1.8"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+        <span>加入歌单</span>
+      </button>
+      <button class="multi-dock-action-btn danger disabled" id="multiDockRemoveBtn" onclick="executeBatchRemoveFromPlaylist()">
+        <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" fill="none" stroke-width="1.8"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+        <span id="multiDockRemoveBtnText">移出歌单</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- 4.5 独立编辑歌单页（移植自歌单.html） -->
+  <input type="file" id="coverImageFileInput" accept="image/*" style="display:none;" onchange="handleCoverImageUpload(event)">
+  <input type="file" id="playlistJsonFileInput" accept=".json,application/json" style="display:none;" onchange="handlePlaylistJsonImport(event)">
+  <div class="view-edit-playlist" id="viewEditPlaylist">
+    <div class="edit-page-header">
+      <button class="nav-btn fine-back ripple-btn" onclick="closeEditPlaylistPage()" title="返回">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="19" y1="12" x2="5" y2="12"/>
+          <polyline points="12 19 5 12 12 5"/>
+        </svg>
+      </button>
+      <div class="edit-page-title">编辑歌单</div>
+      <button class="edit-save-capsule-btn" onclick="saveEditedPlaylist()">保存</button>
+    </div>
+
+    <div class="edit-page-body">
+      <div class="edit-cell-row edit-cover-cell" onclick="triggerCoverImageUpload()">
+        <span class="edit-cell-label">封面</span>
+        <div class="edit-cover-thumbnail" id="editCoverThumbnail"></div>
+        <div class="edit-cell-spacer"></div>
+        <span class="edit-arrow-chevron">›</span>
+      </div>
+
+      <div class="edit-cell-row">
+        <span class="edit-cell-label">名称</span>
+        <div class="edit-cell-right">
+          <input type="text" class="edit-cell-input" id="editTitleInput" placeholder="歌单名称">
+        </div>
+      </div>
+
+      <div class="edit-cell-row edit-desc-cell">
+        <span class="edit-cell-label">简介</span>
+        <div class="edit-cell-right">
+          <textarea class="edit-cell-textarea" id="editDescInput" placeholder="简单介绍主题，可以让更多人了解你的歌单"></textarea>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  
+
+
+  <!-- 4.6 外观与个性化子页（1:1 严格复刻自 hhznx） -->
+  <div class="view-theme-subpage" id="viewThemeSettings">
+    <header class="nav-header">
+      <button class="nav-btn fine-back ripple-btn" onclick="closeThemeSettingsSubpage()" title="返回设置">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="19" y1="12" x2="5" y2="12"/>
+          <polyline points="12 19 5 12 12 5"/>
+        </svg>
+      </button>
+      <div class="nav-title">外观与个性化</div>
+      <div style="width:48px;"></div>
+    </header>
+
+    <div class="settings-subview-scroll">
+      <section class="group-menu-card">
+        <div class="group-menu-item ripple-btn" onclick="openColorModal()">
+          <div class="item-left-main">
+            <div class="item-icon-wrap">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="5"/>
+                <line x1="12" y1="1" x2="12" y2="3"/>
+                <line x1="12" y1="21" x2="12" y2="23"/>
+                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+                <line x1="1" y1="12" x2="3" y2="12"/>
+                <line x1="21" y1="12" x2="23" y2="12"/>
+                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+              </svg>
+            </div>
+            <div class="item-content">
+              <span class="item-main-title">显示模式</span>
+              <span class="item-subtitle-tight" id="main-theme-display">跟随系统</span>
+            </div>
+          </div>
+          <svg class="item-arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </div>
+        <div class="group-menu-item ripple-btn" onclick="openThemeColorModal()">
+          <div class="item-left-main">
+            <div class="item-icon-wrap">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <circle cx="12" cy="12" r="4"/>
+                <line x1="4.93" y1="4.93" x2="9.17" y2="9.17"/>
+                <line x1="14.83" y1="14.83" x2="19.07" y2="19.07"/>
+                <line x1="14.83" y1="9.17" x2="19.07" y2="4.93"/>
+                <line x1="4.93" y1="19.07" x2="9.17" y2="14.83"/>
+              </svg>
+            </div>
+            <div class="item-content">
+              <span class="item-main-title">主题色调</span>
+              <span class="item-subtitle-tight" id="main-theme-color-display">克莱因蓝</span>
+            </div>
+          </div>
+          <svg class="item-arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </div>
+        <div class="group-menu-item ripple-btn" onclick="openFontModal()">
+          <div class="item-left-main">
+            <div class="item-icon-wrap">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="4 7 4 4 20 4 20 7"/>
+                <line x1="9" y1="20" x2="15" y2="20"/>
+                <line x1="12" y1="4" x2="12" y2="20"/>
+              </svg>
+            </div>
+            <div class="item-content">
+              <span class="item-main-title">应用字体</span>
+              <span class="item-subtitle-tight" id="main-font-display">霞鹜文楷</span>
+            </div>
+          </div>
+          <svg class="item-arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </div>
+      </section>
+
+      <span class="sub-group-header">视觉与交互</span>
+      <section class="group-menu-card">
+        <div class="cap-switch-row ripple-btn" onclick="toggleCoverDisplayMode()">
+          <div class="cap-switch-left">
+            <div class="cap-icon-box">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                <circle cx="8.5" cy="8.5" r="1.5"/>
+                <polyline points="21 15 16 10 5 21"/>
+              </svg>
+            </div>
+            <div class="cap-switch-texts">
+              <span class="cap-switch-title">唱片封面展示</span>
+              <span class="cap-switch-desc" id="coverDisplayModeDesc">真实封面 (显示提取的专辑画作)</span>
+            </div>
+          </div>
+          <div class="blue-toggle-switch active" id="coverDisplayToggle"></div>
+        </div>
+
+        <div class="cap-switch-row ripple-btn" onclick="toggleDesktopLyricsFromUI()">
+          <div class="cap-switch-left">
+            <div class="cap-icon-box">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+              </svg>
+            </div>
+            <div class="cap-switch-texts">
+              <span class="cap-switch-title">桌面悬浮歌词</span>
+              <span class="cap-switch-desc" id="desktopLyricsDesc">在手机桌面与应用上方浮窗显示歌词，支持滑动切词与拖拽</span>
+            </div>
+          </div>
+          <div class="blue-toggle-switch" id="desktopLyricsToggle"></div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <!-- 5. 全屏搜索页面（搜索视图） -->
+  <div class="view-search-full" id="viewSearchFull">
+    <header class="search-header-nav">
+      <button class="search-back-btn ripple-btn" onclick="closeSearchView()" title="返回">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="19" y1="12" x2="5" y2="12"/>
+          <polyline points="12 19 5 12 12 5"/>
+        </svg>
+      </button>
+      <div class="search-input-pill">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7.5"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg>
+        <input type="text" enterkeyhint="search" autocomplete="off" autocorrect="off" spellcheck="false" class="search-real-input" id="searchKeywordInput" placeholder="搜索歌曲、歌手、歌词..." oninput="handleSearchInputChange(this)" onkeydown="if(event.key==='Enter') triggerExecuteSearch()">
+        <button class="search-clear-btn" id="searchClearBtn" onclick="clearSearchInput()" title="清空"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+      </div>
+      <button class="search-submit-btn" onclick="triggerExecuteSearch()">搜索</button>
+    </header>
+
+    <div class="search-scroll-content">
+      <!-- 发现/推荐与历史区域（未搜索时展示） -->
+      <div id="searchDiscoverSection">
+        <div class="search-section" id="searchHistorySection" style="display:none;">
+          <div class="search-section-head">
+            <span>搜索历史</span>
+            <span class="search-clear-history-link" onclick="clearSearchHistory()">清空</span>
+          </div>
+          <div class="search-tags-cluster" id="searchHistoryTags"></div>
+        </div>
+
+        <div class="search-section" style="margin-top: 10px;">
+          <div class="search-section-head">
+            <span>热门推荐</span>
+          </div>
+          <div class="search-tags-cluster">
+            <span class="search-chip-tag" onclick="quickSearch('周杰伦')">周杰伦</span>
+            <span class="search-chip-tag" onclick="quickSearch('起风了')">起风了</span>
+            <span class="search-chip-tag" onclick="quickSearch('晴天')">晴天</span>
+            <span class="search-chip-tag" onclick="quickSearch('七里香')">七里香</span>
+            <span class="search-chip-tag" onclick="quickSearch('陈奕迅')">陈奕迅</span>
+            <span class="search-chip-tag" onclick="quickSearch('林俊杰')">林俊杰</span>
+            <span class="search-chip-tag" onclick="quickSearch('海阔天空')">海阔天空</span>
+            <span class="search-chip-tag" onclick="quickSearch('富士山下')">富士山下</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 搜索中加载动画 -->
+      <div class="search-loading-state" id="searchLoadingState">
+        <div class="search-wave-bars">
+          <div class="search-wave-bar"></div>
+          <div class="search-wave-bar"></div>
+          <div class="search-wave-bar"></div>
+          <div class="search-wave-bar"></div>
+        </div>
+        <span style="font-size:13px; letter-spacing:0.5px;">正在搜索网络音乐...</span>
+      </div>
+
+      <!-- 搜索空状态 -->
+      <div class="search-empty-state" id="searchEmptyState">
+        <svg viewBox="0 0 24 24" width="36" height="36" stroke="currentColor" fill="none" stroke-width="1.2" style="opacity:0.6;"><circle cx="12" cy="12" r="10"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+        <span style="font-size:13px;" id="searchEmptyMsg">未找到相关歌曲，换个关键词试试吧</span>
+      </div>
+
+      <!-- 搜索结果列表容器 -->
+      <div class="search-results-box" id="searchResultsBox" style="display:none;">
+        <div class="list-panel-header" style="margin-bottom:6px;">
+          <span id="searchResultCountText">检索结果</span>
+        </div>
+        <div id="searchResultsContainer"></div>
+      </div>
+    </div>
+  </div>
+
+<!-- 6. 歌曲内部（全屏播放详情页） -->
+  <div class="view-player-full" id="viewPlayerFull">
+    <nav class="full-player-header">
+      <button class="header-btn back-large-btn" onclick="handleHeaderBackClick()" title="返回">
+        <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="header-title-box">
+        <div class="song-main-title" id="fullPlayerSongTitle">空谷幽兰</div>
+        <div class="song-main-artist" id="fullPlayerArtist">系统演示</div>
+      </div>
+      <button class="header-btn btn-heart" id="topHeartBtn" onclick="toggleFavCurrent()" title="收藏">
+        <svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+      </button>
+    </nav>
+
+    <section class="disc-stage">
+      <div class="turntable-assembly" id="turntableBox" onclick="openPureLyricsView()">
+        <div class="tonearm-wrapper" id="tonearm">
+          <svg class="tonearm-svg" viewBox="0 0 78 144" fill="none">
+            <circle cx="52" cy="14" r="10" fill="#2E2C28" stroke="#1A1918" stroke-width="1.5"/>
+            <circle cx="52" cy="14" r="4" fill="var(--brand-terracotta)"/>
+            <path d="M52 14 L42 84 L20 122" stroke="#3D3B37" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+            <rect x="12" y="118" width="16" height="20" rx="3" transform="rotate(-30 20 128)" fill="var(--dark-cold-btn)" stroke="#252422" stroke-width="1.2"/>
+          </svg>
+        </div>
+        <div class="turntable-plate" id="plate">
+          <div class="turntable-center">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <div class="lyrics-simple-preview" id="simpleLyricsBox" onclick="openPureLyricsView()">
+        <div class="preview-scroll-track" id="previewScrollTrack">
+          <div class="lyric-row-main" id="previewMainLyric"><span class="lyric-text-body">谁家的枝头鸟儿成双对</span></div>
+          <div class="lyric-row-sub" id="previewSubLyric">蝴蝶翩翩飞</div>
+        </div>
+      </div>
+
+      <div class="pure-lyrics-scroll-container" id="pureLyricsContainer">
+        <div class="lyrics-items-list" id="lyricsItemsList"></div>
+      </div>
+
+      <div class="lyrics-seek-crossline" id="lyricsSeekCrossline">
+        <div style="display:flex; align-items:center;">
+          <span class="crossline-time-tag" id="crosslineTimeText">00:05</span>
+          <div class="crossline-gradient-left"></div>
+        </div>
+        <div style="flex:1;"></div>
+        <div style="display:flex; align-items:center;">
+          <div class="crossline-gradient-right"></div>
+          <div class="crossline-play-btn" onclick="playAtTargetLyric(event)" title="从此处播放">
+            <svg viewBox="0 0 24 24"><polygon points="7 4 20 12 7 20 7 4"/></svg>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <footer class="player-controls-panel">
+      <div class="progress-container">
+        <span class="time-label" id="curTime">00:00</span>
+        <div class="seek-bar-wrap" id="seekBarWrap">
+          <div class="seek-track"><div class="seek-fill" id="seekFill"></div></div>
+          <div class="seek-thumb" id="seekThumb"></div>
+        </div>
+        <span class="time-label" id="totalTime">03:06</span>
+      </div>
+
+      <div class="main-buttons-row">
+        <button class="ctrl-btn" onclick="togglePlayMode()" id="playModeBtn" title="播放模式">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17 2l4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><path d="M7 22l-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/>
+          </svg>
+        </button>
+        <button class="ctrl-btn filled" onclick="playPrev()" title="上一首">
+          <svg viewBox="0 0 24 24"><polygon points="19 20 9 12 19 4 19 20"/><line x1="5" y1="19" x2="5" y2="5" stroke="currentColor" stroke-width="2.5"/></svg>
+        </button>
+        <button class="ctrl-btn play-pause-big" onclick="togglePlayState()" id="bigPlayBtn" title="播放/暂停">
+          <svg id="playIcon" viewBox="0 0 24 24"><polygon points="7 4 20 12 7 20 7 4"/></svg>
+        </button>
+        <button class="ctrl-btn filled" onclick="playNext()" title="下一首">
+          <svg viewBox="0 0 24 24"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19" stroke="currentColor" stroke-width="2.5"/></svg>
+        </button>
+        <button class="ctrl-btn" onclick="openPlaylistDrawer()" title="当前播放列表">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="8" y1="6" x2="21" y2="6"/>
+            <line x1="8" y1="12" x2="21" y2="12"/>
+            <line x1="8" y1="18" x2="21" y2="18"/>
+            <line x1="3" y1="6" x2="3.01" y2="6" stroke-width="2.6"/>
+            <line x1="3" y1="12" x2="3.01" y2="12" stroke-width="2.6"/>
+            <line x1="3" y1="18" x2="3.01" y2="18" stroke-width="2.6"/>
+          </svg>
+        </button>
+      </div>
+    </footer>
+  </div>
+
+  <!-- 7. 播放队列抽屉 -->
+  <div class="playlist-drawer-backdrop" id="playlistDrawerBackdrop" onclick="closePlaylistDrawer()"></div>
+  <div class="playlist-drawer" id="playlistDrawer">
+    <div class="add-sheet-drag-handle"></div>
+    <div class="playlist-header">
+      <button class="add-sheet-close-btn" onclick="closePlaylistDrawer()" title="关闭">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+      <div class="playlist-title">当前播放列表 (<span id="drawerCountText">0</span>)</div>
+      <div style="width:32px;"></div>
+    </div>
+    <div class="playlist-items" id="drawerItemsList"></div>
+  </div>
+
+  <!-- 8. 歌曲操作轻灵弹窗（SVG与文字精确对齐、无分割线、可选择歌单） -->
+  <div class="add-sheet-overlay" id="songMenuOverlay" onclick="closeSongMenu(event)">
+    <div class="add-sheet-card" onclick="event.stopPropagation()">
+      <div class="add-sheet-drag-handle"></div>
+      
+      <div class="add-sheet-header">
+        <button class="add-sheet-close-btn" onclick="closeSongMenu()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+        <span class="add-sheet-title" id="sheetSongTitle">歌曲操作</span>
+        <div style="width:32px;"></div>
+      </div>
+
+      <div class="add-clean-list">
+        <div class="add-clean-row ripple-btn" onclick="triggerSheetAction('next')">
+          <div class="add-clean-icon"><svg viewBox="0 0 24 24"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19" stroke-width="2"/></svg></div>
+          <span class="add-clean-label">下一首播放</span>
+        </div>
+        <div class="add-clean-row ripple-btn" onclick="triggerSheetAction('playlist')">
+          <div class="add-clean-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg></div>
+          <span class="add-clean-label">加入歌单</span>
+        </div>
+        <div class="add-clean-row ripple-btn" onclick="triggerSheetAction('fav')">
+          <div class="add-clean-icon" id="sheetFavIcon"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></div>
+          <span class="add-clean-label" id="sheetFavText">收藏歌曲</span>
+        </div>
+        <div class="add-clean-row ripple-btn" onclick="triggerSheetAction('download')">
+          <div class="add-clean-icon"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></div>
+          <span class="add-clean-label">离线下载</span>
+        </div>
+        <div class="add-clean-row ripple-btn" onclick="triggerSheetAction('ringtone')">
+          <div class="add-clean-icon"><svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></div>
+          <span class="add-clean-label">设为系统铃声</span>
+        </div>
+        <div class="add-clean-row ripple-btn" onclick="triggerSheetAction('extract_cover')">
+          <div class="add-clean-icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>
+          <span class="add-clean-label">提取封面</span>
+        </div>
+        <div class="add-clean-row ripple-btn" onclick="triggerSheetAction('share')">
+          <div class="add-clean-icon"><svg viewBox="0 0 24 24"><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/></svg></div>
+          <span class="add-clean-label">分享歌曲</span>
+        </div>
+        <div class="add-clean-row ripple-btn" onclick="triggerSheetAction('delete')" style="color:var(--brand-red);">
+          <div class="add-clean-icon" style="color:var(--brand-red);"><svg viewBox="0 0 24 24" stroke="currentColor"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></div>
+          <span class="add-clean-label" id="sheetDeleteText" style="color:var(--brand-red);">移出此歌曲</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 8.5 加入歌单专属选择子弹窗（底部滑出、无分割线极简高级质感） -->
+  <div class="choose-playlist-modal" id="choosePlaylistModal" onclick="closeChoosePlaylistModal(event)">
+    <div class="choose-playlist-card" onclick="event.stopPropagation()">
+      <div class="add-sheet-drag-handle"></div>
+      <div class="choose-sheet-header">
+        <button class="choose-sheet-close-btn" onclick="closeChoosePlaylistModalDirect()" title="关闭">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+        <div class="choose-sheet-title">加入歌单</div>
+        <button class="choose-sheet-header-action-btn ripple-btn" onclick="openCreatePlaylistFromChoose()">新建歌单</button>
+      </div>
+      <div id="choosePlaylistItems" class="choose-playlist-list" style="max-height:48vh; overflow-y:auto;"></div>
+      <div class="choose-capsule-wrap">
+        <button class="choose-sheet-confirm-btn ripple-btn" onclick="confirmBatchAddToPlaylists()">完成</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 8.55 设为系统铃声类型选择子弹窗（底部滑出、无分割线极简高级质感） -->
+  <div class="choose-playlist-modal" id="chooseRingtoneModal" onclick="closeChooseRingtoneModal(event)">
+    <div class="choose-playlist-card" onclick="event.stopPropagation()">
+      <div class="add-sheet-drag-handle"></div>
+      <div class="choose-sheet-header">
+        <button class="choose-sheet-close-btn" onclick="document.getElementById('chooseRingtoneModal').classList.remove('active')" title="关闭">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+        <div class="choose-sheet-title" id="chooseRingtoneSongTitle">设为系统铃声</div>
+        <div style="width:36px;"></div>
+      </div>
+      <div class="choose-playlist-list" style="margin-top:4px;">
+        <div class="choose-item-row ripple-btn" onclick="confirmSetRingtone(1)">
+          <div style="display:flex; align-items:center; gap:12px;">
+            <div class="add-clean-icon"><svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg></div>
+            <span class="choose-item-title">来电铃声 (默认)</span>
+          </div>
+          <span class="choose-item-sub">设为电话铃声</span>
+        </div>
+        <div class="choose-item-row ripple-btn" onclick="confirmSetRingtone(2)">
+          <div style="display:flex; align-items:center; gap:12px;">
+            <div class="add-clean-icon"><svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></div>
+            <span class="choose-item-title">通知提示音</span>
+          </div>
+          <span class="choose-item-sub">设为系统通知音</span>
+        </div>
+        <div class="choose-item-row ripple-btn" onclick="confirmSetRingtone(4)">
+          <div style="display:flex; align-items:center; gap:12px;">
+            <div class="add-clean-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2"/><path d="m5 3 4 4"/><path d="m19 3-4 4"/></svg></div>
+            <span class="choose-item-title">闹钟铃声</span>
+          </div>
+          <span class="choose-item-sub">设为系统闹铃</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 8.56 应用内版本更新升级弹窗（底部滑出、高级卡片、下载进度平滑展示） -->
+  <div class="choose-playlist-modal" id="appUpdateModal" onclick="closeAppUpdateModal(event)">
+    <div class="choose-playlist-card" onclick="event.stopPropagation()" style="max-height:85vh; padding: 0 22px calc(20px + var(--safe-bottom, 14px)) !important; max-width: 440px; margin: 0 auto;">
+      <div class="add-sheet-drag-handle"></div>
+      <div class="choose-sheet-header">
+        <button class="choose-sheet-close-btn" onclick="closeAppUpdateModalDirect()" title="关闭">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+        <div class="choose-sheet-title">发现新版本</div>
+        <div style="width:32px;"></div>
+      </div>
+      <div style="display:flex; flex-direction:column; align-items:center; padding:4px 0 14px;">
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px;">
+          <span style="font-size:18px; font-weight:700; color:var(--ink-black);" id="updateVersionTitle">v2.5.8</span>
+          <span style="font-size:11px; font-weight:600; background:rgba(35,75,184,0.08); color:var(--brand-blue); padding:2px 8px; border-radius:10px;" id="updateVersionBadge">最新版本</span>
+        </div>
+        <div id="updateChangelogBox" style="width:100%; box-sizing:border-box; background:var(--claude-pill-bg, rgba(20,20,19,0.03)); border:none; border-radius:14px; padding:14px 16px; font-size:13.5px; line-height:1.65; color:var(--ink-gray); white-space:pre-line; max-height:36vh; overflow-y:auto;"></div>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:8px; width:100%; padding-bottom:4px;">
+        <button id="btnStartAppUpdate" class="create-playlist-sheet-confirm ripple-btn" onclick="executeAppUpdate()">立即升级</button>
+        <button id="btnCancelAppUpdate" class="update-sheet-cancel-btn" onclick="closeAppUpdateModalDirect()" style="background:transparent; border:none; box-shadow:none; color:var(--ink-light); font-size:13px; height:36px; cursor:pointer;">稍后再说</button>
+        <div id="updateProgressWrap" style="display:none; width:100%; flex-direction:column; gap:6px;">
+          <div style="width:100%; height:6px; background:var(--claude-pill-bg); border-radius:999px; overflow:hidden;">
+            <div id="updateProgressBar" style="width:0%; height:100%; background:var(--ink-black); border-radius:999px; transition:width 0.15s ease;"></div>
+          </div>
+          <div style="display:flex; justify-content:space-between; font-size:12px; color:var(--ink-light);">
+            <span id="updateProgressPercent">下载中 0%</span>
+            <span id="updateProgressBytes">正在连接...</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 8.6 自定义音乐接口弹窗（严格对齐显示模式/主题色调设计规范） -->
+  <div class="modal-overlay" id="apiConfigModal" onclick="closeApiConfigModal(event)">
+    <div class="color-modal-card" onclick="event.stopPropagation()">
+      <div class="color-modal-title">自定义音乐接口</div>
+      
+      <div class="color-option-row ripple-btn" id="apiOpt_injahow" onclick="selectApiChannelDirect('injahow', this)">
+        <div class="color-option-left">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect width="20" height="8" x="2" y="2" rx="2"/><rect width="20" height="8" x="2" y="14" rx="2"/><line x1="6" x2="6.01" y1="6" y2="6"/><line x1="6" x2="6.01" y1="18" y2="18"/></svg>
+          <span>Injahow 镜像 (高可用)</span>
+        </div>
+        <svg class="color-option-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+
+      <div class="color-option-row ripple-btn" id="apiOpt_gdstudio" onclick="selectApiChannelDirect('gdstudio', this)">
+        <div class="color-option-left">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20M2 12h20"/></svg>
+          <span>GDStudio 聚合解析</span>
+        </div>
+        <svg class="color-option-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+
+      <div class="color-option-row ripple-btn" id="apiOpt_custom" onclick="selectApiChannelDirect('custom', this)">
+        <div class="color-option-left">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+          <span>自定义私有接口</span>
+        </div>
+        <svg class="color-option-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- 8.6.1 自定义私有接口填写弹窗（独立弹窗、纯文字底横线输入） -->
+  <div class="modern-dialog-backdrop" id="customApiModal" onclick="closeCustomApiModal(event)">
+    <div class="modern-dialog-card" onclick="event.stopPropagation()" style="max-width:320px; padding:22px 20px 20px;">
+      <div class="modern-dialog-title" style="margin-bottom:6px; font-size:16px;">自定义私有接口</div>
+      <div style="font-size:12.5px; color:var(--ink-gray); line-height:1.5; margin-bottom:16px; text-align:left;">
+        请输入第三方或自建的 Meting 兼容接口地址。
+      </div>
+      <input type="text" class="config-input-box" id="apiServerInput" placeholder="输入自定义 API (https://...)" autocomplete="off" spellcheck="false" style="margin-bottom:22px;">
+      <div class="modern-dialog-actions" style="gap:10px;">
+        <button class="modern-pill-btn modern-pill-cancel" onclick="closeCustomApiModal()">取消</button>
+        <button class="modern-pill-btn modern-pill-primary" onclick="saveCustomApiUrl()">保存生效</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 8.7 参考设计图：全站统一现代双药丸确认弹窗（删除/重置通用） -->
+  <div class="modern-dialog-backdrop" id="universalConfirmModal" onclick="closeUniversalConfirmModal(event)">
+    <div class="modern-dialog-card" onclick="event.stopPropagation()">
+      <div class="modern-dialog-title" id="universalConfirmTitle">移出歌曲</div>
+      <div class="modern-dialog-desc" id="universalConfirmDesc">确定要将这首歌曲移出吗？</div>
+      <div class="modern-dialog-actions">
+        <button class="modern-pill-btn modern-pill-cancel" onclick="closeUniversalConfirmModal()">取消</button>
+        <button class="modern-pill-btn modern-pill-danger" id="universalConfirmActionBtn" onclick="executeUniversalConfirm()">确认</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 8.8 新手入门指南弹窗（极简滑动卡片，一信息一页，绝无 Emoji） -->
+  <div class="modern-dialog-backdrop" id="beginnerGuideModal" onclick="closeBeginnerGuideModal(event)">
+    <div class="modern-dialog-card guide-carousel-card" onclick="event.stopPropagation()">
+      <div class="guide-header-row">
+        <span class="guide-step-tag" id="guideStepTag">机制指引 1 / 4</span>
+        <button class="guide-close-btn" onclick="closeBeginnerGuideModal()" title="关闭">
+          <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+
+      <div class="guide-slides-viewport" id="guideViewport">
+        <div class="guide-slides-track" id="guideSlidesTrack">
+          <!-- Slide 1: 全部歌曲机制 -->
+          <div class="guide-slide-item">
+            <div class="guide-slide-num">01</div>
+            <div class="guide-slide-title">全部歌曲机制</div>
+            <div class="guide-slide-text">
+              在全网搜索并播放过的歌曲，都会自动保存到<b>「全部歌曲」</b>中，相当于你的完整收听记录，刷新页面也不会丢失。
+            </div>
+          </div>
+          <!-- Slide 2: 收藏与整理 -->
+          <div class="guide-slide-item">
+            <div class="guide-slide-num">02</div>
+            <div class="guide-slide-title">收藏与整理</div>
+            <div class="guide-slide-text">
+              常听的歌曲建议点亮<b>红心</b>加入「我喜欢」，或点击三点加入自建歌单；不想要的歌曲点三点选择<b>「移出」</b>即可。
+            </div>
+          </div>
+          <!-- Slide 3: 网络与下载 -->
+          <div class="guide-slide-item">
+            <div class="guide-slide-num">03</div>
+            <div class="guide-slide-title">网络点播与接口寿命</div>
+            <div class="guide-slide-text">
+              在线歌曲为网络即时点播，不占手机存储。点播依托开源社区聚合解析引擎，偶有波动；若遇到无法播放或搜歌失效，随时可在<b>【设置】->【自定义音乐接口】</b>中填入新接口地址，即可永久复活使用。
+            </div>
+          </div>
+          <!-- Slide 4: 唱片与切歌 -->
+          <div class="guide-slide-item">
+            <div class="guide-slide-num">04</div>
+            <div class="guide-slide-title">黑胶唱片联动</div>
+            <div class="guide-slide-text">
+              左右横滑上方的<b>黑胶唱片</b>可切换歌单；在任何歌单中点击播放，唱片就会<b>自动塞入左侧卡片</b>并旋转转动，充满仪式感。
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 分页圆点 -->
+      <div class="guide-dots-bar" id="guideDotsBar">
+        <div class="guide-dot active" onclick="goToGuideSlide(0)"></div>
+        <div class="guide-dot" onclick="goToGuideSlide(1)"></div>
+        <div class="guide-dot" onclick="goToGuideSlide(2)"></div>
+        <div class="guide-dot" onclick="goToGuideSlide(3)"></div>
+      </div>
+
+      <!-- 底部操作按钮 -->
+      <div class="guide-actions-bar">
+        <button class="modern-pill-btn modern-pill-cancel" id="guidePrevBtn" style="visibility:hidden;" onclick="prevGuideSlide()">上一条</button>
+        <button class="modern-pill-btn modern-pill-primary" id="guideNextBtn" onclick="nextGuideSlide()">下一条</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 8.9 播放音质选择弹窗（严格对齐显示模式/主题色调设计规范） -->
+  <div class="modal-overlay" id="audioQualityModal" onclick="closeQualityModal(event)">
+    <div class="color-modal-card" onclick="event.stopPropagation()">
+      <div class="color-modal-title">播放音质</div>
+      
+      <div class="color-option-row ripple-btn" id="qualityOpt320" onclick="selectQuality('320', this)">
+        <div class="color-option-left">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 10v4M6 6v12M10 3v18M14 6v12M18 10v4M22 12v0"/></svg>
+          <span>极高音质 (320 kbps)</span>
+        </div>
+        <svg class="color-option-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+
+      <div class="color-option-row ripple-btn" id="qualityOpt128" onclick="selectQuality('128', this)">
+        <div class="color-option-left">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 12v0M6 10v4M10 7v10M14 10v4M18 12v0M22 12v0"/></svg>
+          <span>标准音质 (128 kbps)</span>
+        </div>
+        <svg class="color-option-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- 8.9.1 定时关闭选择弹窗 -->
+  <div class="modal-overlay" id="sleepTimerModal" onclick="closeSleepTimerModal(event)">
+    <div class="color-modal-card" onclick="event.stopPropagation()">
+      <div class="color-modal-title">定时关闭</div>
+      
+      <div class="color-option-row ripple-btn selected" id="sleepTimerOpt_off" onclick="selectSleepTimer('off')">
+        <div class="color-option-left">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+          <span>不开启</span>
+        </div>
+        <svg class="color-option-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+
+      <div class="color-option-row ripple-btn" id="sleepTimerOpt_15" onclick="selectSleepTimer('time', 15)">
+        <div class="color-option-left">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <span>15 分钟后</span>
+        </div>
+        <svg class="color-option-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+
+      <div class="color-option-row ripple-btn" id="sleepTimerOpt_30" onclick="selectSleepTimer('time', 30)">
+        <div class="color-option-left">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <span>30 分钟后</span>
+        </div>
+        <svg class="color-option-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+
+      <div class="color-option-row ripple-btn" id="sleepTimerOpt_45" onclick="selectSleepTimer('time', 45)">
+        <div class="color-option-left">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <span>45 分钟后</span>
+        </div>
+        <svg class="color-option-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+
+      <div class="color-option-row ripple-btn" id="sleepTimerOpt_60" onclick="selectSleepTimer('time', 60)">
+        <div class="color-option-left">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <span>60 分钟后</span>
+        </div>
+        <svg class="color-option-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+
+      <div class="color-option-row ripple-btn" id="sleepTimerOpt_90" onclick="selectSleepTimer('time', 90)">
+        <div class="color-option-left">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <span>90 分钟后</span>
+        </div>
+        <svg class="color-option-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+
+      <div class="color-option-row ripple-btn" id="sleepTimerOpt_track" onclick="selectSleepTimer('track')">
+        <div class="color-option-left">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+          <span>播完当前歌曲后</span>
+        </div>
+        <svg class="color-option-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+
+      <div class="color-option-row ripple-btn" id="sleepTimerOpt_custom" onclick="selectSleepTimerCustom()">
+        <div class="color-option-left">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          <span id="sleepTimerCustomLabel">自定义分钟</span>
+        </div>
+        <svg class="color-option-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- 8.9.2 自定义定时分钟弹窗 -->
+  <div class="modern-dialog-backdrop" id="sleepTimerCustomModal" onclick="closeSleepTimerCustomModal(event)">
+    <div class="modern-dialog-card" onclick="event.stopPropagation()" style="max-width:320px; padding:22px 20px 20px;">
+      <div class="modern-dialog-title" style="margin-bottom:8px; font-size:16px;">自定义定时时长</div>
+      <div style="font-size:12.5px; color:var(--ink-gray); line-height:1.5; margin-bottom:14px; text-align:left;">
+        请输入定时关闭的分钟数（1 ~ 720 分钟）：
+      </div>
+      <input type="number" id="sleepTimerCustomInput" class="config-input-box" placeholder="例如：20" min="1" max="720" style="margin-bottom:18px;">
+      <div class="modern-dialog-actions" style="gap:10px;">
+        <button class="modern-pill-btn modern-pill-cancel" onclick="closeSleepTimerCustomModal()">取消</button>
+        <button class="modern-pill-btn modern-pill-primary" onclick="confirmSleepTimerCustom()">确定</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 8.10 歌曲封面查看、更换与保存弹窗 -->
+  <div class="modern-dialog-backdrop" id="coverPreviewModal" onclick="closeCoverPreviewModal(event)">
+    <div class="modern-dialog-card" onclick="event.stopPropagation()" style="max-width:320px; text-align:center; padding: 22px 20px;">
+      <div class="modern-dialog-title" id="coverPreviewTitle" style="margin-bottom:14px; font-size:16px;">歌曲封面</div>
+      <div style="width:190px; height:190px; margin:0 auto 16px; border-radius:14px; overflow:hidden; box-shadow:0 8px 24px rgba(0,0,0,0.12); background:var(--pinned-bg); display:flex; align-items:center; justify-content:center;">
+        <img id="coverPreviewImg" src="" alt="封面原图" style="width:100%; height:100%; object-fit:cover; display:none;">
+        <div id="coverPreviewPlaceholder" style="color:var(--ink-light); font-size:13px;">暂无独立封面</div>
+      </div>
+      <div class="modern-dialog-actions" style="flex-direction:column; gap:10px;">
+        <button class="modern-pill-btn modern-pill-primary" id="coverChangeBtn" onclick="triggerCustomSongCoverUpload()" style="width:100%; height:42px; min-height:42px; flex:none; font-size:14px; font-weight:600;">更换歌曲封面</button>
+        <button class="modern-pill-btn" id="coverSaveBtn" onclick="saveCoverImageToDevice()" style="width:100%; height:42px; min-height:42px; flex:none; font-size:14px; border:1px solid var(--border-input); background:var(--card-bg); color:var(--ink-black); display:none;">保存封面图片</button>
+        <button class="modern-pill-btn modern-pill-cancel" onclick="closeCoverPreviewModal()" style="width:100%; height:42px; min-height:42px; flex:none; font-size:14px;">关闭</button>
+      </div>
+    </div>
+  </div>
+  <input type="file" id="songCoverFileInput" accept="image/*" style="display:none;" onchange="handleCustomSongCoverUpload(event)">
+
+  
+  <!-- 8.12 导出歌单文本弹窗（修复居中定位与标准蒙层） -->
+  <div class="modern-dialog-backdrop" id="playlistExportTextModal" onclick="closeExportPlaylistModal(event)">
+    <div class="modern-dialog-card" onclick="event.stopPropagation()" style="max-width:330px; padding:22px 20px;">
+      <div class="modern-dialog-title" id="exportModalTitle" style="margin-bottom:6px; font-size:16px;">导出歌单文本</div>
+      <div id="exportModalDesc" style="font-size:12px; color:var(--ink-gray); line-height:1.5; margin-bottom:12px; text-align:left;">
+        已自动复制到剪贴板，可直接粘贴分享或导入其他平台。
+      </div>
+      <textarea id="exportPlaylistTextArea" class="config-input-box" style="height:120px; resize:none; padding:10px; font-size:12px; line-height:1.5; margin-bottom:14px;" readonly></textarea>
+      <div class="modern-dialog-actions" style="gap:8px;">
+        <button class="modern-pill-btn modern-pill-cancel" onclick="closeExportPlaylistModal()" style="font-size:13px;">关闭</button>
+        <button class="modern-pill-btn modern-pill-primary" onclick="copyExportedText()" style="font-size:13px; font-weight:600;">复制全部</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 8.11 外部歌单导入弹窗（支持酷狗概念版/网易云歌单文本粘贴与 JSON 文件导入） -->
+  <div class="modern-dialog-backdrop" id="playlistImportModal" onclick="closePlaylistImportModal(event)">
+    <div class="modern-dialog-card" onclick="event.stopPropagation()" style="max-width:330px; padding:22px 20px 20px;">
+      <div class="modern-dialog-title" style="margin-bottom:6px; font-size:16px;">导入外部歌单</div>
+      <div style="font-size:12.5px; color:var(--ink-gray); line-height:1.5; margin-bottom:14px; text-align:left;">
+        支持直接粘贴酷狗概念版、网易云等应用的分享文本或卡片，系统将自动过滤多余字符并提取歌曲。
+      </div>
+      <input type="text" id="importPlaylistNameInput" class="config-input-box" placeholder="歌单名称（如：酷狗导入歌单）" style="margin-bottom:14px;">
+      <textarea id="importPlaylistTextInput" class="config-input-box" style="height:100px; resize:none; font-size:13px; line-height:1.5; margin-bottom:18px;" placeholder="直接粘贴分享卡片或歌单文本，例如：&#10;晴天 - 周杰伦&#10;告白气球 - 周杰伦&#10;或包含链接的酷狗概念版分享文本"></textarea>
+      <div class="modern-dialog-actions" style="gap:10px;">
+        <button class="modern-pill-btn modern-pill-cancel" onclick="closePlaylistImportModal()">取消</button>
+        <button class="modern-pill-btn modern-pill-primary" onclick="executeTextPlaylistImport()">一键导入</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 8.12 显示模式弹窗（对齐新UI设计规范） -->
+  <div class="modal-overlay" id="color-modal-overlay" onclick="closeColorModal(event)">
+    <div class="color-modal-card" onclick="event.stopPropagation()">
+      <div class="color-modal-title">显示模式</div>
+      
+      <div class="color-option-row ripple-btn" data-mode="system" onclick="selectTheme('system', this)">
+        <div class="color-option-left">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 0 20Z"/></svg>
+          <span>跟随系统</span>
+        </div>
+        <svg class="color-option-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+
+      <div class="color-option-row ripple-btn" data-mode="light" onclick="selectTheme('light', this)">
+        <div class="color-option-left">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/></svg>
+          <span>浅色明亮</span>
+        </div>
+        <svg class="color-option-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+
+      <div class="color-option-row ripple-btn" data-mode="dark" onclick="selectTheme('dark', this)">
+        <div class="color-option-left">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+          <span>深色夜间</span>
+        </div>
+        <svg class="color-option-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- 8.13 主题色调弹窗（严格对齐新UI设计规范） -->
+  <div class="modal-overlay" id="theme-color-modal-overlay" onclick="closeThemeColorModal(event)">
+    <div class="color-modal-card" onclick="event.stopPropagation()">
+      <div class="color-modal-title">主题色调</div>
+      
+      <div class="color-option-row ripple-btn" data-color-id="blue" onclick="selectThemeColor('blue', '#234BB8', '克莱因蓝', this)">
+        <span class="pure-theme-name">克莱因蓝 (默认经典)</span>
+      </div>
+
+      <div class="color-option-row ripple-btn" data-color-id="terracotta" onclick="selectThemeColor('terracotta', '#D97757', '陶土橙', this)">
+        <span class="pure-theme-name">陶土橙 (剧情本色)</span>
+      </div>
+
+      <div class="color-option-row ripple-btn" data-color-id="green" onclick="selectThemeColor('green', '#2E6B4F', '青翠绿', this)">
+        <span class="pure-theme-name">青翠绿 (自然清新)</span>
+      </div>
+
+      <div class="color-option-row ripple-btn" data-color-id="purple" onclick="selectThemeColor('purple', '#6A1B9A', '深邃紫', this)">
+        <span class="pure-theme-name">深邃紫 (典雅华丽)</span>
+      </div>
+
+      <div class="color-option-row ripple-btn" data-color-id="black" onclick="selectThemeColor('black', '#171715', '水墨黑', this)">
+        <span class="pure-theme-name">水墨黑 (纯粹极简)</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 8.135 应用字体弹窗（严格复用显示模式结构规范与定制SVG） -->
+  <div class="modal-overlay" id="font-modal-overlay" onclick="closeFontModal(event)">
+    <div class="color-modal-card" onclick="event.stopPropagation()">
+      <div class="color-modal-title">应用字体</div>
+      
+      <div class="color-option-row ripple-btn" data-font="lxgw" onclick="selectAppFont('lxgw', this)">
+        <div class="color-option-left">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><line x1="9" y1="7" x2="15" y2="7"/><line x1="9" y1="11" x2="13" y2="11"/></svg>
+          <span style="font-family:'LXGW WenKai', serif;">霞鹜文楷 (默认)</span>
+        </div>
+        <svg class="color-option-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+
+      <div class="color-option-row ripple-btn" data-font="system" onclick="selectAppFont('system', this)">
+        <div class="color-option-left">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="3"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+          <span style="font-family:system-ui, -apple-system, sans-serif;">系统自带</span>
+        </div>
+        <svg class="color-option-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- 新建歌单底部滑出抽屉 (1:1 对齐 hhznx 个人资料页输入框风格与底部抽屉交互) -->
+  <div class="create-playlist-sheet-overlay" id="createPlaylistModalOverlay" onclick="closeCreatePlaylistModal(event)">
+    <div class="create-playlist-sheet-card" onclick="event.stopPropagation()">
+      <div class="create-playlist-drag-handle"></div>
+      <div class="create-playlist-sheet-header">
+        <button class="choose-sheet-close-btn" onclick="closeCreatePlaylistModal()" title="关闭">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+        <div class="create-playlist-sheet-title">新建歌单</div>
+        <div style="width: 32px;"></div>
+      </div>
+      <div class="create-playlist-input-wrap">
+        <input type="text" class="create-playlist-input" id="createPlaylistInput" placeholder="输入歌单名称..." maxlength="24" onkeydown="if(event.key==='Enter')submitCreatePlaylistModal()">
+      </div>
+      <div class="create-playlist-sheet-actions">
+        <button type="button" class="create-playlist-sheet-confirm ripple-btn" onclick="submitCreatePlaylistModal()">确定</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 9. 系统虚拟导航键 -->
+  <footer class="nav-bar">
+    <div class="nav-btn" onclick="handleSystemBack()"><svg viewBox="0 0 24 24"><path d="M9 14L4 9l5-5M4 9h10.5a4.5 4.5 0 0 1 0 9H11"/></svg></div>
+    <div class="nav-btn" onclick="handleSystemHome()"><svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg></div>
+    <div class="nav-btn" onclick="toast('多任务视图')"><svg viewBox="0 0 24 24"><line x1="4" y1="8" x2="20" y2="8"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="16" x2="20" y2="16"/></svg></div>
+  </footer>
+
+  <div class="toast-msg" id="toastMsg"></div>
+</div>
+
+<script>
+/* {{SCRIPTS}} */
+</script>
+</body>
+</html>

@@ -1,0 +1,171 @@
+/* 本地内置加载霞鹜文楷字体，100% 离线生效，杜绝 Google Fonts 阻塞 */
+@font-face {
+  font-family: 'LXGW WenKai';
+  src: url('LXGWWenKaiLite-Regular.ttf') format('truetype');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'LXGW WenKai TC';
+  src: url('LXGWWenKaiLite-Regular.ttf') format('truetype');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: '霞鹜文楷';
+  src: url('LXGWWenKaiLite-Regular.ttf') format('truetype');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ================= 1. 色彩体系（YYRC 统一标准规范） ================= */
+:root {
+  --status-bar-height: 38px;
+  --safe-top: max(var(--status-bar-height, 38px), env(safe-area-inset-top, 38px));
+  --nav-bar-height: 0px;
+  --safe-bottom: max(var(--nav-bar-height, 0px), env(safe-area-inset-bottom, 0px));
+  --bg-page: #F7F7F5;
+  --settings-bg: #F8F8F6;
+  --paper-bg: #F7F7F5;
+  --card-bg: #FFFFFF;
+  --pinned-bg: #EDEDEB;
+  --chat-input-bar-bg: #F4F4F2;
+  --claude-pill-bg: #EEEEEB;
+  
+  --inner-divider: #ECEBE6;
+  --divider: rgba(24, 26, 28, 0.065);
+  --border-line: rgba(24, 26, 28, 0.09);
+  --border-input: #E0E0DC;
+  --modal-input-focus: #C0532C;
+  --card-border: rgba(24, 26, 28, 0.08);
+
+  --ink-black: #161718;
+  --ink-dark: #353738;
+  --ink-gray: #747779;
+  --ink-light: #9FA2A5;
+
+  --brand-terracotta: #D97757;
+  --brand-red: #BA3B36;
+  --heart-red: #BA3B36;
+  --brand-rose: #BA3B36;
+  --brand-red-shadow: rgba(186, 59, 54, 0.35);
+  --brand-blue: #234BB8;
+  --brand-blue-press: #1B3B96;
+  --brand-blue-soft: rgba(35, 75, 184, 0.08);
+  --lyric-inactive: #9A9DA0;
+
+  --dark-cold-btn: #2E3034;
+  --font-serif: "LXGW WenKai TC", "LXGW WenKai", "霞鹜文楷", serif;
+  --font-system: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "WenQuanYi Micro Hei", system-ui, Roboto, "Helvetica Neue", sans-serif;
+}
+
+body.night {
+  --bg-page: #141413;
+  --settings-bg: #131312;
+  --paper-bg: #141413;
+  --card-bg: #1E1E1C;
+  --pinned-bg: #1C1C1A;
+  --chat-input-bar-bg: #242422;
+  --claude-pill-bg: #272724;
+
+  --inner-divider: #242422;
+  --divider: rgba(255, 255, 255, 0.08);
+  --border-line: rgba(255, 255, 255, 0.08);
+  --border-input: #383834;
+  --modal-input-focus: #C86A4B;
+  --card-border: rgba(255, 255, 255, 0.08);
+
+  --ink-black: #FAF9F5;
+  --ink-dark: #C7C5BB;
+  --ink-gray: #8F8D84;
+  --ink-light: #63625C;
+
+  --brand-terracotta: #E08769;
+  --brand-red: #BA3B36;
+  --heart-red: #BA3B36;
+  --brand-rose: #BA3B36;
+  --brand-red-shadow: rgba(186, 59, 54, 0.4);
+  --brand-blue: #4A76ED;
+  --brand-blue-press: #3662D8;
+  --brand-blue-soft: rgba(74, 118, 237, 0.15);
+  --lyric-inactive: #76797D;
+      
+  --dark-cold-btn: #FAF9F5;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: var(--font-serif) !important;
+  -webkit-tap-highlight-color: transparent !important;
+  outline: none !important;
+  user-select: none;
+}
+
+body.font-system,
+body.font-system * {
+  font-family: var(--font-system) !important;
+}
+
+button:focus, button:active, button:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg-page);
+  color: var(--ink-black);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  -webkit-font-smoothing: antialiased;
+}
+
+.phone-viewport {
+  width: 100%;
+  max-width: 414px;
+  height: 100%;
+  height: 100dvh;
+  margin: 0 auto;
+  background: var(--bg-page);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+@media (min-width: 440px) {
+  .phone-viewport {
+    height: 860px;
+    border-radius: 40px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.14);
+    border: 10px solid #D6D4CD;
+  }
+}
+
+/* 全局透明状态栏 */
+.status-bar {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 20px 0;
+  color: var(--ink-dark);
+  z-index: 105;
+  pointer-events: none;
+  background: transparent !important;
+}
+.status-left { font-size: 13px; font-weight: 500; letter-spacing: 0.2px; }
+.status-right { display: flex; align-items: center; gap: 6px; opacity: 0.85; }
+.status-battery-text { font-size: 11px; }
+.status-right svg { width: 13.5px; height: 13.5px; stroke: currentColor; stroke-width: 1.4; fill: none; }
+
