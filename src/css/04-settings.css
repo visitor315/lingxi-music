@@ -4,7 +4,7 @@
   flex-direction: column;
   height: 100% !important;
   box-sizing: border-box !important;
-  padding: calc(var(--safe-top, 38px) + 8px) 14px calc(84px + var(--safe-bottom, 0px)) !important;
+  padding: 0 14px calc(84px + var(--safe-bottom, 0px)) !important;
   gap: 14px;
   overflow-y: auto !important;
   -webkit-overflow-scrolling: touch !important;
@@ -12,6 +12,24 @@
 }
 .view-settings-page.active { display: flex; }
 body.night .view-settings-page {
+  background: var(--settings-bg, #131312) !important;
+}
+
+/* 设置页顶部吸顶沉浸式状态栏防护遮罩（彻底解决内容上滑穿透状态栏） */
+.settings-safe-top-bar {
+  position: sticky !important;
+  top: 0 !important;
+  left: -14px !important;
+  right: -14px !important;
+  width: calc(100% + 28px) !important;
+  height: calc(var(--safe-top, 38px) + 8px) !important;
+  background: var(--settings-bg, #F8F8F6) !important;
+  z-index: 100 !important;
+  flex-shrink: 0 !important;
+  pointer-events: none !important;
+  margin: 0 -14px -4px -14px !important;
+}
+body.night .settings-safe-top-bar {
   background: var(--settings-bg, #131312) !important;
 }
 .settings-group-header, .sub-group-header, .subpage-group-title-standard {

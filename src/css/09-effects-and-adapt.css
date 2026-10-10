@@ -208,7 +208,7 @@ body.in-pip-mode .view-player-full {
   box-sizing: border-box !important;
   overflow-y: auto !important;
   -webkit-overflow-scrolling: touch !important;
-  padding-top: calc(var(--safe-top, 38px) + 8px) !important;
+  padding-top: 0 !important;
   padding-bottom: calc(84px + var(--safe-bottom, 0px)) !important;
 }
 
@@ -258,7 +258,7 @@ body.in-pip-mode .view-player-full {
   box-sizing: border-box !important;
   overflow-y: auto !important;
   -webkit-overflow-scrolling: touch !important;
-  padding-top: calc(var(--safe-top, 38px) + 8px) !important;
+  padding-top: 0 !important;
   padding-bottom: calc(84px + var(--safe-bottom, 0px)) !important;
 }
 

@@ -1860,6 +1860,13 @@ function updateUI() {
     updateFixedRadioCardUI();
   }
 
+  // 动态同步当前播放列表抽屉内正在播放歌曲的音波跳跃律动
+  const drawerBars = document.querySelectorAll('.playlist-items .playing-equalizer-bars');
+  drawerBars.forEach(b => {
+    b.classList.toggle('animated', isPlaying);
+    b.classList.toggle('paused', !isPlaying);
+  });
+
   for (let i = 0; i < (topRecommendedTracks || []).length; i++) {
     const d = document.getElementById('streamDisc' + i);
     const track = topRecommendedTracks[i];
