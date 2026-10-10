@@ -2327,7 +2327,7 @@ public class MainActivity extends Activity {
 
         @JavascriptInterface
         public void setVideoAutoPauseEnabled(final boolean enabled) {
-            mainHandler.post(new Runnable() {
+            runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
                     MediaPlaybackService service = MediaPlaybackService.getInstance();
