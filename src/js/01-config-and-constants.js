@@ -206,3 +206,28 @@ let LYRICS_DATA = [
   { time: 172, duration: 14, text: "音乐停歇，余音仍在耳畔回响" }
 ];
 
+// 全局移动端幽灵穿透（Ghost Click）防范拦截引擎
+let ghostClickBlockUntil = 0;
+function blockGhostClicks(duration = 420) {
+  ghostClickBlockUntil = Math.max(ghostClickBlockUntil, Date.now() + duration);
+}
+function isGhostClickBlocked() {
+  return Date.now() < ghostClickBlockUntil;
+}
+
+if (typeof document !== 'undefined') {
+  document.addEventListener('click', (e) => {
+    if (isGhostClickBlocked()) {
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+      e.preventDefault();
+    }
+  }, true);
+  document.addEventListener('touchend', (e) => {
+    if (isGhostClickBlocked()) {
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+    }
+  }, true);
+}
+

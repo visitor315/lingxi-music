@@ -264,6 +264,9 @@ function scrollVinylToAlbum(idx, smooth = true) {
 }
 
 function togglePlayCurrentLibraryAlbum() {
+  if (typeof isGhostClickBlocked === 'function' && isGhostClickBlocked()) return;
+  const overlay = document.getElementById('createPlaylistModalOverlay');
+  if (overlay && overlay.classList.contains('active')) return;
   const alb = VINYL_ALBUMS[activeRadioIndex];
   if (!alb || !alb.songs || alb.songs.length === 0) {
     toast('当前歌单暂无歌曲');
@@ -1298,7 +1301,21 @@ function handleDeletePlaylistMenu() {
 }
 
 /* 新建歌单功能 */
-function openCreatePlaylistPrompt() {
+let lastOpenCreatePlaylistTime = 0;
+
+function openCreatePlaylistPrompt(e) {
+  if (e) {
+    if (typeof e.stopPropagation === 'function') e.stopPropagation();
+    if (typeof e.preventDefault === 'function') e.preventDefault();
+  }
+  const now = Date.now();
+  if (now - lastOpenCreatePlaylistTime < 350) return;
+  lastOpenCreatePlaylistTime = now;
+
+  // 严防全屏播放页与当前播放列表抽屉被夹带在下方
+  if (typeof closePlayerFull === 'function') closePlayerFull();
+  if (typeof closePlaylistDrawer === 'function') closePlaylistDrawer();
+
   const drawer = document.getElementById('playlistDrawer');
   const drawerBackdrop = document.getElementById('playlistDrawerBackdrop');
   if (drawer) {
@@ -1317,13 +1334,18 @@ function openCreatePlaylistPrompt() {
 }
 
 function closeCreatePlaylistModal(e) {
-  if (e && e.target && e.target !== document.getElementById('createPlaylistModalOverlay')) return;
+  if (e) {
+    if (typeof e.stopPropagation === 'function') e.stopPropagation();
+    if (typeof e.preventDefault === 'function') e.preventDefault();
+  }
   closeCreatePlaylistModalDirect();
 }
 
 function closeCreatePlaylistModalDirect() {
+  if (typeof blockGhostClicks === 'function') blockGhostClicks(450);
   const overlay = document.getElementById('createPlaylistModalOverlay');
   if (overlay) overlay.classList.remove('active');
+  if (typeof closePlaylistDrawer === 'function') closePlaylistDrawer();
 }
 
 function submitCreatePlaylistModal() {

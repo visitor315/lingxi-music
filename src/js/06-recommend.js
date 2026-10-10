@@ -153,7 +153,7 @@ function renderLibraryAlbumPills() {
       onmouseup="handlePillMouseUp(event)">${escapeHtml(alb.title)} (${count})</div>`;
   }).join('');
 
-  const addPillHtml = `<div class="library-album-pill" onclick="openCreatePlaylistPrompt()" style="display:inline-flex; align-items:center; gap:3px;"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>新建歌单</div>`;
+  const addPillHtml = `<div class="library-album-pill" onclick="openCreatePlaylistPrompt(event)" style="display:inline-flex; align-items:center; gap:3px;"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>新建歌单</div>`;
 
   bar.innerHTML = albumPillsHtml + addPillHtml;
 }

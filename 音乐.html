@@ -817,7 +817,7 @@ body.night .library-album-pill.active {
   flex-direction: column;
   height: 100% !important;
   box-sizing: border-box !important;
-  padding: 14px 14px 84px;
+  padding: calc(var(--safe-top, 38px) + 12px) 14px calc(84px + var(--safe-bottom, 0px)) !important;
   gap: 14px;
   overflow-y: auto !important;
   -webkit-overflow-scrolling: touch !important;
@@ -878,11 +878,11 @@ body.night .settings-circular-back-btn {
   margin-right: 1px;
 }
 .settings-page-main-title {
-  font-size: 28px;
-  font-weight: 700;
+  font-size: 22px;
+  font-weight: 600;
   color: var(--ink-black);
-  letter-spacing: -0.5px;
-  line-height: 1.2;
+  letter-spacing: -0.3px;
+  line-height: 1.25;
   margin: 0 0 2px 2px;
   user-select: none;
 }
@@ -1063,10 +1063,11 @@ body.night .settings-circular-back-btn {
   color: var(--ink-black);
   line-height: 1.3;
 }
-.cap-switch-desc {
-  font-size: 12px;
-  color: var(--ink-gray);
-  line-height: 1.35;
+.cap-switch-sub, .cap-switch-desc {
+  font-size: 11.5px !important;
+  color: var(--ink-gray, #8E8D88) !important;
+  line-height: 1.35 !important;
+  word-break: break-word !important;
 }
 
 /* 卡片子项首项、末项、单项圆角 */
@@ -2401,13 +2402,12 @@ body.night .add-clean-row:active, body.night .choose-item-row:active, body.night
   100% { height: 5px; }
 }
 
-/* 当前播放列表正在播放歌曲整行差异化高亮 */
+/* 当前播放列表正在播放歌曲纯净水墨差异化状态（遵循素雅留白美学，杜绝大面积彩色背景色块） */
 .playlist-items .song-row.playing {
-  background: var(--brand-blue-soft) !important;
-  border-radius: 14px !important;
+  background: transparent !important;
 }
 body.night .playlist-items .song-row.playing {
-  background: rgba(74, 118, 237, 0.12) !important;
+  background: transparent !important;
 }
 .playlist-items .song-row.playing .song-title {
   color: var(--brand-blue) !important;
@@ -3014,7 +3014,7 @@ body.in-pip-mode .view-player-full {
   box-sizing: border-box !important;
   overflow-y: auto !important;
   -webkit-overflow-scrolling: touch !important;
-  padding-top: 10px !important;
+  padding-top: calc(var(--safe-top, 38px) + 12px) !important;
   padding-bottom: calc(84px + var(--safe-bottom, 0px)) !important;
 }
 
@@ -3064,7 +3064,7 @@ body.in-pip-mode .view-player-full {
   box-sizing: border-box !important;
   overflow-y: auto !important;
   -webkit-overflow-scrolling: touch !important;
-  padding-top: 10px !important;
+  padding-top: calc(var(--safe-top, 38px) + 12px) !important;
   padding-bottom: calc(84px + var(--safe-bottom, 0px)) !important;
 }
 
@@ -3455,7 +3455,7 @@ body.night .create-playlist-sheet-confirm {
                 </div>
               </div>
               <div style="display:flex; align-items:center; gap:8px;">
-                <button class="icon-btn" style="width:24px; height:24px; display:inline-flex; align-items:center; justify-content:center; color:var(--ink-gray); padding:0; background:none; border:none; cursor:pointer;" onclick="openCreatePlaylistPrompt()" title="新建歌单">
+                <button class="icon-btn" style="width:24px; height:24px; display:inline-flex; align-items:center; justify-content:center; color:var(--ink-gray); padding:0; background:none; border:none; cursor:pointer;" onclick="openCreatePlaylistPrompt(event)" title="新建歌单">
                   <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
                     <line x1="12" y1="11" x2="12" y2="17"/>
@@ -4722,7 +4722,7 @@ body.night .create-playlist-sheet-confirm {
     <div class="create-playlist-sheet-card" onclick="event.stopPropagation()">
       <div class="create-playlist-drag-handle"></div>
       <div class="create-playlist-sheet-header">
-        <button class="choose-sheet-close-btn" onclick="closeCreatePlaylistModal()" title="关闭">
+        <button class="choose-sheet-close-btn" onclick="closeCreatePlaylistModal(event)" title="关闭">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
         </button>
         <div class="create-playlist-sheet-title">新建歌单</div>
@@ -4955,6 +4955,31 @@ let LYRICS_DATA = [
   { time: 148, duration: 24, text: "随心聆听每一刻美好旋律" },
   { time: 172, duration: 14, text: "音乐停歇，余音仍在耳畔回响" }
 ];
+
+// 全局移动端幽灵穿透（Ghost Click）防范拦截引擎
+let ghostClickBlockUntil = 0;
+function blockGhostClicks(duration = 420) {
+  ghostClickBlockUntil = Math.max(ghostClickBlockUntil, Date.now() + duration);
+}
+function isGhostClickBlocked() {
+  return Date.now() < ghostClickBlockUntil;
+}
+
+if (typeof document !== 'undefined') {
+  document.addEventListener('click', (e) => {
+    if (isGhostClickBlocked()) {
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+      e.preventDefault();
+    }
+  }, true);
+  document.addEventListener('touchend', (e) => {
+    if (isGhostClickBlocked()) {
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+    }
+  }, true);
+}
 
 
 /* ================== 全网搜歌引擎与持久化状态 ================== */
@@ -6856,7 +6881,7 @@ function renderLibraryAlbumPills() {
       onmouseup="handlePillMouseUp(event)">${escapeHtml(alb.title)} (${count})</div>`;
   }).join('');
 
-  const addPillHtml = `<div class="library-album-pill" onclick="openCreatePlaylistPrompt()" style="display:inline-flex; align-items:center; gap:3px;"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>新建歌单</div>`;
+  const addPillHtml = `<div class="library-album-pill" onclick="openCreatePlaylistPrompt(event)" style="display:inline-flex; align-items:center; gap:3px;"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>新建歌单</div>`;
 
   bar.innerHTML = albumPillsHtml + addPillHtml;
 }
@@ -8875,6 +8900,9 @@ function scrollVinylToAlbum(idx, smooth = true) {
 }
 
 function togglePlayCurrentLibraryAlbum() {
+  if (typeof isGhostClickBlocked === 'function' && isGhostClickBlocked()) return;
+  const overlay = document.getElementById('createPlaylistModalOverlay');
+  if (overlay && overlay.classList.contains('active')) return;
   const alb = VINYL_ALBUMS[activeRadioIndex];
   if (!alb || !alb.songs || alb.songs.length === 0) {
     toast('当前歌单暂无歌曲');
@@ -9909,7 +9937,21 @@ function handleDeletePlaylistMenu() {
 }
 
 /* 新建歌单功能 */
-function openCreatePlaylistPrompt() {
+let lastOpenCreatePlaylistTime = 0;
+
+function openCreatePlaylistPrompt(e) {
+  if (e) {
+    if (typeof e.stopPropagation === 'function') e.stopPropagation();
+    if (typeof e.preventDefault === 'function') e.preventDefault();
+  }
+  const now = Date.now();
+  if (now - lastOpenCreatePlaylistTime < 350) return;
+  lastOpenCreatePlaylistTime = now;
+
+  // 严防全屏播放页与当前播放列表抽屉被夹带在下方
+  if (typeof closePlayerFull === 'function') closePlayerFull();
+  if (typeof closePlaylistDrawer === 'function') closePlaylistDrawer();
+
   const drawer = document.getElementById('playlistDrawer');
   const drawerBackdrop = document.getElementById('playlistDrawerBackdrop');
   if (drawer) {
@@ -9928,13 +9970,18 @@ function openCreatePlaylistPrompt() {
 }
 
 function closeCreatePlaylistModal(e) {
-  if (e && e.target && e.target !== document.getElementById('createPlaylistModalOverlay')) return;
+  if (e) {
+    if (typeof e.stopPropagation === 'function') e.stopPropagation();
+    if (typeof e.preventDefault === 'function') e.preventDefault();
+  }
   closeCreatePlaylistModalDirect();
 }
 
 function closeCreatePlaylistModalDirect() {
+  if (typeof blockGhostClicks === 'function') blockGhostClicks(450);
   const overlay = document.getElementById('createPlaylistModalOverlay');
   if (overlay) overlay.classList.remove('active');
+  if (typeof closePlaylistDrawer === 'function') closePlaylistDrawer();
 }
 
 function submitCreatePlaylistModal() {

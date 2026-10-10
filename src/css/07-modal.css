@@ -415,13 +415,12 @@ body.night .add-clean-row:active, body.night .choose-item-row:active, body.night
   100% { height: 5px; }
 }
 
-/* 当前播放列表正在播放歌曲整行差异化高亮 */
+/* 当前播放列表正在播放歌曲纯净水墨差异化状态（遵循素雅留白美学，杜绝大面积彩色背景色块） */
 .playlist-items .song-row.playing {
-  background: var(--brand-blue-soft) !important;
-  border-radius: 14px !important;
+  background: transparent !important;
 }
 body.night .playlist-items .song-row.playing {
-  background: rgba(74, 118, 237, 0.12) !important;
+  background: transparent !important;
 }
 .playlist-items .song-row.playing .song-title {
   color: var(--brand-blue) !important;
