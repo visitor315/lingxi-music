@@ -138,6 +138,7 @@ window.addEventListener('load', () => {
         return;
       }
 
+      // 排除具有独立横向滑动的区域与交互输入框
       const target = e.target;
       if (
         target.closest('.radio-stage-viewport') ||
@@ -147,12 +148,6 @@ window.addEventListener('load', () => {
         target.closest('.slider-track') ||
         target.closest('input, textarea, select')
       ) {
-        isTracking = false;
-        return;
-      }
-
-      // 切页手势仅在顶部导航标题栏有效，严禁在页面内容滚动区域拦截滑动手势造成意外切页
-      if (!target.closest('#listenHeaderBar')) {
         isTracking = false;
         return;
       }
@@ -179,10 +174,11 @@ window.addEventListener('load', () => {
       const absX = Math.abs(diffX);
       const absY = Math.abs(diffY);
 
-      if (absX > 80 && absX > absY * 1.5) {
-        if (currentHomeTab === 'discover' && diffX < -80) {
+      // 横向滑动意图判定：水平距离大于 45px 且横向位移明显大于纵向位移（有效防止上下浏览时误触切页）
+      if (absX > 45 && absX > absY * 1.3) {
+        if (currentHomeTab === 'discover' && diffX < -45) {
           switchHomeNavTab('library');
-        } else if (currentHomeTab === 'library' && diffX > 80) {
+        } else if (currentHomeTab === 'library' && diffX > 45) {
           switchHomeNavTab('discover');
         }
       }

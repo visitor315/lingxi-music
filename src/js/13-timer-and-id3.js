@@ -282,7 +282,9 @@ function handleSystemBack() {
   else if (searchP && searchP.classList.contains('active')) closeSearchView();
   else if (editP && editP.classList.contains('active')) closeEditPlaylistPage();
   else if (detailP && detailP.classList.contains('active')) closePlaylistDetail();
-  else {
+  else if (paneSettings && paneSettings.classList.contains('active')) {
+    switchBottomTab('listen');
+  } else {
     // 已经位于应用主界面，按返回键直接退回手机桌面
     if (window.AndroidBridge && window.AndroidBridge.minimizeApp) {
       window.AndroidBridge.minimizeApp();
@@ -445,7 +447,7 @@ function switchBottomTab(tab) {
     if (homeNavTitles) homeNavTitles.style.display = 'flex';
     if (settingsNavTitles) settingsNavTitles.style.display = 'none';
     if (headerActions) headerActions.style.display = 'flex';
-    headerBar.style.display = 'flex';
+    if (headerBar) headerBar.style.display = 'flex';
     paneSettings.classList.remove('active');
     btnListen.classList.add('active');
     btnSettings.classList.remove('active');
@@ -456,10 +458,7 @@ function switchBottomTab(tab) {
   } else {
     exitHomeMultiSelectMode();
     if (homeTabSlider) homeTabSlider.style.display = 'none';
-    headerBar.style.display = 'flex';
-    if (homeNavTitles) homeNavTitles.style.display = 'none';
-    if (settingsNavTitles) settingsNavTitles.style.display = 'flex';
-    if (headerActions) headerActions.style.display = 'none';
+    if (headerBar) headerBar.style.display = 'none';
     paneSettings.classList.add('active');
     btnListen.classList.remove('active');
     btnSettings.classList.add('active');
@@ -468,6 +467,7 @@ function switchBottomTab(tab) {
     updateDynamicAppVersion();
     if (typeof updateSleepTimerUI === 'function') updateSleepTimerUI();
     if (typeof updateAudioFocusUI === 'function') updateAudioFocusUI();
+    if (typeof updateVideoAutoPauseUI === 'function') updateVideoAutoPauseUI();
   }
 }
 

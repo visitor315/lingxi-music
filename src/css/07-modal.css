@@ -32,18 +32,22 @@
   box-sizing: border-box !important;
   transform: translate3d(0, 100%, 0);
   will-change: transform;
-  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.22s ease, visibility 0.28s !important;
   box-shadow: none !important;
   border: none !important;
   touch-action: pan-down;
   overflow: hidden !important;
   overscroll-behavior: none;
   z-index: 2050;
-  pointer-events: none;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
 }
 .playlist-drawer.open {
   transform: translate3d(0, 0, 0) !important;
-  pointer-events: auto;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
 }
 
 /* 歌曲操作菜单弹窗：层级严格高于播放队列抽屉，彻底解决抽屉内点击操作菜单被遮挡的Bug */
@@ -357,6 +361,77 @@ body.night .choose-sheet-confirm-btn {
 body.night .add-clean-row:active, body.night .choose-item-row:active, body.night .playlist-items .song-row:active {
   background: transparent !important;
 }
+
+/* 播放列表行左侧序号与音波容器 */
+.song-index-col {
+  width: 26px !important;
+  height: 20px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-shrink: 0 !important;
+}
+.song-index-col .drawer-song-index {
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  color: var(--ink-light) !important;
+  text-align: center !important;
+}
+
+/* 正在播放的动态音波律动 */
+.playing-equalizer-bars {
+  display: flex !important;
+  align-items: flex-end !important;
+  justify-content: center !important;
+  gap: 2.5px !important;
+  width: 18px !important;
+  height: 14px !important;
+}
+.playing-equalizer-bars .eq-bar {
+  width: 2.5px !important;
+  background: var(--brand-blue) !important;
+  border-radius: 1.5px !important;
+  height: 6px !important;
+}
+.playing-equalizer-bars.animated .bar-1 {
+  animation: drawerEqBounce 0.85s ease-in-out infinite alternate !important;
+}
+.playing-equalizer-bars.animated .bar-2 {
+  animation: drawerEqBounce 0.65s ease-in-out 0.2s infinite alternate !important;
+}
+.playing-equalizer-bars.animated .bar-3 {
+  animation: drawerEqBounce 0.95s ease-in-out 0.4s infinite alternate !important;
+}
+.playing-equalizer-bars.paused .eq-bar {
+  animation: none !important;
+}
+.playing-equalizer-bars.paused .bar-1 { height: 8px !important; }
+.playing-equalizer-bars.paused .bar-2 { height: 13px !important; }
+.playing-equalizer-bars.paused .bar-3 { height: 6px !important; }
+
+@keyframes drawerEqBounce {
+  0% { height: 3px; }
+  50% { height: 14px; }
+  100% { height: 5px; }
+}
+
+/* 当前播放列表正在播放歌曲整行差异化高亮 */
+.playlist-items .song-row.playing {
+  background: var(--brand-blue-soft) !important;
+  border-radius: 14px !important;
+}
+body.night .playlist-items .song-row.playing {
+  background: rgba(74, 118, 237, 0.12) !important;
+}
+.playlist-items .song-row.playing .song-title {
+  color: var(--brand-blue) !important;
+  font-weight: 600 !important;
+}
+.playlist-items .song-row.playing .song-artist {
+  color: var(--brand-blue) !important;
+  opacity: 0.85 !important;
+}
+
 
 .add-clean-icon {
   width: 24px !important;

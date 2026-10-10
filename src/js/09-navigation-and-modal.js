@@ -117,13 +117,41 @@ function handleHeaderBackClick() {
 }
 
 function openPlaylistDrawer() {
-  renderDrawerList();
-  document.getElementById('playlistDrawer').classList.add('open');
-  document.getElementById('playlistDrawerBackdrop').classList.add('open');
+  const drawer = document.getElementById('playlistDrawer');
+  const backdrop = document.getElementById('playlistDrawerBackdrop');
+  if (drawer) {
+    drawer.style.visibility = '';
+    renderDrawerList();
+    drawer.classList.add('open');
+  }
+  if (backdrop) backdrop.classList.add('open');
+
+  // 打开抽屉时平滑滚动居中定位当前播放曲目
+  requestAnimationFrame(() => {
+    setTimeout(() => {
+      const list = document.getElementById('drawerItemsList');
+      if (list) {
+        const activeRow = list.querySelector(`.song-row[data-song-idx="${currentIndex}"]`);
+        if (activeRow) {
+          activeRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }
+    }, 120);
+  });
 }
+
 function closePlaylistDrawer() {
-  document.getElementById('playlistDrawer').classList.remove('open');
-  document.getElementById('playlistDrawerBackdrop').classList.remove('open');
+  const drawer = document.getElementById('playlistDrawer');
+  const backdrop = document.getElementById('playlistDrawerBackdrop');
+  if (drawer) {
+    drawer.classList.remove('open');
+    setTimeout(() => {
+      if (!drawer.classList.contains('open')) {
+        drawer.style.visibility = 'hidden';
+      }
+    }, 300);
+  }
+  if (backdrop) backdrop.classList.remove('open');
 }
 
 function expandIslandCard() {}

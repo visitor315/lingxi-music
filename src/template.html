@@ -158,8 +158,18 @@
         </div>
       </div>
 
-      <!-- 设置页 (1:1 严格复刻自 hhznx) -->
+      <!-- 设置页 (对齐用户参考图：顶部圆形返回键 + 大标题设置 + 通用设置分类) -->
       <div class="view-settings-page" id="paneSettings">
+        <div class="settings-top-header">
+          <button class="settings-circular-back-btn ripple-btn" onclick="switchBottomTab('listen')" title="返回主页">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="15 18 9 12 15 6"></polyline>
+            </svg>
+          </button>
+          <h1 class="settings-page-main-title">设置</h1>
+        </div>
+
+        <div class="subpage-group-title-standard">通用设置</div>
         <section class="group-menu-card">
           <div class="group-menu-item ripple-btn" onclick="toggleDefaultHomeTabSetting()">
             <div class="item-left-main">
@@ -174,7 +184,6 @@
                 <span class="item-subtitle-tight" id="defaultHomeTabDesc">当前：发现（精选推荐）</span>
               </div>
             </div>
-            <svg class="item-arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
           </div>
           <div class="group-menu-item ripple-btn" onclick="openThemeSettingsSubpage()">
             <div class="item-left-main">
@@ -190,7 +199,6 @@
                 <span class="item-subtitle-tight" id="themeSettingsSummary">跟随系统 - 克莱因蓝</span>
               </div>
             </div>
-            <svg class="item-arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
           </div>
         </section>
 
@@ -209,9 +217,8 @@
                 <span class="item-subtitle-tight" id="sleepTimerSettingsDesc">未开启</span>
               </div>
             </div>
-            <svg class="item-arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
           </div>
-          <div class="cap-switch-row ripple-btn">
+          <div class="cap-switch-row ripple-btn" onclick="toggleAudioFocusSetting()">
             <div class="cap-switch-left">
               <div class="cap-icon-box">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
@@ -220,9 +227,25 @@
               </div>
               <div class="cap-switch-texts">
                 <span class="cap-switch-title">通话与录音时自动暂停</span>
+                <span class="cap-switch-sub">已开启 - 系统优先避让通话与录音</span>
               </div>
             </div>
-            <div class="blue-toggle-switch active" id="audioFocusToggle" onclick="toggleAudioFocusSetting(); event.stopPropagation();"></div>
+            <div class="blue-toggle-switch active" id="audioFocusToggle" style="pointer-events:none; opacity:0.85;" title="已强制开启"></div>
+          </div>
+          <div class="cap-switch-row ripple-btn" onclick="toggleVideoAutoPauseSetting()">
+            <div class="cap-switch-left">
+              <div class="cap-icon-box">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="2" y="4" width="20" height="15" rx="2.5"/>
+                  <polygon points="10 8 16 11.5 10 15 10 8" fill="currentColor"/>
+                </svg>
+              </div>
+              <div class="cap-switch-texts">
+                <span class="cap-switch-title">播放视频时自动暂停</span>
+                <span class="cap-switch-sub" id="videoAutoPauseDesc">其他应用播放视频时自动暂停音乐</span>
+              </div>
+            </div>
+            <div class="blue-toggle-switch active" id="videoAutoPauseToggle"></div>
           </div>
         </section>
 

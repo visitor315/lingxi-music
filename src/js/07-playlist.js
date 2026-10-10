@@ -1299,7 +1299,15 @@ function handleDeletePlaylistMenu() {
 
 /* 新建歌单功能 */
 function openCreatePlaylistPrompt() {
-  if (typeof closePlaylistDrawer === 'function') closePlaylistDrawer();
+  const drawer = document.getElementById('playlistDrawer');
+  const drawerBackdrop = document.getElementById('playlistDrawerBackdrop');
+  if (drawer) {
+    drawer.classList.remove('open');
+    drawer.style.visibility = 'hidden';
+  }
+  if (drawerBackdrop) {
+    drawerBackdrop.classList.remove('open');
+  }
   const overlay = document.getElementById('createPlaylistModalOverlay');
   const input = document.getElementById('createPlaylistInput');
   if (!overlay || !input) return;
@@ -1308,7 +1316,12 @@ function openCreatePlaylistPrompt() {
   setTimeout(() => input.focus(), 80);
 }
 
-function closeCreatePlaylistModal() {
+function closeCreatePlaylistModal(e) {
+  if (e && e.target && e.target !== document.getElementById('createPlaylistModalOverlay')) return;
+  closeCreatePlaylistModalDirect();
+}
+
+function closeCreatePlaylistModalDirect() {
   const overlay = document.getElementById('createPlaylistModalOverlay');
   if (overlay) overlay.classList.remove('active');
 }

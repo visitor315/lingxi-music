@@ -226,17 +226,16 @@ body.night .discover-section-play-btn {
 .fixed-radio-card {
   position: absolute; top: 0; left: 0; z-index: 10;
   width: 118px; height: 122px; border-radius: 16px;
-  background: rgba(255, 255, 255, 0.40);
-  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-  border: none !important;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid var(--border-line) !important;
   padding: 11px 11px;
   display: flex; flex-direction: column; justify-content: space-between; cursor: pointer;
   box-shadow: none !important;
   overflow: hidden;
 }
 body.night .fixed-radio-card {
-  background: rgba(28, 28, 26, 0.45);
-  border: none !important;
+  background: rgba(32, 32, 30, 0.94);
+  border: 1px solid var(--border-line) !important;
   box-shadow: none !important;
 }
 

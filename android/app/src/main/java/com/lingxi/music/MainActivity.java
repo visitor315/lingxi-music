@@ -2324,6 +2324,28 @@ public class MainActivity extends Activity {
             }
             return true;
         }
+
+        @JavascriptInterface
+        public void setVideoAutoPauseEnabled(final boolean enabled) {
+            mainHandler.post(new Runnable() {
+                @Override
+                public void run() {
+                    MediaPlaybackService service = MediaPlaybackService.getInstance();
+                    if (service != null) {
+                        service.setVideoAutoPauseEnabled(enabled);
+                    }
+                }
+            });
+        }
+
+        @JavascriptInterface
+        public boolean isVideoAutoPauseEnabled() {
+            MediaPlaybackService service = MediaPlaybackService.getInstance();
+            if (service != null) {
+                return service.isVideoAutoPauseEnabled();
+            }
+            return true;
+        }
     }
 
     @Override

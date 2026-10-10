@@ -179,16 +179,15 @@ function switchHomeNavTab(tab, immediate = false) {
     exitHomeMultiSelectMode();
     if (tabNavLibrary) tabNavLibrary.classList.add('active');
     if (tabNavDiscover) tabNavDiscover.classList.remove('active');
-    renderLibraryAlbumPills();
-    renderSongList();
-    renderDrawerList();
+    const songContainer = document.getElementById('homeSongItemsList');
+    if (!songContainer || !songContainer.children.length) {
+      renderLibraryAlbumPills();
+      renderSongList();
+    }
   } else {
     exitHomeMultiSelectMode();
     if (tabNavLibrary) tabNavLibrary.classList.remove('active');
     if (tabNavDiscover) tabNavDiscover.classList.add('active');
-    if (currentDiscoverSections.length === 0 || currentDiscoverSongs.length === 0) {
-      refreshRecommendations(false);
-    }
   }
 
   if (!homeTabTrack) return;
@@ -232,8 +231,10 @@ let isAppendingRecommendations = false;
 let nextStreamSeedIndex = 0;
 
 const STREAM_RECOMMEND_SEEDS = [
-  '国风', '民谣', '治愈', '古风', '经典流行', '纯音乐', '轻音乐', '温润',
-  '伦桑', '许嵩', '周杰伦', '毛不易', '胡夏', '薛之谦', '邓紫棋', '张学友', '阿鲲'
+  '流行', '民谣', '治愈', '轻音乐', '经典流行', '摇滚', '爵士', '纯音乐', '粤语',
+  '周杰伦', '陈奕迅', '林俊杰', '孙燕姿', '毛不易', '王菲', '李健', '薛之谦', '邓紫棋',
+  '张学友', '朴树', '赵雷', '房东的猫', '郭顶', '梁静茹', '莫文蔚', '陶喆', '许巍',
+  '五月天', '苏打绿', '郁可唯', '汪苏泷', '胡夏', '告五人', '落日飞车', '久石让', '阿鲲'
 ];
 
 function isSameSongIdentifier(a, b) {
@@ -504,10 +505,74 @@ async function fetchNextOnlineRecommendationBatch() {
   }
 }
 
+const DIVERSE_INITIAL_SONG_POOL = [
+  { id: 'pool_1', name: '晴天', artist: '周杰伦', album: '叶惠美', source: 'netease', duration: 269, url_id: '186016', cover: 'https://p1.music.126.net/ZGffiDQZrGj5s_hnR1CNbg==/109951165566379710.jpg', reason: '经典流行' },
+  { id: 'pool_2', name: '水星记', artist: '郭顶', album: '飞行器的执行周期', source: 'netease', duration: 325, url_id: '441491828', cover: 'https://p1.music.126.net/wSMfGvFzOAYRU_yVIfquAA==/2946691248081599.jpg', reason: '温润治愈' },
+  { id: 'pool_3', name: '起风了', artist: '买辣椒也用券', album: '起风了', source: 'netease', duration: 325, url_id: '1330348068', cover: 'https://p1.music.126.net/diGAyEmpymX8G7JcnElncQ==/109951163699673355.jpg', reason: '清雅悠远' },
+  { id: 'pool_4', name: '消愁', artist: '毛不易', album: '平凡的一天', source: 'netease', duration: 258, url_id: '569213220', cover: 'https://p1.music.126.net/b4Wz_l02K7uP0b7_l_G97Q==/109951163311849102.jpg', reason: '深情低语' },
+  { id: 'pool_5', name: '云与海', artist: '胡夏', album: '云与海', source: 'netease', duration: 241, url_id: '1492323898', cover: 'https://p1.music.126.net/bcT_08OyUcsPAt9NU6hCxQ==/109951165434199148.jpg', reason: '温润治愈' },
+  { id: 'pool_6', name: '像风一样', artist: '薛之谦', album: '渡', source: 'netease', duration: 255, url_id: '516657051', cover: 'https://p1.music.126.net/fNbj5uDwltSDLbETdnEYYQ==/109951163069265719.jpg', reason: '伴茶细酌' },
+  { id: 'pool_7', name: '年轮', artist: '汪苏泷', album: '花千骨 电视剧原声带', source: 'netease', duration: 273, url_id: '32507038', cover: 'https://p1.music.126.net/H4aJb090l81W2B0l1W73uA==/109951163456381628.jpg', reason: '细腻婉转' },
+  { id: 'pool_8', name: '平凡之路', artist: '朴树', album: '猎户星座', source: 'netease', duration: 301, url_id: '28815250', cover: '', reason: '清亮自由' },
+  { id: 'pool_9', name: '成都', artist: '赵雷', album: '无法长大', source: 'netease', duration: 328, url_id: '439915614', cover: '', reason: '城市民谣' },
+  { id: 'pool_10', name: '贝加尔湖畔', artist: '李健', album: '依然', source: 'netease', duration: 240, url_id: '36897723', cover: '', reason: '余韵悠长' },
+  { id: 'pool_11', name: '红豆', artist: '王菲', album: '唱游', source: 'netease', duration: 259, url_id: '386538', cover: '', reason: '经典流传' },
+  { id: 'pool_12', name: '蓝莲花', artist: '许巍', album: '时光 - 漫步', source: 'netease', duration: 270, url_id: '168036', cover: '', reason: '辽阔自由' },
+  { id: 'pool_13', name: '下一站天后', artist: 'Twins', album: 'Touch Of Love', source: 'netease', duration: 204, url_id: '316892', cover: '', reason: '青春回忆' },
+  { id: 'pool_14', name: '遇见', artist: '孙燕姿', album: 'The Moment', source: 'netease', duration: 210, url_id: '287035', cover: '', reason: '随心听赏' },
+  { id: 'pool_15', name: '十年', artist: '陈奕迅', album: '黑白灰', source: 'netease', duration: 205, url_id: '65766', cover: '', reason: '岁月流声' },
+  { id: 'pool_16', name: '江南', artist: '林俊杰', album: '第二天堂', source: 'netease', duration: 257, url_id: '108485', cover: '', reason: '江南烟雨' },
+  { id: 'pool_17', name: '暖暖', artist: '梁静茹', album: '亲亲', source: 'netease', duration: 243, url_id: '253748', cover: '', reason: '暖心陪伴' },
+  { id: 'pool_18', name: '爱我还是他', artist: '陶喆', album: '太平盛世', source: 'netease', duration: 292, url_id: '108242', cover: '', reason: '深情吟唱' },
+  { id: 'pool_19', name: '慢慢喜欢你', artist: '莫文蔚', album: '我们在中场相遇', source: 'netease', duration: 222, url_id: '541687281', cover: '', reason: '温润人心' },
+  { id: 'pool_20', name: '达尔文', artist: '蔡健雅', album: 'Goodbye & Hello', source: 'netease', duration: 264, url_id: '208902', cover: '', reason: '慢调品味' },
+  { id: 'pool_21', name: '云烟成雨', artist: '房东的猫', album: '云烟成雨', source: 'netease', duration: 242, url_id: '512359195', cover: '', reason: '清澈温暖' },
+  { id: 'pool_22', name: '爱人错过', artist: '告五人', album: '我肯定在几百年前就说过爱你', source: 'netease', duration: 293, url_id: '1371939273', cover: '', reason: '独立声动' },
+  { id: 'pool_23', name: 'My Jinji', artist: '落日飞车', album: 'JINJI KIKKO', source: 'netease', duration: 400, url_id: '407000293', cover: '', reason: '复古浪漫' },
+  { id: 'pool_24', name: 'Summer', artist: '久石让', album: '菊次郎の夏', source: 'netease', duration: 185, url_id: '443242', cover: '', reason: '清灵纯音' },
+  { id: 'pool_25', name: '风居住的街道', artist: '矶村由纪子', album: '风居住的街道', source: 'netease', duration: 279, url_id: '22707008', cover: '', reason: '琴瑟共鸣' },
+  { id: 'pool_26', name: '夜的钢琴曲五', artist: '石进', album: '夜的钢琴曲', source: 'netease', duration: 164, url_id: '139774', cover: '', reason: '深夜静听' },
+  { id: 'pool_27', name: '总有一天会再见', artist: '棱镜', album: '总有一天会再见', source: 'netease', duration: 248, url_id: '1381755293', cover: '', reason: '真挚释怀' },
+  { id: 'pool_28', name: '夜空中最亮的星', artist: '逃跑计划', album: '世界', source: 'netease', duration: 252, url_id: '25706282', cover: '', reason: '辽远明亮' },
+  { id: 'pool_29', name: '卡布达', artist: '昼夜', album: '指尖的星河', source: 'netease', duration: 200, url_id: '509512338', cover: '', reason: '指尖独奏' },
+  { id: 'pool_30', name: '冬天的秘密', artist: '张仲谋', album: '冬天的秘密', source: 'netease', duration: 265, url_id: '1859245776', cover: 'https://p1.music.126.net/e5cvcdgeosDKTDrkTfZXnQ==/109951166155165682.jpg', reason: '深情低语' }
+];
+
+function generateRandomDiscoverSections() {
+  const shuffledPool = [...DIVERSE_INITIAL_SONG_POOL].sort(() => 0.5 - Math.random());
+  const selected = shuffledPool.slice(0, 18);
+  const now = new Date();
+  const m = String(now.getMonth() + 1).padStart(2, '0');
+  const d = String(now.getDate()).padStart(2, '0');
+
+  const titlesPool = [
+    ['灵犀新推 - 今日佳作', `灵犀精选 - ${m}.${d}私享`, '随心漫游心选'],
+    ['私人专属好歌', '温润治愈慢调', '深夜私享共鸣'],
+    ['小众宝藏佳作', '独立声动集萃', '慢调时光漫行']
+  ];
+
+  const secTitles = titlesPool.map(options => options[Math.floor(Math.random() * options.length)]);
+
+  return [
+    {
+      title: secTitles[0],
+      songs: selected.slice(0, 6)
+    },
+    {
+      title: secTitles[1],
+      songs: selected.slice(6, 12)
+    },
+    {
+      title: secTitles[2],
+      songs: selected.slice(12, 18)
+    }
+  ];
+}
+
 function initTopRecommendedTracks() {
   if (topRecommendedTracks && topRecommendedTracks.length > 0) return;
   const allInitSongs = [];
-  INITIAL_DISCOVER_SECTIONS.forEach(sec => {
+  currentDiscoverSections.forEach(sec => {
     (sec.songs || []).forEach(s => allInitSongs.push(s));
   });
   const shuffled = [...allInitSongs].sort(() => 0.5 - Math.random());
@@ -515,43 +580,7 @@ function initTopRecommendedTracks() {
   activeTopTrackIndex = 0;
 }
 
-const INITIAL_DISCOVER_SECTIONS = [
-  {
-    title: '灵犀新推 - 今日佳作',
-    songs: [
-      { id: 'init_1', name: '愿我', artist: '伦桑', album: '愿我', source: 'netease', duration: 252, url_id: '1815967406', cover: 'https://p1.music.126.net/0ju8ET1ApZSXfWacc4w49w==/109951169484091680.jpg', reason: '伦桑心选' },
-      { id: 'init_2', name: '断桥残雪', artist: '许嵩', album: '断桥残雪', source: 'netease', duration: 226, url_id: '167827', cover: 'https://p1.music.126.net/t3ogpTd1bIJpwokhkpBtwQ==/109951169829246225.jpg', reason: '经典流传' },
-      { id: 'init_3', name: '云与海', artist: '胡夏', album: '云与海', source: 'netease', duration: 241, url_id: '1492323898', cover: 'https://p1.music.126.net/bcT_08OyUcsPAt9NU6hCxQ==/109951165434199148.jpg', reason: '温润治愈' },
-      { id: 'init_4', name: '山有木兮', artist: '伦桑', album: '橙光《人鱼传说》', source: 'netease', duration: 260, url_id: '426804563', cover: 'https://p1.music.126.net/rCsVvkaV8Lb5Yb_al7fmuA==/2536573325091724.jpg', reason: '古风雅韵' },
-      { id: 'init_5', name: '故梦', artist: '双笙', album: '故梦', source: 'netease', duration: 288, url_id: '436514315', cover: 'https://p1.music.126.net/7EYBYjQeiq98Qf4guhhmVA==/109951168754160492.jpg', reason: '水墨诗画' },
-      { id: 'init_6', name: '红马', artist: '王琪', album: '红马', source: 'netease', duration: 245, url_id: '1475330366', cover: 'https://p1.music.126.net/0ju8ET1ApZSXfWacc4w49w==/109951169484091680.jpg', reason: '清亮静听' }
-    ]
-  },
-  {
-    title: '私人专属好歌',
-    songs: [
-      { id: 'init_7', name: '冬天的秘密', artist: '张仲谋', album: '冬天的秘密', source: 'netease', duration: 265, url_id: '1859245776', cover: 'https://p1.music.126.net/e5cvcdgeosDKTDrkTfZXnQ==/109951166155165682.jpg', reason: '深情低语' },
-      { id: 'init_8', name: '花季', artist: '鱼儿七', album: '花季', source: 'netease', duration: 218, url_id: '1888497678', cover: 'https://p1.music.126.net/0ju8ET1ApZSXfWacc4w49w==/109951169484091680.jpg', reason: '空灵清澈' },
-      { id: 'init_9', name: '消失的黎明', artist: 'Babystop_山竹 / 糯米Nomi', album: '消失的黎明', source: 'netease', duration: 232, url_id: '1878345712', cover: 'https://p1.music.126.net/8UzUOJh_Fkde4cGcHv51tQ==/109951166390397302.jpg', reason: '宝藏小众' },
-      { id: 'init_10', name: '起风了', artist: '买辣椒也用券', album: '起风了', source: 'netease', duration: 325, url_id: '1330348068', cover: 'https://p1.music.126.net/diGAyEmpymX8G7JcnElncQ==/109951163699673355.jpg', reason: '清雅悠远' },
-      { id: 'init_11', name: '晴天', artist: '周杰伦', album: '叶惠美', source: 'netease', duration: 269, url_id: '186016', cover: 'https://p1.music.126.net/ZGffiDQZrGj5s_hnR1CNbg==/109951165566379710.jpg', reason: '青春心选' },
-      { id: 'init_12', name: '像风一样', artist: '薛之谦', album: '渡', source: 'netease', duration: 255, url_id: '516657051', cover: 'https://p1.music.126.net/fNbj5uDwltSDLbETdnEYYQ==/109951163069265719.jpg', reason: '伴茶细酌' }
-    ]
-  },
-  {
-    title: '小众宝藏佳作',
-    songs: [
-      { id: 'init_13', name: '年轮', artist: '汪苏泷', album: '花千骨 电视剧原声带', source: 'netease', duration: 273, url_id: '32507038', cover: 'https://p1.music.126.net/H4aJb090l81W2B0l1W73uA==/109951163456381628.jpg', reason: '经典古风' },
-      { id: 'init_14', name: '千百度', artist: '许嵩', album: '苏格拉没有底', source: 'netease', duration: 247, url_id: '167876', cover: 'https://p1.music.126.net/Zg4XDfsiRi5vawjSWPP8Ng==/109951172899966259.jpg', reason: '细腻婉转' },
-      { id: 'init_15', name: '消愁', artist: '毛不易', album: '平凡的一天', source: 'netease', duration: 258, url_id: '569213220', cover: 'https://p1.music.126.net/b4Wz_l02K7uP0b7_l_G97Q==/109951163311849102.jpg', reason: '深情吟唱' },
-      { id: 'init_16', name: '水星记', artist: '郭顶', album: '飞行器的执行周期', source: 'netease', duration: 325, url_id: '441491828', cover: 'https://p1.music.126.net/wSMfGvFzOAYRU_yVIfquAA==/2946691248081599.jpg', reason: '深夜独享' },
-      { id: 'init_17', name: '借月', artist: '王宇宙 / 乔浚丞', album: '借月', source: 'netease', duration: 220, url_id: '1969248538', cover: 'https://p1.music.126.net/j6H8QcBRXmmHfKdu8AZSXA==/2907108746014408.jpg', reason: '月色温柔' },
-      { id: 'init_18', name: '琵琶行', artist: '奇然 / 沈谧仁', album: '高考背诵曲目', source: 'netease', duration: 312, url_id: '504262174', cover: 'https://p1.music.126.net/uumDETX_PnWbHlDfbLcilQ==/7454688836371728.jpg', reason: '弦音如诉' }
-    ]
-  }
-];
-
-let currentDiscoverSections = JSON.parse(JSON.stringify(INITIAL_DISCOVER_SECTIONS));
+let currentDiscoverSections = generateRandomDiscoverSections();
 let currentDiscoverSongs = [];
 currentDiscoverSections.forEach((sec, secIdx) => {
   sec.songs.forEach(song => {
@@ -1063,14 +1092,32 @@ function updateAllPlayingRowStates() {
     const sIdxStr = row.getAttribute('data-song-idx');
     let isThisPlaying = false;
 
-    if (isPlaying && curPlayingSong) {
-      if (sId && curId && (sId === curId || (curOnlineId && (sId === curOnlineId || sId === 'online_' + curOnlineId)))) {
-        isThisPlaying = true;
-      } else if (row.closest('#drawerItemsList') && sIdxStr !== null) {
-        isThisPlaying = (parseInt(sIdxStr, 10) === currentIndex);
+    if (row.closest('#drawerItemsList') && sIdxStr !== null) {
+      const rowIdx = parseInt(sIdxStr, 10);
+      const isCurrentRow = (rowIdx === currentIndex);
+      row.classList.toggle('playing', isCurrentRow);
+      const col = row.querySelector('.song-index-col');
+      if (col) {
+        if (isCurrentRow) {
+          col.innerHTML = `
+            <div class="playing-equalizer-bars ${isPlaying ? 'animated' : 'paused'}">
+              <span class="eq-bar bar-1"></span>
+              <span class="eq-bar bar-2"></span>
+              <span class="eq-bar bar-3"></span>
+            </div>
+          `;
+        } else {
+          col.innerHTML = `<span class="drawer-song-index">${rowIdx + 1}</span>`;
+        }
       }
+    } else {
+      if (isPlaying && curPlayingSong) {
+        if (sId && curId && (sId === curId || (curOnlineId && (sId === curOnlineId || sId === 'online_' + curOnlineId)))) {
+          isThisPlaying = true;
+        }
+      }
+      row.classList.toggle('playing', isThisPlaying);
     }
-    row.classList.toggle('playing', isThisPlaying);
   });
 }
 
@@ -1448,49 +1495,56 @@ function updateDynamicAppVersion(ver) {
 window.updateDynamicAppVersion = updateDynamicAppVersion;
 
 let isAudioFocusEnabled = true;
+let isVideoAutoPauseEnabled = localStorage.getItem('lingxi_video_auto_pause') !== 'false';
 
 function initAudioFocusSetting() {
-  const saved = localStorage.getItem('lingxi_audio_focus_enabled');
-  if (saved !== null) {
-    isAudioFocusEnabled = (saved === 'true');
-  } else {
-    isAudioFocusEnabled = true;
-  }
+  isAudioFocusEnabled = true;
   updateAudioFocusUI();
-  if (window.AndroidBridge && window.AndroidBridge.setAudioFocusEnabled) {
-    try {
-      window.AndroidBridge.setAudioFocusEnabled(isAudioFocusEnabled);
-    } catch(e) {}
+  updateVideoAutoPauseUI();
+  if (window.AndroidBridge) {
+    if (window.AndroidBridge.setAudioFocusEnabled) {
+      try { window.AndroidBridge.setAudioFocusEnabled(true); } catch(e) {}
+    }
+    if (window.AndroidBridge.setVideoAutoPauseEnabled) {
+      try { window.AndroidBridge.setVideoAutoPauseEnabled(isVideoAutoPauseEnabled); } catch(e) {}
+    }
   }
 }
 
 function updateAudioFocusUI() {
   const toggle = document.getElementById('audioFocusToggle');
-  const desc = document.getElementById('audioFocusSettingsDesc');
   if (toggle) {
-    if (isAudioFocusEnabled) {
-      toggle.classList.add('active');
-    } else {
-      toggle.classList.remove('active');
-    }
-  }
-  if (desc) {
-    desc.textContent = isAudioFocusEnabled
-      ? '通话或微信发语音时自动暂停，结束后自动继续播放'
-      : '已关闭 - 其他应用发声或通话时不自动打断音乐';
+    toggle.classList.add('active');
   }
 }
 
 function toggleAudioFocusSetting() {
-  isAudioFocusEnabled = !isAudioFocusEnabled;
-  localStorage.setItem('lingxi_audio_focus_enabled', isAudioFocusEnabled ? 'true' : 'false');
-  updateAudioFocusUI();
-  if (window.AndroidBridge && window.AndroidBridge.setAudioFocusEnabled) {
+  toast('通话与录音自动暂停已强制开启，确保通话清晰与录音纯净');
+}
+
+function updateVideoAutoPauseUI() {
+  const toggle = document.getElementById('videoAutoPauseToggle');
+  const desc = document.getElementById('videoAutoPauseDesc');
+  if (toggle) {
+    toggle.classList.toggle('active', isVideoAutoPauseEnabled);
+  }
+  if (desc) {
+    desc.textContent = isVideoAutoPauseEnabled
+      ? '已开启 - 其他应用播放视频时自动暂停音乐'
+      : '已关闭 - 允许与其他应用视频声音并存';
+  }
+}
+
+function toggleVideoAutoPauseSetting() {
+  isVideoAutoPauseEnabled = !isVideoAutoPauseEnabled;
+  localStorage.setItem('lingxi_video_auto_pause', isVideoAutoPauseEnabled ? 'true' : 'false');
+  if (window.AndroidBridge && window.AndroidBridge.setVideoAutoPauseEnabled) {
     try {
-      window.AndroidBridge.setAudioFocusEnabled(isAudioFocusEnabled);
+      window.AndroidBridge.setVideoAutoPauseEnabled(isVideoAutoPauseEnabled);
     } catch(e) {}
   }
-  toast(isAudioFocusEnabled ? '已开启通话与录音时自动暂停' : '已关闭通话与录音自动暂停');
+  updateVideoAutoPauseUI();
+  toast(isVideoAutoPauseEnabled ? '已开启播放视频时自动暂停' : '已关闭播放视频时自动暂停');
 }
 
 async function updateCacheStorageDisplay() {

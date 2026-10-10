@@ -94,6 +94,7 @@ public class MediaPlaybackService extends Service {
     private AudioManager audioManager = null;
     private AudioFocusRequest audioFocusRequest = null;
     private boolean isAudioFocusEnabled = true;
+    private boolean isVideoAutoPauseEnabled = true;
     private boolean resumeOnFocusGain = false;
     private boolean isNoisyReceiverRegistered = false;
 
@@ -337,6 +338,14 @@ public class MediaPlaybackService extends Service {
         return isAudioFocusEnabled;
     }
 
+    public synchronized void setVideoAutoPauseEnabled(boolean enabled) {
+        this.isVideoAutoPauseEnabled = enabled;
+    }
+
+    public synchronized boolean isVideoAutoPauseEnabled() {
+        return isVideoAutoPauseEnabled;
+    }
+
     private synchronized boolean requestAudioFocusInternal() {
         if (!isAudioFocusEnabled) {
             return true;
@@ -413,7 +422,11 @@ public class MediaPlaybackService extends Service {
 
         switch (focusChange) {
             case AudioManager.AUDIOFOCUS_LOSS:
-                // 永久失去音频焦点（其他媒体播放器常驻播放）
+                // 失去音频焦点（其他应用播放视频或音乐）
+                if (!isVideoAutoPauseEnabled) {
+                    android.util.Log.i("LingXiAudio", "AUDIOFOCUS_LOSS ignored because videoAutoPause is disabled");
+                    break;
+                }
                 resumeOnFocusGain = false;
                 pausePlayback();
                 abandonAudioFocusInternal();
