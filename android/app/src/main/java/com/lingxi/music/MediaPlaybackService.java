@@ -264,12 +264,20 @@ public class MediaPlaybackService extends Service {
                         dur = mp.getDuration();
                     } catch (Exception ignored) {}
 
-                    // 核心防御：防止偶发网络流中断/提前EOF导致系统误报播放完毕而错误切歌
+                    // 核心防御1：防止偶发网络流中断/提前EOF导致系统误报播放完毕而错误切歌
                     // 若音频总时长超过 20 秒，且中断发生时离实际结尾还有 8 秒以上，判定为偶发网络流早退中断
                     if (dur > 20000 && curPos >= 0 && curPos < (dur - 8000)) {
                         android.util.Log.w("LingXiAudio", "Premature completion detected: curPos=" + curPos + ", dur=" + dur + ". Re-connecting stream...");
                         final double resumeSec = curPos / 1000.0;
                         MainActivity.dispatchWebAction("if (window.onNativeStreamInterrupted) window.onNativeStreamInterrupted(" + resumeSec + "); else if (window.onNativeCompletion) window.onNativeCompletion();");
+                        return;
+                    }
+
+                    // 核心防御2：防止 30 秒以内的平台试听片段播完被误当作整曲播放完毕而草率切歌
+                    boolean isOnlineStream = currentAudioUrl != null && (currentAudioUrl.startsWith("http://") || currentAudioUrl.startsWith("https://"));
+                    if (isOnlineStream && dur > 0 && dur <= 35000) {
+                        android.util.Log.w("LingXiAudio", "Online trial snippet finished (dur=" + dur + "ms). Triggering alternative full-track resolution...");
+                        MainActivity.dispatchWebAction("if (window.onNativeTrialSnippetDetected) window.onNativeTrialSnippetDetected(); else if (window.onNativeCompletion) window.onNativeCompletion();");
                         return;
                     }
 
@@ -554,6 +562,24 @@ public class MediaPlaybackService extends Service {
                 }
 
                 final String finalPlayUrl = targetStreamUrl;
+
+                // 核心防御：如果重定向解析后的真实音频流包含网易云 VIP 试听残片标识 (musicrep-ts)，直接拦截并触发跨平台全曲切换
+                if (finalPlayUrl != null && finalPlayUrl.contains("musicrep-ts")) {
+                    android.util.Log.w("LingXiAudio", "VIP trial snippet stream detected and rejected: " + finalPlayUrl);
+                    mainHandler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            if (!url.equals(currentAudioUrl)) return;
+                            isPreparing = false;
+                            isPrepared = false;
+                            isPlaying = false;
+                            try { if (mediaPlayer != null) mediaPlayer.reset(); } catch (Exception ignored) {}
+                            MainActivity.dispatchWebAction("if (window.onNativeTrialSnippetDetected) window.onNativeTrialSnippetDetected(); else if (window.onNativeError) window.onNativeError(-99, -99);");
+                        }
+                    });
+                    return;
+                }
+
                 mainHandler.post(new Runnable() {
                     @Override
                     public void run() {

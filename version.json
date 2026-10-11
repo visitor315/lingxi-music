@@ -1,6 +1,6 @@
 {
-  "versionCode": 96,
-  "versionName": "2.6.3",
-  "changelog": "彻底修复打开当前播放列表抽屉时自动滚动导致底部出现异常空白的问题；消除退出抽屉后歌曲详情页视口偏移的缺陷；优化列表内部平滑定位算法与视口防抖。",
+  "versionCode": 97,
+  "versionName": "2.6.4",
+  "changelog": "深度防御并拦截平台 VIP 30 秒试听片段导致的音频早退切歌问题；新增试听残片智能检测与跨平台全长版本自动检索切换引擎。",
   "downloadUrl": "https://ghfast.top/https://github.com/visitor315/lingxi-music/releases/download/v1.4.0/LingXiMusic.apk"
 }

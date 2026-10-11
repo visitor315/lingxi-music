@@ -46,6 +46,18 @@ window.onNativePrepared = function(durationSec) {
   isPlaying = true;
   const song = currentPlaybackQueue[currentIndex];
   if (song && durationSec > 0) {
+    // 关键防御：如果底层解码出的时长 <= 35 秒（平台试听片段），且该曲目为在线歌曲，立即拦截并触发跨平台全长版检索
+    const isOnline = !!(song.onlineId || (song.fileUrl && song.fileUrl.startsWith('http')));
+    if (isOnline && durationSec <= 35 && !song.isLocal && !song._switchedToFull) {
+      console.warn("Native prepared duration is only " + durationSec + "s for online song " + song.title + ", trial snippet detected!");
+      song._switchedToFull = true;
+      if (window.AndroidBridge && window.AndroidBridge.pauseNativeAudio) {
+        window.AndroidBridge.pauseNativeAudio();
+      }
+      tryResolveAlternativeFullTrack(song);
+      return;
+    }
+
     song.duration = Math.floor(durationSec);
     const totalTimeEl = document.getElementById('totalTime');
     if (totalTimeEl) totalTimeEl.textContent = formatTime(song.duration);
@@ -53,6 +65,19 @@ window.onNativePrepared = function(durationSec) {
   }
   updateUI();
   startLyricSmoothSync();
+};
+
+window.onNativeTrialSnippetDetected = function() {
+  const song = currentPlaybackQueue[currentIndex];
+  if (!song || song.isLocal) return;
+  console.warn("Native layer reported trial snippet (VIP preview) for", song.title);
+  if (!song._switchedToFull) {
+    song._switchedToFull = true;
+    tryResolveAlternativeFullTrack(song);
+  } else {
+    toast(`《${song.title}》暂无可用完整版本，自动播放下一首...`);
+    setTimeout(() => playNext(), 1200);
+  }
 };
 
 window.onNativeStreamInterrupted = function(resumeSec) {
@@ -74,13 +99,21 @@ window.onNativeStreamInterrupted = function(resumeSec) {
 
 window.onNativeCompletion = function() {
   const song = currentPlaybackQueue[currentIndex];
-  // 核心防御：防止偶发网络抖动导致系统提前触发完成而误切歌
+  // 核心防御1：防止偶发网络抖动导致系统提前触发完成而误切歌
   if (song && song.duration > 20 && currentSec > 0 && currentSec < (song.duration - 8)) {
     console.warn("Front-end caught premature completion at", currentSec, "of", song.duration);
     if (window.onNativeStreamInterrupted) {
       window.onNativeStreamInterrupted(currentSec);
       return;
     }
+  }
+  // 核心防御2：防止 30 秒以内的试听残片播完被误当作整曲播放完毕而草率切歌
+  const isOnline = song && !!(song.onlineId || (song.fileUrl && song.fileUrl.startsWith('http')));
+  if (isOnline && currentSec <= 35 && (!song.duration || song.duration <= 35) && !song._switchedToFull) {
+    console.warn("Online song completed at " + currentSec + "s (trial snippet completion)");
+    song._switchedToFull = true;
+    tryResolveAlternativeFullTrack(song);
+    return;
   }
   stopLyricSmoothSync();
   handleTrackEnd();

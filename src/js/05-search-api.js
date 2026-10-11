@@ -205,8 +205,8 @@ async function batchFillNetEaseCovers(songList) {
 }
 
 // 多源高可用全网音乐检索服务（智能级联：用户自建API -> Meting官方云源 -> 多平台备用源，全异步无阻塞）
-async function requestOnlineSearch(keyword, count = 30, page = 1, bypassCache = false) {
-  const cacheKey = `${keyword.toLowerCase().trim()}_p${page}`;
+async function requestOnlineSearch(keyword, count = 30, page = 1, bypassCache = false, preferredSource = '') {
+  const cacheKey = `${keyword.toLowerCase().trim()}_p${page}_${preferredSource}`;
   if (!bypassCache && searchResultCache.has(cacheKey)) {
     const cached = searchResultCache.get(cacheKey);
     if (cached && cached.length > 0) return cached;
@@ -215,28 +215,31 @@ async function requestOnlineSearch(keyword, count = 30, page = 1, bypassCache = 
   const encodedKw = encodeURIComponent(keyword);
   const candidates = [];
 
-  // 1. GDStudio 稳定极速公共网易云搜索通道（国内高可用CDN，带分页）
-  candidates.push({
+  const neteaseCandidate = {
     url: `https://music-api.gdstudio.xyz/api.php?types=search&count=${count}&source=netease&pages=${page}&name=${encodedKw}`,
     defaultSource: 'netease',
     timeout: 3600
-  });
+  };
 
-  // 2. Meting/Injahow 聚合搜索通道
-  candidates.push({
+  const injahowCandidate = {
     url: `https://api.injahow.cn/meting/?server=netease&type=search&id=${encodedKw}`,
     defaultSource: 'netease',
     timeout: 3600
-  });
+  };
 
-  // 3. GDStudio 腾讯音乐备用搜索通道
-  candidates.push({
+  const tencentCandidate = {
     url: `https://music-api.gdstudio.xyz/api.php?types=search&count=${count}&source=tencent&pages=${page}&name=${encodedKw}`,
     defaultSource: 'tencent',
     timeout: 3600
-  });
+  };
 
-  // 4. 用户自建或备用自定义通道
+  if (preferredSource === 'tencent') {
+    candidates.push(tencentCandidate, neteaseCandidate, injahowCandidate);
+  } else {
+    candidates.push(neteaseCandidate, injahowCandidate, tencentCandidate);
+  }
+
+  // 用户自建或备用自定义通道
   if (currentApiBase && !currentApiBase.includes('injahow') && !currentApiBase.includes('gdstudio')) {
     candidates.push({
       url: `${currentApiBase}?types=search&count=${count}&source=netease&pages=${page}&name=${encodedKw}`,
@@ -432,7 +435,11 @@ async function playOnlineTrack(idx) {
     if (urlRes.ok) {
       const uData = await urlRes.json();
       if (uData && uData.url && typeof uData.url === 'string' && uData.url.startsWith('http')) {
-        realAudioUrl = uData.url;
+        if (!uData.url.includes('musicrep-ts')) {
+          realAudioUrl = uData.url;
+        } else {
+          console.warn("Direct URL is trial sample snippet (musicrep-ts), skipping direct url");
+        }
       }
     }
   } catch(e) {

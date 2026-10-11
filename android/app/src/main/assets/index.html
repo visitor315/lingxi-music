@@ -4756,8 +4756,8 @@ const OTHER_AVATAR_SVG = `<svg width="14" height="14" viewBox="0 0 24 24" fill="
 
 const APP_CONFIG = {
   name: '灵犀音乐',
-  version: '2.6.3',
-  build: '2026.10.10',
+  version: '2.6.4',
+  build: '2026.10.11',
   codename: 'Pure Sound'
 };
 
@@ -5484,6 +5484,18 @@ window.onNativePrepared = function(durationSec) {
   isPlaying = true;
   const song = currentPlaybackQueue[currentIndex];
   if (song && durationSec > 0) {
+    // 关键防御：如果底层解码出的时长 <= 35 秒（平台试听片段），且该曲目为在线歌曲，立即拦截并触发跨平台全长版检索
+    const isOnline = !!(song.onlineId || (song.fileUrl && song.fileUrl.startsWith('http')));
+    if (isOnline && durationSec <= 35 && !song.isLocal && !song._switchedToFull) {
+      console.warn("Native prepared duration is only " + durationSec + "s for online song " + song.title + ", trial snippet detected!");
+      song._switchedToFull = true;
+      if (window.AndroidBridge && window.AndroidBridge.pauseNativeAudio) {
+        window.AndroidBridge.pauseNativeAudio();
+      }
+      tryResolveAlternativeFullTrack(song);
+      return;
+    }
+
     song.duration = Math.floor(durationSec);
     const totalTimeEl = document.getElementById('totalTime');
     if (totalTimeEl) totalTimeEl.textContent = formatTime(song.duration);
@@ -5491,6 +5503,19 @@ window.onNativePrepared = function(durationSec) {
   }
   updateUI();
   startLyricSmoothSync();
+};
+
+window.onNativeTrialSnippetDetected = function() {
+  const song = currentPlaybackQueue[currentIndex];
+  if (!song || song.isLocal) return;
+  console.warn("Native layer reported trial snippet (VIP preview) for", song.title);
+  if (!song._switchedToFull) {
+    song._switchedToFull = true;
+    tryResolveAlternativeFullTrack(song);
+  } else {
+    toast(`《${song.title}》暂无可用完整版本，自动播放下一首...`);
+    setTimeout(() => playNext(), 1200);
+  }
 };
 
 window.onNativeStreamInterrupted = function(resumeSec) {
@@ -5512,13 +5537,21 @@ window.onNativeStreamInterrupted = function(resumeSec) {
 
 window.onNativeCompletion = function() {
   const song = currentPlaybackQueue[currentIndex];
-  // 核心防御：防止偶发网络抖动导致系统提前触发完成而误切歌
+  // 核心防御1：防止偶发网络抖动导致系统提前触发完成而误切歌
   if (song && song.duration > 20 && currentSec > 0 && currentSec < (song.duration - 8)) {
     console.warn("Front-end caught premature completion at", currentSec, "of", song.duration);
     if (window.onNativeStreamInterrupted) {
       window.onNativeStreamInterrupted(currentSec);
       return;
     }
+  }
+  // 核心防御2：防止 30 秒以内的试听残片播完被误当作整曲播放完毕而草率切歌
+  const isOnline = song && !!(song.onlineId || (song.fileUrl && song.fileUrl.startsWith('http')));
+  if (isOnline && currentSec <= 35 && (!song.duration || song.duration <= 35) && !song._switchedToFull) {
+    console.warn("Online song completed at " + currentSec + "s (trial snippet completion)");
+    song._switchedToFull = true;
+    tryResolveAlternativeFullTrack(song);
+    return;
   }
   stopLyricSmoothSync();
   handleTrackEnd();
@@ -6369,8 +6402,8 @@ async function batchFillNetEaseCovers(songList) {
 }
 
 // 多源高可用全网音乐检索服务（智能级联：用户自建API -> Meting官方云源 -> 多平台备用源，全异步无阻塞）
-async function requestOnlineSearch(keyword, count = 30, page = 1, bypassCache = false) {
-  const cacheKey = `${keyword.toLowerCase().trim()}_p${page}`;
+async function requestOnlineSearch(keyword, count = 30, page = 1, bypassCache = false, preferredSource = '') {
+  const cacheKey = `${keyword.toLowerCase().trim()}_p${page}_${preferredSource}`;
   if (!bypassCache && searchResultCache.has(cacheKey)) {
     const cached = searchResultCache.get(cacheKey);
     if (cached && cached.length > 0) return cached;
@@ -6379,28 +6412,31 @@ async function requestOnlineSearch(keyword, count = 30, page = 1, bypassCache = 
   const encodedKw = encodeURIComponent(keyword);
   const candidates = [];
 
-  // 1. GDStudio 稳定极速公共网易云搜索通道（国内高可用CDN，带分页）
-  candidates.push({
+  const neteaseCandidate = {
     url: `https://music-api.gdstudio.xyz/api.php?types=search&count=${count}&source=netease&pages=${page}&name=${encodedKw}`,
     defaultSource: 'netease',
     timeout: 3600
-  });
+  };
 
-  // 2. Meting/Injahow 聚合搜索通道
-  candidates.push({
+  const injahowCandidate = {
     url: `https://api.injahow.cn/meting/?server=netease&type=search&id=${encodedKw}`,
     defaultSource: 'netease',
     timeout: 3600
-  });
+  };
 
-  // 3. GDStudio 腾讯音乐备用搜索通道
-  candidates.push({
+  const tencentCandidate = {
     url: `https://music-api.gdstudio.xyz/api.php?types=search&count=${count}&source=tencent&pages=${page}&name=${encodedKw}`,
     defaultSource: 'tencent',
     timeout: 3600
-  });
+  };
 
-  // 4. 用户自建或备用自定义通道
+  if (preferredSource === 'tencent') {
+    candidates.push(tencentCandidate, neteaseCandidate, injahowCandidate);
+  } else {
+    candidates.push(neteaseCandidate, injahowCandidate, tencentCandidate);
+  }
+
+  // 用户自建或备用自定义通道
   if (currentApiBase && !currentApiBase.includes('injahow') && !currentApiBase.includes('gdstudio')) {
     candidates.push({
       url: `${currentApiBase}?types=search&count=${count}&source=netease&pages=${page}&name=${encodedKw}`,
@@ -6596,7 +6632,11 @@ async function playOnlineTrack(idx) {
     if (urlRes.ok) {
       const uData = await urlRes.json();
       if (uData && uData.url && typeof uData.url === 'string' && uData.url.startsWith('http')) {
-        realAudioUrl = uData.url;
+        if (!uData.url.includes('musicrep-ts')) {
+          realAudioUrl = uData.url;
+        } else {
+          console.warn("Direct URL is trial sample snippet (musicrep-ts), skipping direct url");
+        }
       }
     }
   } catch(e) {
@@ -11657,7 +11697,11 @@ async function resolveAndPlayOnlineSong(song, isRetry = false, resumeSec = 0) {
           if (uRes.ok) {
             const uData = await uRes.json();
             if (uData && uData.url && typeof uData.url === 'string' && uData.url.startsWith('http')) {
-              audioUrl = uData.url;
+              if (!uData.url.includes('musicrep-ts')) {
+                audioUrl = uData.url;
+              } else {
+                console.warn("Direct URL is trial sample snippet (musicrep-ts), skipping direct url");
+              }
             }
           }
         } catch(e) {
@@ -11675,7 +11719,7 @@ async function resolveAndPlayOnlineSong(song, isRetry = false, resumeSec = 0) {
     if (!audioUrl || isRetry) {
       const query = `${song.title} ${song.artist !== '未知歌手' ? song.artist : ''}`.trim();
       try {
-        const matches = await requestOnlineSearch(query, 5);
+        const matches = await requestOnlineSearch(query, 5, 1, true, isRetry ? 'tencent' : '');
         if (matches && matches.length) {
           for (const item of matches) {
             const candId = item.url_id || item.id;
@@ -11688,7 +11732,9 @@ async function resolveAndPlayOnlineSong(song, isRetry = false, resumeSec = 0) {
                   if (cRes.ok) {
                     const cData = await cRes.json();
                     if (cData && cData.url && typeof cData.url === 'string' && cData.url.startsWith('http')) {
-                      audioUrl = cData.url;
+                      if (!cData.url.includes('musicrep-ts')) {
+                        audioUrl = cData.url;
+                      }
                     }
                   }
                 } catch(e) {}
@@ -11799,14 +11845,10 @@ async function tryResolveAlternativeFullTrack(song) {
   const currentSrc = song.source || 'netease';
   const alternativeServers = ['tencent', 'kugou', 'netease'].filter(s => s !== currentSrc);
   const query = `${song.title} ${song.artist !== '未知歌手' ? song.artist : ''}`.trim();
-  const encodedQuery = encodeURIComponent(query);
 
   for (const altServer of alternativeServers) {
     try {
-      const searchUrl = `https://api.i-meto.com/meting/api?server=${altServer}&type=search&id=${encodedQuery}`;
-      const res = await universalFetch(searchUrl, { timeout: 3500 });
-      if (!res.ok) continue;
-      const list = await res.json();
+      const list = await requestOnlineSearch(query, 10, 1, true, altServer);
       if (!Array.isArray(list) || list.length === 0) continue;
 
       const trialKeywords = ['试听', '片段', '铃声', '30s', '30秒', '副歌', '高潮版', '截取'];
@@ -11817,22 +11859,38 @@ async function tryResolveAlternativeFullTrack(song) {
 
       if (!candidate) continue;
 
-      const altId = candidate.url_id || candidate.id || (candidate.url && candidate.url.match(/[?&]id=([^&]+)/)?.[1]);
+      const altId = candidate.url_id || candidate.id;
       if (!altId || altId === song.onlineId) continue;
 
-      const altAudioUrl = `https://api.injahow.cn/meting/?server=${altServer}&type=url&id=${altId}`;
-      
+      let altAudioUrl = '';
+      if (!currentApiBase.includes('injahow')) {
+        try {
+          const candUrlApi = `${currentApiBase}?types=url&id=${altId}&source=${altServer}&br=${currentAudioQuality}`;
+          const cRes = await universalFetch(candUrlApi, { timeout: 3500 });
+          if (cRes.ok) {
+            const cData = await cRes.json();
+            if (cData && cData.url && typeof cData.url === 'string' && cData.url.startsWith('http') && !cData.url.includes('musicrep-ts')) {
+              altAudioUrl = cData.url;
+            }
+          }
+        } catch(e) {}
+      }
+
+      if (!altAudioUrl) {
+        altAudioUrl = `https://api.injahow.cn/meting/?server=${altServer}&type=url&id=${altId}`;
+      }
+
       song.onlineId = altId;
       song.source = altServer;
       song.fileUrl = altAudioUrl;
       song.urlFetchedAt = Date.now();
-      if (candidate.pic || candidate.cover) song.cover = candidate.pic || candidate.cover;
+      song._switchedToFull = true;
+      if (candidate.cover && !song.cover) song.cover = candidate.cover;
       persistData();
 
-      fetchLyricForSong(altId, song.title, altServer);
+      fetchLyricForSong(candidate.lyric_id || altId, song.title, altServer);
 
-      const wasPlaying = isPlaying;
-      const curSec = (typeof currentSec === 'number' && currentSec > 0) ? currentSec : 0;
+      const curSec = (typeof currentSec === 'number' && currentSec > 0 && currentSec < 35) ? currentSec : 0;
       if (isNativeAudioSupported) {
         if (audioPlayer && !audioPlayer.paused) {
           try { audioPlayer.pause(); } catch(e) {}
@@ -11845,17 +11903,17 @@ async function tryResolveAlternativeFullTrack(song) {
         audioPlayer.src = altAudioUrl;
         audioPlayer.load();
         audioPlayer.currentTime = curSec;
-        if (wasPlaying) {
-          audioPlayer.play().catch(e => console.warn("Alt track play failed", e));
-        }
+        audioPlayer.play().catch(e => console.warn("Alt track play failed", e));
       }
-      toast(`已成功切换至《${song.title}》完整版`);
+      toast(`已成功为《${song.title}》切换至跨平台完整版`);
       return;
     } catch(err) {
       console.warn("Alternative track search failed for", altServer, err);
     }
   }
-  toast(`《${song.title}》全网暂无免费完整版本，仅有试听片段`);
+
+  toast(`《${song.title}》各平台均为试听片段，自动播放下一首...`);
+  setTimeout(() => playNext(), 1500);
 }
 
 
