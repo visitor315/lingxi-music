@@ -4839,6 +4839,26 @@ function loadPersistedData() {
     if (!s1Track.fileUrl) s1Track.fileUrl = 'https://api.injahow.cn/meting/?server=netease&type=url&id=405485307';
     if (s1Track.cover === 'https://p1.music.126.net/109951169987201212.jpg') s1Track.cover = '';
   }
+  // 若曲库为空或仅有1首默认曲目，尝试从原生本地备份文件自动恢复
+  if (ALL_LIBRARY_SONGS.length <= 1 && typeof window !== 'undefined' && window.AndroidBridge && window.AndroidBridge.restoreLibraryFromFile) {
+    try {
+      const rawBackup = window.AndroidBridge.restoreLibraryFromFile();
+      if (rawBackup && rawBackup.length > 20) {
+        const parsed = JSON.parse(rawBackup);
+        if (parsed.playlist && Array.isArray(parsed.playlist.songs) && parsed.playlist.songs.length > 0) {
+          ALL_LIBRARY_SONGS = parsed.playlist.songs;
+        } else if (parsed.songs && Array.isArray(parsed.songs) && parsed.songs.length > 0) {
+          ALL_LIBRARY_SONGS = parsed.songs;
+        }
+        if (parsed.albums && Array.isArray(parsed.albums) && parsed.albums.length > 0) {
+          VINYL_ALBUMS = parsed.albums;
+        }
+      }
+    } catch(e) {
+      console.warn("自动从本地文件恢复曲库受限:", e);
+    }
+  }
+
   if (ALL_LIBRARY_SONGS.length === 0) {
     ALL_LIBRARY_SONGS = JSON.parse(JSON.stringify(DEFAULT_LIBRARY_SONGS));
   }
@@ -4932,6 +4952,12 @@ function persistData() {
     if (VINYL_ALBUMS[1]) VINYL_ALBUMS[1].songs = ALL_LIBRARY_SONGS.filter(s => s.isFav);
     localStorage.setItem('yyrc_lib_songs_v2', JSON.stringify(ALL_LIBRARY_SONGS));
     localStorage.setItem('yyrc_albums_v2', JSON.stringify(VINYL_ALBUMS));
+    if (typeof window !== 'undefined' && window.AndroidBridge && window.AndroidBridge.backupLibraryToFile) {
+      window.AndroidBridge.backupLibraryToFile(JSON.stringify({
+        songs: ALL_LIBRARY_SONGS,
+        albums: VINYL_ALBUMS
+      }));
+    }
   } catch(e) {
     console.warn("持久化保存受限:", e);
   }

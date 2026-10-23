@@ -2346,6 +2346,45 @@ public class MainActivity extends Activity {
             }
             return true;
         }
+
+        @JavascriptInterface
+        public void backupLibraryToFile(final String json) {
+            if (json == null || json.isEmpty()) return;
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        File musicDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MUSIC);
+                        if (!musicDir.exists()) musicDir.mkdirs();
+                        File backupFile = new File(musicDir, "lingxi_backup.json");
+                        FileOutputStream fos = new FileOutputStream(backupFile);
+                        fos.write(json.getBytes("UTF-8"));
+                        fos.flush();
+                        fos.close();
+                    } catch (Exception ignored) {}
+                }
+            }).start();
+        }
+
+        @JavascriptInterface
+        public String restoreLibraryFromFile() {
+            try {
+                File musicDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MUSIC);
+                File backupFile = new File(musicDir, "lingxi_backup.json");
+                if (!backupFile.exists() || backupFile.length() < 10) {
+                    File dlDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+                    backupFile = new File(dlDir, "guoguo_playlist.json");
+                }
+                if (backupFile.exists() && backupFile.length() > 10) {
+                    FileInputStream fis = new FileInputStream(backupFile);
+                    byte[] buffer = new byte[(int) backupFile.length()];
+                    fis.read(buffer);
+                    fis.close();
+                    return new String(buffer, "UTF-8");
+                }
+            } catch (Exception ignored) {}
+            return "";
+        }
     }
 
     @Override
