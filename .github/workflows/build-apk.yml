@@ -14,6 +14,21 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
+      - name: Build Frontend Bundle
+        run: python3 scripts/build.py --check
+
+      - name: Read Release Version
+        id: ver
+        run: |
+          python3 - <<'PY' >> "$GITHUB_OUTPUT"
+          import json
+          v = json.load(open('version.json', encoding='utf-8'))
+          print('name=' + v['versionName'])
+          print('changelog<<EOF')
+          print(v.get('changelog', ''))
+          print('EOF')
+          PY
+
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
@@ -39,24 +54,22 @@ jobs:
         run: |
           mkdir -p output
           cp android/app/build/outputs/apk/release/app-release.apk output/LingXiMusic.apk
-          cp android/app/build/outputs/apk/release/app-release.apk output/灵犀音乐.apk
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: LingXiMusic
-          path: output/*
+          path: output/LingXiMusic.apk
 
       - name: Create or Update Production Release
         uses: softprops/action-gh-release@v2
         if: github.ref == 'refs/heads/main'
         with:
-          tag_name: v1.4.0
-          name: "灵犀音乐 Android 正式版 v1.4.0"
-          body: "灵犀音乐原生沉浸极速版 APK v1.4.0。居中5键对称系统媒体中心卡片、原生系统DownloadManager真实歌曲下载、原生沉浸透明状态栏、彻底移除模拟桌面与应用内胶囊、全子页面消除留白。"
+          tag_name: v${{ steps.ver.outputs.name }}
+          name: "灵犀音乐 Android 正式版 v${{ steps.ver.outputs.name }}"
+          body: ${{ steps.ver.outputs.changelog }}
           files: |
             output/LingXiMusic.apk
-            output/灵犀音乐.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -70,6 +83,5 @@ jobs:
           prerelease: true
           files: |
             output/LingXiMusic.apk
-            output/灵犀音乐.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

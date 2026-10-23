@@ -9,6 +9,15 @@ Thumbs.db
 # Local Agent Workspace Rules
 AGENTS.md
 
+# Generated standalone entry (built by scripts/build.py, local double-click only)
+音乐.html
+
+# Release APK exports
+*.apk
+
+# App playlist exports (user data)
+*歌单*.json
+
 # Gradle & Build Cache
 .gradle/
 *.class

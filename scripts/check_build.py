@@ -43,13 +43,21 @@ if run:
     print(f"Run completed with conclusion: {run['conclusion']}")
     if run['conclusion'] == 'success':
         # Wait a moment for Release asset upload to finalize
-        # Determine tag based on current git branch
+        # Determine tag based on current git branch; main uses the version from version.json
         try:
             res_br = subprocess.run(["git", "rev-parse", "--abbrev-ref", "HEAD"], capture_output=True, text=True)
             cur_branch = res_br.stdout.strip()
         except Exception:
             cur_branch = "main"
-        release_tag = "v1.4.0" if cur_branch == "main" else "test-apk"
+        if cur_branch == "main":
+            try:
+                ver_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'version.json')
+                with open(ver_path, 'r', encoding='utf-8') as vf:
+                    release_tag = 'v' + json.load(vf)['versionName']
+            except Exception:
+                release_tag = "v1.4.0"
+        else:
+            release_tag = "test-apk"
         download_url = f'https://github.com/visitor315/lingxi-music/releases/download/{release_tag}/LingXiMusic.apk'
         print(f"Downloading from {download_url} (branch: {cur_branch}, tag: {release_tag})...", flush=True)
         try:

@@ -180,6 +180,31 @@ function playAtTargetLyric(e) {
 
 let lyricRafId = null;
 let bgLyricInterval = null;
+
+/* 后台歌词轮询共享实现：08 本模块与 10 桌面歌词的 visibilitychange / 状态回调统一复用 */
+function startBgLyricPolling() {
+  if (bgLyricInterval || !isPlaying) return;
+  bgLyricInterval = setInterval(() => {
+    if (!isPlaying) return;
+    if (isNativeAudioSupported) {
+      if (window.AndroidBridge && window.AndroidBridge.getNativePosition) {
+        const np = window.AndroidBridge.getNativePosition();
+        if (typeof np === 'number' && np >= 0) currentSec = np;
+      }
+    } else if (audioPlayer && !audioPlayer.paused && !isSeekingAudio && !isNaN(audioPlayer.currentTime)) {
+      currentSec = audioPlayer.currentTime;
+    }
+    syncCurrentLyricToDesktop();
+  }, 300);
+}
+
+function stopBgLyricPolling() {
+  if (bgLyricInterval) {
+    clearInterval(bgLyricInterval);
+    bgLyricInterval = null;
+  }
+}
+
 let lastNativeSamplePos = -1;
 let lastNativeSamplePerf = 0;
 
@@ -239,25 +264,11 @@ document.addEventListener('visibilitychange', () => {
     }
     // 关键优化：若未开启桌面悬浮歌词，切后台时坚决不运行高频定时器与 DOM 计算，节省 100% CPU 给底层音频解码！
     const needBgLyrics = isDesktopLyricsActive || (window.AndroidBridge && window.AndroidBridge.isDesktopLyricsActive && window.AndroidBridge.isDesktopLyricsActive());
-    if (needBgLyrics && !bgLyricInterval && isPlaying) {
-      bgLyricInterval = setInterval(() => {
-        if (!isPlaying) return;
-        if (isNativeAudioSupported) {
-          if (window.AndroidBridge && window.AndroidBridge.getNativePosition) {
-            const np = window.AndroidBridge.getNativePosition();
-            if (typeof np === 'number' && np >= 0) currentSec = np;
-          }
-        } else if (audioPlayer && !audioPlayer.paused && !isSeekingAudio && !isNaN(audioPlayer.currentTime)) {
-          currentSec = audioPlayer.currentTime;
-        }
-        syncCurrentLyricToDesktop();
-      }, 300);
+    if (needBgLyrics) {
+      startBgLyricPolling();
     }
   } else {
-    if (bgLyricInterval) {
-      clearInterval(bgLyricInterval);
-      bgLyricInterval = null;
-    }
+    stopBgLyricPolling();
     if (isPlaying) {
       if (isNativeAudioSupported && window.AndroidBridge.getNativePosition) {
         const np = window.AndroidBridge.getNativePosition();

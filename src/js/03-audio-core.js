@@ -6,38 +6,51 @@ const songRetryCounts = {};
 let isNativeAudioSupported = false;
 let nativeSyncTimer = null;
 
+function startNativeSyncTimer() {
+  if (!isNativeAudioSupported || nativeSyncTimer) return;
+  nativeSyncTimer = setInterval(() => {
+    if (isNativeAudioSupported && isPlaying) {
+      const pos = window.AndroidBridge.getNativePosition ? window.AndroidBridge.getNativePosition() : currentSec;
+      if (typeof pos === 'number' && pos >= 0 && !isSeekingAudio) {
+        currentSec = pos;
+      }
+      if (document.hidden) {
+        const needBg = isDesktopLyricsActive || (window.AndroidBridge && window.AndroidBridge.isDesktopLyricsActive && window.AndroidBridge.isDesktopLyricsActive());
+        if (needBg) {
+          syncCurrentLyricToDesktop();
+        }
+        return;
+      }
+      syncProgress();
+      updateLyricProgressSmooth();
+    }
+  }, 250);
+}
+
+function stopNativeSyncTimer() {
+  if (nativeSyncTimer) {
+    clearInterval(nativeSyncTimer);
+    nativeSyncTimer = null;
+  }
+}
+
 function initNativeAudioEngine() {
   isNativeAudioSupported = !!(window.AndroidBridge && window.AndroidBridge.isNativeAudioSupported && window.AndroidBridge.isNativeAudioSupported());
   if (isNativeAudioSupported) {
-    if (nativeSyncTimer) clearInterval(nativeSyncTimer);
-    nativeSyncTimer = setInterval(() => {
-      if (isNativeAudioSupported && isPlaying) {
-        const pos = window.AndroidBridge.getNativePosition ? window.AndroidBridge.getNativePosition() : currentSec;
-        if (typeof pos === 'number' && pos >= 0 && !isSeekingAudio) {
-          currentSec = pos;
-        }
-        if (document.hidden) {
-          const needBg = isDesktopLyricsActive || (window.AndroidBridge && window.AndroidBridge.isDesktopLyricsActive && window.AndroidBridge.isDesktopLyricsActive());
-          if (needBg) {
-            syncCurrentLyricToDesktop();
-          }
-          return;
-        }
-        syncProgress();
-        updateLyricProgressSmooth();
-      }
-    }, 250);
+    startNativeSyncTimer();
   }
 }
 
 window.onNativePlay = function() {
   isPlaying = true;
+  startNativeSyncTimer();
   updateUI();
   startLyricSmoothSync();
 };
 
 window.onNativePause = function() {
   isPlaying = false;
+  stopNativeSyncTimer();
   updateUI();
   stopLyricSmoothSync();
 };
@@ -292,7 +305,7 @@ function updateMediaSession(song) {
         }
       });
     } catch(err) {
-      console.log('MediaSession error', err);
+      console.warn('MediaSession error', err);
     }
   }
 }

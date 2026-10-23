@@ -1,6 +1,6 @@
 {
-  "versionCode": 97,
-  "versionName": "2.6.4",
-  "changelog": "深度防御并拦截平台 VIP 30 秒试听片段导致的音频早退切歌问题；新增试听残片智能检测与跨平台全长版本自动检索切换引擎。",
-  "downloadUrl": "https://ghfast.top/https://github.com/visitor315/lingxi-music/releases/download/v1.4.0/LingXiMusic.apk"
+  "versionCode": 98,
+  "versionName": "2.6.5",
+  "changelog": "构建链与性能优化：版本号统一由 version.json 单一来源自动注入；CI 打包前自动执行前端构建，杜绝旧前端混入 APK；Release 标签随版本号自动生成；APK 产物去重只上传一份；前端去除歌词轮询重复定时器代码，暂停播放时停止空转的同步定时器。",
+  "downloadUrl": "https://ghfast.top/https://github.com/visitor315/lingxi-music/releases/download/v2.6.5/LingXiMusic.apk"
 }

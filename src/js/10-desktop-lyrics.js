@@ -32,25 +32,9 @@ window.onDesktopLyricsStateChanged = function(active) {
   updateDesktopLyricsUI();
   if (document.hidden) {
     if (isDesktopLyricsActive) {
-      if (!bgLyricInterval && isPlaying) {
-        bgLyricInterval = setInterval(() => {
-          if (!isPlaying) return;
-          if (isNativeAudioSupported) {
-            if (window.AndroidBridge && window.AndroidBridge.getNativePosition) {
-              const np = window.AndroidBridge.getNativePosition();
-              if (typeof np === 'number' && np >= 0) currentSec = np;
-            }
-          } else if (audioPlayer && !audioPlayer.paused && !isSeekingAudio && !isNaN(audioPlayer.currentTime)) {
-            currentSec = audioPlayer.currentTime;
-          }
-          syncCurrentLyricToDesktop();
-        }, 300);
-      }
+      startBgLyricPolling();
     } else {
-      if (bgLyricInterval) {
-        clearInterval(bgLyricInterval);
-        bgLyricInterval = null;
-      }
+      stopBgLyricPolling();
     }
   }
 };
