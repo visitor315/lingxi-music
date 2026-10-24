@@ -373,8 +373,10 @@ function playSongAtQueue(idx) {
 
   stopPlaybackLoop();
 
-  // 1. 自动补全歌曲封面（高可用解析真实高清封面）
-  if (!song.cover || !song.cover.startsWith('http') || song.cover.includes('injahow.cn/meting/?server=') || song.cover.includes('param=300y300')) {
+  // 1. 自动补全歌曲封面（高可用解析真实高清封面）；本地导入歌曲保留 ID3 内嵌封面，不做在线检索覆盖
+  if (song.isLocal && song.cover) {
+    applySongCoverToUI(song.cover);
+  } else if (!song.cover || !song.cover.startsWith('http') || song.cover.includes('injahow.cn/meting/?server=') || song.cover.includes('param=300y300')) {
     ensureSongCover(song);
   } else {
     applySongCoverToUI(song.cover);
@@ -421,6 +423,13 @@ function playSongAtQueue(idx) {
 
   if (song.fileUrl) {
     if (isNativeAudioSupported) {
+      if (song.fileUrl.startsWith('blob:')) {
+        // 旧版导入的 blob 临时地址原生引擎无法访问且会话结束即失效，引导重新导入而非误报网络问题
+        toast('该本地歌曲的临时音源已失效，请删除后重新导入');
+        isPlaying = false;
+        updateUI();
+        return;
+      }
       if (audioPlayer && !audioPlayer.paused) {
         try { audioPlayer.pause(); } catch(e) {}
       }

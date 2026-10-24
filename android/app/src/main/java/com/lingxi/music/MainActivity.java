@@ -189,6 +189,7 @@ public class MainActivity extends Activity {
     };
 
     private ValueCallback<Uri[]> uploadMessage;
+    private boolean pendingAudioPick = false;
     private final static int FILE_CHOOSER_RESULT_CODE = 10001;
 
     @Override
@@ -354,8 +355,25 @@ public class MainActivity extends Activity {
                     uploadMessage.onReceiveValue(null);
                 }
                 uploadMessage = filePathCallback;
+                pendingAudioPick = false;
                 Intent intent = null;
+                boolean isAudioPick = false;
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                    try {
+                        for (String t : fileChooserParams.getAcceptTypes()) {
+                            if (t != null && t.toLowerCase().contains("audio")) { isAudioPick = true; break; }
+                        }
+                    } catch (Exception ignored) {}
+                }
+                if (isAudioPick && Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+                    // 本地音频导入：走系统文档选择器，取可持久化授权的 content 地址，原生引擎可直接播放且重启后仍有效
+                    intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+                    intent.addCategory(Intent.CATEGORY_OPENABLE);
+                    intent.setType("audio/*");
+                    intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION);
+                    intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
+                    pendingAudioPick = true;
+                } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                     try {
                         intent = fileChooserParams.createIntent();
                     } catch (Exception ignored) {}
@@ -2103,9 +2121,9 @@ public class MainActivity extends Activity {
         public String getAppVersion() {
             try {
                 PackageInfo pInfo = getPackageManager().getPackageInfo(getPackageName(), 0);
-                return "2.6.5";
+                return "2.6.6";
             } catch (Exception e) {
-                return "2.6.5";
+                return "2.6.6";
             }
         }
 
@@ -2119,7 +2137,7 @@ public class MainActivity extends Activity {
                     return pInfo.versionCode;
                 }
             } catch (Exception e) {
-                return 98;
+                return 99;
             }
         }
 
@@ -2392,13 +2410,43 @@ public class MainActivity extends Activity {
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == FILE_CHOOSER_RESULT_CODE) {
             if (uploadMessage == null) return;
+            final ValueCallback<Uri[]> callback = uploadMessage;
+            uploadMessage = null;
+            final Uri[] results;
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                uploadMessage.onReceiveValue(WebChromeClient.FileChooserParams.parseResult(resultCode, data));
+                results = WebChromeClient.FileChooserParams.parseResult(resultCode, data);
             } else {
                 Uri result = (data == null || resultCode != RESULT_OK) ? null : data.getData();
-                uploadMessage.onReceiveValue(result != null ? new Uri[]{result} : null);
+                results = result != null ? new Uri[]{result} : null;
             }
-            uploadMessage = null;
+            if (pendingAudioPick && results != null && results.length > 0 && webView != null) {
+                pendingAudioPick = false;
+                // 固化每个选中音频的读权限，保证重启应用后仍可播放
+                for (Uri uri : results) {
+                    if (uri != null) {
+                        try {
+                            getContentResolver().takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                        } catch (Exception ignored) {}
+                    }
+                }
+                // 先把真实 content 地址注入前端，注入完成后再把文件对象交还 WebView，保证 change 事件触发时地址已就绪
+                StringBuilder js = new StringBuilder("window.__lastPickedAudioUris = [");
+                for (Uri uri : results) {
+                    if (uri != null) {
+                        js.append("'").append(uri.toString().replace("\\", "\\\\").replace("'", "\\'")).append("',");
+                    }
+                }
+                js.append("];");
+                webView.evaluateJavascript(js.toString(), new ValueCallback<String>() {
+                    @Override
+                    public void onReceiveValue(String value) {
+                        callback.onReceiveValue(results);
+                    }
+                });
+            } else {
+                pendingAudioPick = false;
+                callback.onReceiveValue(results);
+            }
         } else if (requestCode == REQUEST_CODE_INSTALL_PERMISSION) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 if (getPackageManager().canRequestPackageInstalls() && pendingInstallApk != null && pendingInstallApk.exists()) {

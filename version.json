@@ -1,6 +1,6 @@
 {
-  "versionCode": 98,
-  "versionName": "2.6.5",
-  "changelog": "构建链与性能优化：版本号统一由 version.json 单一来源自动注入；CI 打包前自动执行前端构建，杜绝旧前端混入 APK；Release 标签随版本号自动生成；APK 产物去重只上传一份；前端去除歌词轮询重复定时器代码，暂停播放时停止空转的同步定时器。",
-  "downloadUrl": "https://ghfast.top/https://github.com/visitor315/lingxi-music/releases/download/v2.6.5/LingXiMusic.apk"
+  "versionCode": 99,
+  "versionName": "2.6.6",
+  "changelog": "修复本地导入歌曲在手机端点击播放提示音源不可达的问题：音频选择器改用系统文档选择器获取持久授权的 content 地址，原生引擎可直接播放且重启应用后依然有效；旧版导入的失效歌曲现在会提示重新导入而不再误报网络问题；本地歌曲保留 ID3 内嵌封面不被在线检索覆盖。",
+  "downloadUrl": "https://ghfast.top/https://github.com/visitor315/lingxi-music/releases/download/v2.6.6/LingXiMusic.apk"
 }

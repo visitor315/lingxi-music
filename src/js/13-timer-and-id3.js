@@ -851,6 +851,13 @@ async function handleAudioImport(e) {
   if (!files || !files.length) return;
   const localAlb = VINYL_ALBUMS.find(a => a.id === 'alb_local') || VINYL_ALBUMS[2];
 
+  // 原生层注入的真实 content:// 地址（持久授权，原生引擎可直接播放）；仅在数量完全一致时采信
+  const pickedUris = (window.__lastPickedAudioUris && Array.isArray(window.__lastPickedAudioUris)
+    && window.__lastPickedAudioUris.length === files.length
+    && window.__lastPickedAudioUris.every(u => typeof u === 'string' && u.startsWith('content://')))
+      ? window.__lastPickedAudioUris : null;
+  window.__lastPickedAudioUris = null;
+
   toast('正在解析本地音频与内嵌封面...');
 
   for (let i = 0; i < files.length; i++) {
@@ -875,8 +882,10 @@ async function handleAudioImport(e) {
       artist: artist,
       album: '本地导入',
       duration: 180,
-      fileUrl: URL.createObjectURL(file),
+      // 原生环境存系统持久授权的 content 地址（重启后仍可播放）；纯网页环境回退 blob（仅当次会话有效）
+      fileUrl: (pickedUris && pickedUris[i]) ? pickedUris[i] : URL.createObjectURL(file),
       cover: coverUrl,
+      isLocal: true,
       isFav: false
     };
 
