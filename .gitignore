@@ -21,3 +21,6 @@ AGENTS.md
 # Gradle & Build Cache
 .gradle/
 *.class
+
+# Python bytecode
+__pycache__/
