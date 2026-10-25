@@ -1,6 +1,6 @@
 {
-  "versionCode": 99,
-  "versionName": "2.6.6",
-  "changelog": "修复本地导入歌曲在手机端点击播放提示音源不可达的问题：音频选择器改用系统文档选择器获取持久授权的 content 地址，原生引擎可直接播放且重启应用后依然有效；旧版导入的失效歌曲现在会提示重新导入而不再误报网络问题；本地歌曲保留 ID3 内嵌封面不被在线检索覆盖。",
-  "downloadUrl": "https://ghfast.top/https://github.com/visitor315/lingxi-music/releases/download/v2.6.6/LingXiMusic.apk"
+  "versionCode": 100,
+  "versionName": "2.6.7",
+  "changelog": "歌词推进显示全面修复：播放中歌词填充与进度条不再出现周期性回跳和顿挫，逐字高亮全程平滑；点击歌词行、拖动进度条或桌面歌词划动切句后，高亮立即精准落位并从本句起唱点开始推进；渲染热路径减负，低配置机型也更流畅；清理了不再使用的旧代码。",
+  "downloadUrl": "https://ghfast.top/https://github.com/visitor315/lingxi-music/releases/download/v2.6.7/LingXiMusic.apk"
 }

@@ -10,10 +10,6 @@ function startNativeSyncTimer() {
   if (!isNativeAudioSupported || nativeSyncTimer) return;
   nativeSyncTimer = setInterval(() => {
     if (isNativeAudioSupported && isPlaying) {
-      const pos = window.AndroidBridge.getNativePosition ? window.AndroidBridge.getNativePosition() : currentSec;
-      if (typeof pos === 'number' && pos >= 0 && !isSeekingAudio) {
-        currentSec = pos;
-      }
       if (document.hidden) {
         const needBg = isDesktopLyricsActive || (window.AndroidBridge && window.AndroidBridge.isDesktopLyricsActive && window.AndroidBridge.isDesktopLyricsActive());
         if (needBg) {
@@ -21,6 +17,10 @@ function startNativeSyncTimer() {
         }
         return;
       }
+      // 前台 60fps rAF 帧循环是唯一推进驱动；250ms 粗采样仅在其未运行时兜底，
+      // 严禁用未经插值的原始位置直接覆盖 currentSec，杜绝歌词与进度条周期性回跳
+      if (lyricRafId) return;
+      currentSec = getAccuratePlaybackSec();
       syncProgress();
       updateLyricProgressSmooth();
     }
@@ -385,7 +385,6 @@ function playSongAtQueue(idx) {
   // 2. 立即重置为当前曲目占位歌词，彻底消除曲目切换瞬间显示上一首旧歌词的视觉不同步
   LYRICS_DATA = [{ time: 0, text: (song.title || '灵犀音乐') + ' - ' + (song.artist || '随心听') }];
   lastActiveIdx = -1;
-  lastInterludeNextIdx = -1;
   displayedPreviewIdx = -1;
   initLyricsList();
   syncCurrentLyricToDesktop();
@@ -397,7 +396,6 @@ function playSongAtQueue(idx) {
     if (parsed && parsed.length) {
       LYRICS_DATA = parsed;
       lastActiveIdx = -1;
-      lastInterludeNextIdx = -1;
       displayedPreviewIdx = -1;
       initLyricsList();
       syncCurrentLyricToDesktop();
@@ -517,21 +515,6 @@ function togglePlayState() {
       playSongAtQueue(currentIndex);
     }
   }
-}
-
-function startPlaybackLoop() {
-  stopPlaybackLoop();
-  playProgressTimer = setInterval(() => {
-    if (!isPlaying) return;
-    const song = currentPlaybackQueue[currentIndex];
-    currentSec += 0.5;
-    if (song && currentSec >= song.duration) {
-      handleTrackEnd();
-      return;
-    }
-    syncProgress();
-    updateLyricProgress();
-  }, 500);
 }
 
 function stopPlaybackLoop() {

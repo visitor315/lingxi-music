@@ -8,6 +8,9 @@ let isAnimatingPreviewRoll = false;
 let displayedPreviewIdx = -1;
 
 let targetSeekIndex = -1;
+let activeLyricLineEl = null;
+let previewMainLyricEl = null;
+let appliedActiveIdx = -99;
 
 function initLyricsList() {
   const container = document.getElementById('lyricsItemsList');
@@ -16,6 +19,8 @@ function initLyricsList() {
       ${formatLyricItemHtml(item)}
     </div>
   `).join('');
+  activeLyricLineEl = null;
+  appliedActiveIdx = -99;
 
   if (LYRICS_DATA && LYRICS_DATA.length > 0) {
     displayedPreviewIdx = -1;
@@ -134,7 +139,9 @@ function seekToLyricLineByIndex(idx, e) {
   const item = LYRICS_DATA[idx];
   if (!item) return;
   const offsetComp = (typeof LYRIC_AUDIO_OFFSET === 'number') ? LYRIC_AUDIO_OFFSET : 0.0;
-  seekToLyricLine(item.time + offsetComp + 0.02, e, idx);
+  // 寻道目标按歌词偏移反向补偿：落点必须对齐本句 0% 起唱点（rawTime + offset 恰好等于行时间轴），
+  // 杜绝点击歌词行后填充从中段才开始推进
+  seekToLyricLine(Math.max(0, item.time - offsetComp + 0.02), e, idx);
 }
 
 function seekToLyricLine(time, e, explicitIdx) {
@@ -149,7 +156,6 @@ function seekToLyricLine(time, e, explicitIdx) {
 
   if (typeof explicitIdx === 'number' && explicitIdx >= 0) {
     lastActiveIdx = explicitIdx;
-    lastInterludeNextIdx = -1;
     displayedPreviewIdx = -1;
   }
 
@@ -174,7 +180,8 @@ function playAtTargetLyric(e) {
   if (typeof targetSeekIndex === 'number' && targetSeekIndex >= 0) {
     seekToLyricLineByIndex(targetSeekIndex, e);
   } else {
-    seekToLyricLine(targetSeekTime + 0.05, e);
+    const offsetComp = (typeof LYRIC_AUDIO_OFFSET === 'number') ? LYRIC_AUDIO_OFFSET : 0.0;
+    seekToLyricLine(Math.max(0, targetSeekTime - offsetComp + 0.02), e);
   }
 }
 
@@ -219,9 +226,9 @@ function getAccuratePlaybackSec() {
         lastNativeSamplePerf = now;
         currentSec = rawPos;
       } else if (isPlaying) {
-        // 底层 MediaPlayer 在 100ms 内尚未更新采样，用高精度系统时钟线性前插平滑（最大不超过0.25s）
+        // 底层 MediaPlayer 在采样间隔内尚未更新时，用高精度系统时钟线性前插平滑（上限0.5s，覆盖粗粒度采样机型）
         const elapsedSinceSample = (now - lastNativeSamplePerf) / 1000;
-        if (elapsedSinceSample > 0 && elapsedSinceSample < 0.25) {
+        if (elapsedSinceSample > 0 && elapsedSinceSample < 0.5) {
           currentSec = rawPos + elapsedSinceSample;
         }
       }
@@ -241,10 +248,15 @@ function startLyricSmoothSync() {
         return;
       }
       if (!isSeekingAudio) {
-        currentSec = getAccuratePlaybackSec();
+        // 每帧只做一次原生位置采样，同一采样值贯穿进度条与歌词推进，杜绝双源写入回跳
+        const sampled = getAccuratePlaybackSec();
+        currentSec = sampled;
+        syncProgress(sampled);
+        updateLyricProgressSmooth(-1, sampled);
+      } else {
+        syncProgress();
+        updateLyricProgressSmooth();
       }
-      syncProgress();
-      updateLyricProgressSmooth();
       lyricRafId = requestAnimationFrame(tick);
     } else {
       lyricRafId = null;
@@ -304,7 +316,6 @@ let LYRIC_AUDIO_OFFSET = (function() {
   if (saved !== null && !isNaN(parseFloat(saved))) return parseFloat(saved);
   return 0.15;
 })();
-let lastInterludeNextIdx = -1;
 
 function setLyricAudioOffset(val) {
   LYRIC_AUDIO_OFFSET = Number(val) || 0.0;
@@ -356,10 +367,11 @@ function findActiveLyricIndex(curTime) {
   return ans;
 }
 
-function updateLyricProgressSmooth(forcedIdx) {
+function updateLyricProgressSmooth(forcedIdx, sampledSec) {
   if (document.hidden) return; // 切后台彻底跳过歌词 DOM 渲染与重排计算
   if (!LYRICS_DATA || LYRICS_DATA.length === 0) return;
-  const rawTime = (typeof getAccuratePlaybackSec === 'function') ? getAccuratePlaybackSec() : currentSec;
+  const rawTime = (typeof sampledSec === 'number' && sampledSec >= 0) ? sampledSec
+    : ((typeof getAccuratePlaybackSec === 'function') ? getAccuratePlaybackSec() : currentSec);
   const curTime = Math.max(0, rawTime + LYRIC_AUDIO_OFFSET);
 
   let activeIdx = -1;
@@ -373,14 +385,16 @@ function updateLyricProgressSmooth(forcedIdx) {
 
   // 1. 前奏判定：歌曲已开播但尚未起唱第一句（停在首句，0%填色，绝不提前染蓝）
   if (activeIdx === -1 && LYRICS_DATA.length > 0 && curTime < LYRICS_DATA[0].time) {
-    if (lastActiveIdx !== 0) {
+    if (lastActiveIdx !== 0 || appliedActiveIdx !== 0) {
       applyLyricLineChange(0);
     }
-    const activeLine = document.querySelector('.lyric-line-item.active');
+    let activeLine = activeLyricLineEl;
+    if (!activeLine) activeLine = document.querySelector('.lyric-line-item.active');
     if (activeLine) {
       activeLine.style.setProperty('--fill-pct', '0%');
     }
-    const previewMain = document.getElementById('previewMainLyric');
+    if (!previewMainLyricEl) previewMainLyricEl = document.getElementById('previewMainLyric');
+    const previewMain = previewMainLyricEl;
     if (previewMain) {
       previewMain.classList.remove('pending');
       previewMain.style.setProperty('--fill-pct', '0%');
@@ -398,11 +412,13 @@ function updateLyricProgressSmooth(forcedIdx) {
 
   if (inInterlude) {
     // 间奏期间锁定停在当前句，保持100%全高亮状态，绝不跳到下一句或提前染蓝
-    const activeLine = document.querySelector('.lyric-line-item.active');
+    let activeLine = activeLyricLineEl;
+    if (!activeLine) activeLine = document.querySelector('.lyric-line-item.active');
     if (activeLine) {
       activeLine.style.setProperty('--fill-pct', '100%');
     }
-    const previewMain = document.getElementById('previewMainLyric');
+    if (!previewMainLyricEl) previewMainLyricEl = document.getElementById('previewMainLyric');
+    const previewMain = previewMainLyricEl;
     if (previewMain) {
       previewMain.classList.remove('pending');
       previewMain.style.setProperty('--fill-pct', '100%');
@@ -453,17 +469,20 @@ function updateLyricProgressSmooth(forcedIdx) {
     fillPct = Math.min(100, Math.max(0, smoothedRatio * 100));
   }
 
-  // 行切换时才触发 DOM 类名变更与平滑滚动
-  if (activeIdx !== lastActiveIdx) {
+  // 行切换时才触发 DOM 类名变更与平滑滚动；以「已应用到 DOM 的行号」为门控，
+  // 修复拖动进度条或 seekAudio 直接改写 lastActiveIdx 后高亮滞留旧行的问题
+  if (activeIdx !== appliedActiveIdx) {
     applyLyricLineChange(activeIdx);
   }
 
-  // 高频精准更新当前活跃行颜色渐变（60fps 丝滑无跳跃）
-  const activeLine = document.querySelector('.lyric-line-item.active');
+  // 高频精准更新当前活跃行颜色渐变（60fps 丝滑无跳跃，活跃行元素走缓存避免每帧查询）
+  let activeLine = activeLyricLineEl;
+  if (!activeLine) activeLine = document.querySelector('.lyric-line-item.active');
   if (activeLine) {
     activeLine.style.setProperty('--fill-pct', `${fillPct.toFixed(1)}%`);
   }
-  const previewMain = document.getElementById('previewMainLyric');
+  if (!previewMainLyricEl) previewMainLyricEl = document.getElementById('previewMainLyric');
+  const previewMain = previewMainLyricEl;
   if (previewMain) {
     previewMain.classList.remove('pending');
     previewMain.style.setProperty('--fill-pct', `${fillPct.toFixed(1)}%`);
@@ -473,10 +492,11 @@ function updateLyricProgressSmooth(forcedIdx) {
 function applyLyricLineChange(activeIdx) {
   if (activeIdx === -1) {
     lastActiveIdx = -1;
-    lastInterludeNextIdx = -1;
+    activeLyricLineEl = null;
+    appliedActiveIdx = -1;
     const lines = document.querySelectorAll('.lyric-line-item');
     lines.forEach(line => {
-      line.classList.remove('active', 'pending-next');
+      line.classList.remove('active');
       line.style.removeProperty('--fill-pct');
     });
     const previewMain = document.getElementById('previewMainLyric');
@@ -490,11 +510,10 @@ function applyLyricLineChange(activeIdx) {
 
   const isForward = activeIdx > lastActiveIdx && lastActiveIdx !== -1 && lastActiveIdx !== -99;
   lastActiveIdx = activeIdx;
-  lastInterludeNextIdx = -1;
+  appliedActiveIdx = activeIdx;
 
   const lines = document.querySelectorAll('.lyric-line-item');
   lines.forEach((line, idx) => {
-    line.classList.remove('pending-next');
     if (idx < activeIdx) {
       if (!line.classList.contains('passed')) {
         line.className = 'lyric-line-item passed';
@@ -509,6 +528,7 @@ function applyLyricLineChange(activeIdx) {
       }
     }
   });
+  activeLyricLineEl = (activeIdx >= 0 && activeIdx < lines.length) ? lines[activeIdx] : null;
 
   if (!isUserInteractingWithLyrics && isPureLyrics) {
     scrollActiveLyricToCenter();
@@ -527,32 +547,6 @@ function applyLyricLineChange(activeIdx) {
       window.AndroidBridge.updateDesktopLyric(curTxt, nextTxt, themeHex, isFav, isPlaying);
     }
   }
-}
-
-function applyLyricInterludeState(nextIdx) {
-  if (lastInterludeNextIdx === nextIdx && lastActiveIdx === -99) {
-    return;
-  }
-  lastInterludeNextIdx = nextIdx;
-  lastActiveIdx = -99;
-
-  const lines = document.querySelectorAll('.lyric-line-item');
-  lines.forEach((line, idx) => {
-    line.style.removeProperty('--fill-pct');
-    if (idx < nextIdx) {
-      line.className = 'lyric-line-item passed';
-    } else if (idx === nextIdx) {
-      line.className = 'lyric-line-item pending-next';
-    } else {
-      line.className = 'lyric-line-item';
-    }
-  });
-
-  if (!isUserInteractingWithLyrics && isPureLyrics) {
-    scrollLyricItemToCenter(nextIdx);
-  }
-
-  updateSimplePreviewLyric(nextIdx, true);
 }
 
 let previewRollTimer = null;
@@ -709,7 +703,7 @@ function scrollLyricItemToCenter(targetIdx) {
 function scrollActiveLyricToCenter() {
   const container = document.getElementById('pureLyricsContainer');
   if (!container) return;
-  const activeLine = container.querySelector('.lyric-line-item.active, .lyric-line-item.pending-next');
+  const activeLine = container.querySelector('.lyric-line-item.active');
   if (!activeLine) return;
   const containerHeight = container.clientHeight;
   const targetTop = activeLine.offsetTop - (containerHeight * 0.42) + (activeLine.clientHeight / 2);

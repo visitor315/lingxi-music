@@ -178,26 +178,6 @@
   background: linear-gradient(to right, var(--brand-blue) var(--fill-pct, 0%), var(--lyric-inactive) var(--fill-pct, 0%));
   -webkit-background-clip: text; -webkit-text-fill-color: transparent;
 }
-/* 间奏待唱静候状态：下一句已平稳就位，但尚未起唱，呈现典雅湛蓝高亮，提示即将开唱 */
-.lyric-line-item.pending-next {
-  font-weight: 600;
-  color: var(--brand-blue) !important;
-  -webkit-text-fill-color: var(--brand-blue) !important;
-  opacity: 1 !important;
-  transform: scale(1.05);
-}
-.lyric-line-item.pending-next .lyric-singer-tag {
-  color: var(--brand-blue) !important;
-  -webkit-text-fill-color: var(--brand-blue) !important;
-  background: none !important;
-  -webkit-background-clip: initial !important;
-}
-.lyric-line-item.pending-next .lyric-text-body {
-  color: var(--brand-blue) !important;
-  -webkit-text-fill-color: var(--brand-blue) !important;
-  background: none !important;
-  -webkit-background-clip: initial !important;
-}
 .lyric-line-item.passed { color: var(--lyric-inactive); opacity: 0.55; }
 
 .lyrics-seek-crossline {

@@ -81,7 +81,9 @@ window.seekToNextLyricLine = function() {
   if (!LYRICS_DATA || LYRICS_DATA.length === 0) return;
   let targetIdx = (lastActiveIdx >= 0) ? (lastActiveIdx + 1) : 0;
   if (targetIdx >= LYRICS_DATA.length) targetIdx = LYRICS_DATA.length - 1;
-  const targetTime = LYRICS_DATA[targetIdx].time;
+  // 按歌词偏移反向补偿，落点对齐本句 0% 起唱点
+  const offsetComp = (typeof LYRIC_AUDIO_OFFSET === 'number') ? LYRIC_AUDIO_OFFSET : 0.0;
+  const targetTime = Math.max(0, LYRICS_DATA[targetIdx].time - offsetComp + 0.02);
   currentSec = targetTime;
   if (isNativeAudioSupported) {
     window.AndroidBridge.seekNativeAudio(targetTime);
@@ -96,7 +98,8 @@ window.seekToNextLyricLine = function() {
 window.seekToPrevLyricLine = function() {
   if (!LYRICS_DATA || LYRICS_DATA.length === 0) return;
   let targetIdx = (lastActiveIdx > 0) ? (lastActiveIdx - 1) : 0;
-  const targetTime = LYRICS_DATA[targetIdx].time;
+  const offsetComp = (typeof LYRIC_AUDIO_OFFSET === 'number') ? LYRIC_AUDIO_OFFSET : 0.0;
+  const targetTime = Math.max(0, LYRICS_DATA[targetIdx].time - offsetComp + 0.02);
   currentSec = targetTime;
   if (isNativeAudioSupported) {
     window.AndroidBridge.seekNativeAudio(targetTime);

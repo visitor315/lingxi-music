@@ -324,12 +324,12 @@ function renderSongList() {
           <div class="playing-bars"><div class="bar"></div><div class="bar"></div><div class="bar"></div></div>
         </div>
         <div class="song-info">
-          <div class="song-title">${song.title}</div>
-          <div class="song-artist">${song.artist}</div>
+          <div class="song-title">${escapeHtml(song.title)}</div>
+          <div class="song-artist">${escapeHtml(song.artist)}</div>
         </div>
         <div class="song-actions-cluster">
           ${isFavAlbum ? '' : `
-          <div class="fav-btn ${song.isFav ? 'active' : ''}" data-song-id="${song.id}" onclick="event.stopPropagation(); toggleSongFav('${song.id}', this, event)">
+          <div class="fav-btn ${song.isFav ? 'active' : ''}" data-song-id="${escapeHtml(song.id || '')}" onclick="event.stopPropagation(); toggleSongFav('${escapeHtml(song.id || '')}', this, event)">
             <svg viewBox="0 0 24 24" width="18" height="18" fill="${song.isFav ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="1.4"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
           </div>`}
           <div class="more-dots-btn" onclick="openSongMenu(event, ${idx})" title="更多操作">

@@ -1728,7 +1728,7 @@ function playNext() {
   }
 }
 
-function syncProgress() {
+function syncProgress(sampledSec) {
   if (isDraggingProgressBar) return;
   if (document.hidden) return; // 切后台彻底跳过 DOM 刷新与样式重绘！
   const song = currentPlaybackQueue[currentIndex];
@@ -1746,7 +1746,10 @@ function syncProgress() {
       duration = realDur;
     }
     if (!isSeekingAudio) {
-      const np = window.AndroidBridge.getNativePosition ? window.AndroidBridge.getNativePosition() : currentSec;
+      // 优先复用帧循环的单次插值采样；自行采样时也走插值引擎，严禁用粗糙原始位置覆盖已平滑的 currentSec 造成回跳
+      const np = (typeof sampledSec === 'number' && sampledSec >= 0)
+        ? sampledSec
+        : ((typeof getAccuratePlaybackSec === 'function') ? getAccuratePlaybackSec() : (window.AndroidBridge.getNativePosition ? window.AndroidBridge.getNativePosition() : currentSec));
       if (typeof np === 'number' && np >= 0) {
         const hasPrepared = window.AndroidBridge.isNativePrepared ? window.AndroidBridge.isNativePrepared() : false;
         if (hasPrepared || np <= duration) {
