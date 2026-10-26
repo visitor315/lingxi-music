@@ -17,25 +17,19 @@ let isLyricLoadingTransition = false;
 /* 纯净歌词加载占位：直接呈现一行普通歌词“歌词正在加载中…”，期间隐藏所有其他歌词 */
 let lyricLoadingWatchdogTimer = null;
 
-function showLyricTransitionAnimation(song) {
+/* 切歌触发时刻第 1 毫秒强制彻底重置歌词上下文与 DOM 渲染状态 */
+function resetLyricStateOnSongSwitch(song) {
+  if (lyricLoadingWatchdogTimer) {
+    clearTimeout(lyricLoadingWatchdogTimer);
+    lyricLoadingWatchdogTimer = null;
+  }
   isLyricLoadingTransition = true;
-  if (lyricLoadingWatchdogTimer) clearTimeout(lyricLoadingWatchdogTimer);
-  // 保险看门狗：最长等待 4 秒，若因全网无歌词或接口超时未正常结束，自动降级解除加载状态
-  lyricLoadingWatchdogTimer = setTimeout(() => {
-    if (isLyricLoadingTransition) {
-      isLyricLoadingTransition = false;
-      const s = currentPlaybackQueue[currentIndex] || song;
-      LYRICS_DATA = [
-        { time: 0, duration: 6, text: `《${(s && s.title) || '当前歌曲'}》` },
-        { time: 6, duration: 15, text: "正在播放网络歌曲" },
-        { time: 21, duration: 25, text: "此歌曲暂无同步歌词" }
-      ];
-      lastActiveIdx = -1;
-      initLyricsList();
-    }
-  }, 4000);
+  LYRICS_DATA = [];
+  lastActiveIdx = -1;
+  appliedActiveIdx = -99;
+  displayedPreviewIdx = -1;
+  activeLyricLineEl = null;
 
-  // 1. 唱片机下方预览歌词区域：只留一行普通歌词，彻底隐藏副歌词
   const previewMain = document.getElementById('previewMainLyric');
   const previewSub = document.getElementById('previewSubLyric');
   const track = document.getElementById('previewScrollTrack');
@@ -47,6 +41,7 @@ function showLyricTransitionAnimation(song) {
     previewMain.style.transition = 'none';
     previewMain.style.opacity = '0.7';
     previewMain.classList.remove('pending');
+    previewMain.style.setProperty('--fill-pct', '0%');
     previewMain.innerHTML = '<span class="lyric-text-body">歌词正在加载中…</span>';
   }
   if (previewSub) {
@@ -56,18 +51,82 @@ function showLyricTransitionAnimation(song) {
     previewSub.textContent = '';
   }
 
-  // 2. 全屏纯歌词滚动容器：隐藏其他歌词，仅居中显示这一行
   const container = document.getElementById('lyricsItemsList');
   if (container) {
     container.innerHTML = '<div class="lyric-line-item active" style="pointer-events:none; opacity:0.7;"><span class="lyric-text-body">歌词正在加载中…</span></div>';
+    container.scrollTop = 0;
   }
 
-  // 3. 桌面与原生悬浮歌词同步为纯净加载行
   if (window.AndroidBridge && window.AndroidBridge.setNativeLyrics) {
     try {
       window.AndroidBridge.setNativeLyrics(JSON.stringify([{ time: 0, text: '歌词正在加载中…' }]));
     } catch(e) {}
   }
+}
+
+/* 确定性无歌词安全状态（本地无词或网络未匹配时立即平稳落袋） */
+function setNoLyricsState(song, reasonText = '此歌曲暂无同步歌词') {
+  if (lyricLoadingWatchdogTimer) {
+    clearTimeout(lyricLoadingWatchdogTimer);
+    lyricLoadingWatchdogTimer = null;
+  }
+  isLyricLoadingTransition = false;
+  LYRICS_DATA = [
+    { time: 0, duration: 99999, text: reasonText, cleanText: reasonText }
+  ];
+  lastActiveIdx = -1;
+  appliedActiveIdx = -99;
+  displayedPreviewIdx = -1;
+  activeLyricLineEl = null;
+
+  const previewMain = document.getElementById('previewMainLyric');
+  const previewSub = document.getElementById('previewSubLyric');
+  const track = document.getElementById('previewScrollTrack');
+  if (track) {
+    track.style.transition = 'none';
+    track.style.transform = 'translateY(0)';
+  }
+  if (previewMain) {
+    previewMain.style.transition = 'none';
+    previewMain.style.opacity = '0.6';
+    previewMain.classList.remove('pending');
+    previewMain.style.setProperty('--fill-pct', '0%');
+    previewMain.innerHTML = '<span class="lyric-text-body">暂无歌词</span>';
+  }
+  if (previewSub) {
+    previewSub.style.transition = 'none';
+    previewSub.style.transform = 'none';
+    previewSub.style.display = 'none';
+    previewSub.textContent = '';
+  }
+
+  const container = document.getElementById('lyricsItemsList');
+  if (container) {
+    container.innerHTML = `
+      <div class="lyric-line-item active" style="pointer-events:none; opacity:0.6; text-align:center;">
+        <span class="lyric-text-body">${reasonText}</span>
+      </div>
+    `;
+    container.scrollTop = 0;
+  }
+
+  if (window.AndroidBridge && window.AndroidBridge.setNativeLyrics) {
+    try {
+      window.AndroidBridge.setNativeLyrics(JSON.stringify([{ time: 0, text: reasonText }]));
+    } catch(e) {}
+  }
+}
+
+function showLyricTransitionAnimation(song) {
+  resetLyricStateOnSongSwitch(song);
+
+  // 保险看门狗：最长等待 3.5 秒，若因全网无歌词或接口超时未正常结束，自动降级解除加载状态
+  lyricLoadingWatchdogTimer = setTimeout(() => {
+    if (isLyricLoadingTransition) {
+      const s = currentPlaybackQueue[currentIndex] || song;
+      setNoLyricsState(s, '此歌曲暂无同步歌词');
+    }
+  }, 3500);
 }
 
 function initLyricsList() {
@@ -76,9 +135,13 @@ function initLyricsList() {
     lyricLoadingWatchdogTimer = null;
   }
   isLyricLoadingTransition = false;
+  if (!LYRICS_DATA || LYRICS_DATA.length === 0) {
+    setNoLyricsState(currentPlaybackQueue[currentIndex]);
+    return;
+  }
   const previewSub = document.getElementById('previewSubLyric');
   if (previewSub) {
-    previewSub.style.display = '';
+    previewSub.style.display = (LYRICS_DATA.length > 1) ? '' : 'none';
   }
   const container = document.getElementById('lyricsItemsList');
   container.innerHTML = LYRICS_DATA.map((item, idx) => `
@@ -157,6 +220,14 @@ function openPureLyricsView() {
   document.getElementById('turntableBox').style.display = 'none';
   document.getElementById('simpleLyricsBox').style.display = 'none';
   document.getElementById('pureLyricsContainer').classList.add('active');
+  const container = document.getElementById('lyricsItemsList');
+  if (container && (!container.children || container.children.length === 0)) {
+    if (isLyricLoadingTransition) {
+      container.innerHTML = '<div class="lyric-line-item active" style="pointer-events:none; opacity:0.7;"><span class="lyric-text-body">歌词正在加载中…</span></div>';
+    } else {
+      container.innerHTML = '<div class="lyric-line-item active" style="pointer-events:none; opacity:0.6; text-align:center;"><span class="lyric-text-body">此歌曲暂无同步歌词</span></div>';
+    }
+  }
   setTimeout(() => scrollActiveLyricToCenter(), 60);
 }
 
@@ -485,6 +556,7 @@ function findActiveLyricIndex(curTime) {
 
 function updateLyricProgressSmooth(forcedIdx, sampledSec) {
   if (document.hidden) return; // 切后台彻底跳过歌词 DOM 渲染与重排计算
+  if (isLyricLoadingTransition) return; // 过渡加载中坚决禁止任何歌词计算与预览覆盖！
   if (!LYRICS_DATA || LYRICS_DATA.length === 0) return;
   const rawTime = (typeof sampledSec === 'number' && sampledSec >= 0) ? sampledSec
     : ((typeof getAccuratePlaybackSec === 'function') ? getAccuratePlaybackSec() : currentSec);

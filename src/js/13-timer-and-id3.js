@@ -704,8 +704,8 @@ async function saveCoverImageToDevice() {
 /* ================== 原生 ID3v2 标签解析（提取内嵌 APIC 封面与信息） ================== */
 function extractID3CoverAndMetadata(file) {
   return new Promise((resolve) => {
-    if (!file) return resolve({ title: '', artist: '', coverUrl: '', coverBlob: null });
-    const slice = file.slice(0, 256 * 1024);
+    if (!file) return resolve({ title: '', artist: '', coverUrl: '', coverBlob: null, lrc: '' });
+    const slice = file.slice(0, 1024 * 1024);
     const reader = new FileReader();
 
     reader.onload = function(e) {
@@ -715,7 +715,8 @@ function extractID3CoverAndMetadata(file) {
         title: '',
         artist: '',
         coverUrl: '',
-        coverBlob: null
+        coverBlob: null,
+        lrc: ''
       };
 
       try {
@@ -769,6 +770,8 @@ function extractID3CoverAndMetadata(file) {
               result.coverUrl = coverInfo.url;
               result.coverBlob = coverInfo.blob;
             }
+          } else if (frameId === 'USLT' && !result.lrc) {
+            result.lrc = decodeUsltFrame(view, frameBodyOffset, frameSize);
           }
 
           offset += 10 + frameSize;
@@ -786,6 +789,47 @@ function extractID3CoverAndMetadata(file) {
 
     reader.readAsArrayBuffer(slice);
   });
+}
+
+function decodeUsltFrame(view, offset, size) {
+  if (size <= 5) return '';
+  const encoding = view.getUint8(offset);
+  let pos = offset + 4; // 跳过 1 字节编码 + 3 字节语言代码
+  const maxPos = offset + size;
+
+  // 跨过以 null 结尾的内容描述符（Content Descriptor）
+  if (encoding === 1 || encoding === 2) {
+    while (pos + 1 < maxPos) {
+      if (view.getUint8(pos) === 0 && view.getUint8(pos + 1) === 0) {
+        pos += 2;
+        break;
+      }
+      pos += 2;
+    }
+  } else {
+    while (pos < maxPos) {
+      if (view.getUint8(pos) === 0) {
+        pos += 1;
+        break;
+      }
+      pos += 1;
+    }
+  }
+
+  if (pos >= maxPos) return '';
+  const bytes = new Uint8Array(view.buffer, pos, maxPos - pos);
+  try {
+    if (encoding === 0) {
+      return new TextDecoder('latin1').decode(bytes).replace(/\0+$/, '').trim();
+    } else if (encoding === 1) {
+      return new TextDecoder('utf-16').decode(bytes).replace(/\0+$/, '').trim();
+    } else if (encoding === 2) {
+      return new TextDecoder('utf-16be').decode(bytes).replace(/\0+$/, '').trim();
+    } else if (encoding === 3) {
+      return new TextDecoder('utf-8').decode(bytes).replace(/\0+$/, '').trim();
+    }
+  } catch(e) {}
+  return '';
 }
 
 function decodeTextFrame(view, offset, size) {
@@ -886,6 +930,7 @@ async function handleAudioImport(e) {
       // 原生环境存系统持久授权的 content 地址（重启后仍可播放）；纯网页环境回退 blob（仅当次会话有效）
       fileUrl: (pickedUris && pickedUris[i]) ? pickedUris[i] : URL.createObjectURL(file),
       cover: coverUrl,
+      lrc: (meta && meta.lrc) ? meta.lrc : '',
       isLocal: true,
       isFav: false
     };

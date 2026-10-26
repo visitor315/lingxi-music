@@ -341,6 +341,7 @@ function playSongAtQueue(idx) {
   if (!song) return;
   currentSec = 0;
   if (typeof resetPlaybackClock === "function") resetPlaybackClock(0);
+  if (typeof resetLyricStateOnSongSwitch === 'function') resetLyricStateOnSongSwitch(song);
 
   // 发现页顶部推荐曲目联动：当前歌曲若为推荐曲目，唱片自动平滑滚入正方形卡片
   if (topRecommendedTracks && topRecommendedTracks.length > 0) {
@@ -420,9 +421,15 @@ function playSongAtQueue(idx) {
     displayedPreviewIdx = -1;
     initLyricsList();
     syncCurrentLyricToDesktop();
+  } else if (song.isLocal && !cachedLrc) {
+    // 本地导入歌曲且未内嵌/无本地歌词缓存：绝不拖延、绝不跟随上一首，立即呈现干净的暂无歌词状态
+    setNoLyricsState(song, '此歌曲暂无同步歌词');
+    const cleanTitle = (typeof formatCleanTitle === 'function') ? formatCleanTitle(song.title || '') : (song.title || '');
+    if (cleanTitle && cleanTitle !== '未知曲目' && cleanTitle.length >= 2) {
+      loadBestAvailableLyric(song);
+    }
   } else {
-    // 存量普通单行 LRC、旧缓存或无缓存：绝不提前刷上屏幕导致一长句排版！
-    // 立即启动宣纸水墨过场微光动效，后台优先拉取 QRC / KRC 商业逐字排版
+    // 存量普通单行 LRC、旧缓存或无缓存：启动宣纸水墨过场微光动效，后台优先拉取逐字排版
     showLyricTransitionAnimation(song);
     if (cachedLrc && !hasWordLyric) {
       upgradeLyricToWordLevel(song, cachedLrc);

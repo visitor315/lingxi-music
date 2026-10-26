@@ -219,18 +219,7 @@ function persistData() {
 
 loadPersistedData();
 
-let LYRICS_DATA = [
-  { time: 0, duration: 5, text: "空谷幽兰 - 系统演示" },
-  { time: 5, duration: 13, text: "谁家的枝头鸟儿成双对" },
-  { time: 18, duration: 14, text: "蝴蝶翩翩飞" },
-  { time: 32, duration: 18, text: "晨光渐照，微风拂过" },
-  { time: 50, duration: 22, text: "琴声悠扬，旋律轻快" },
-  { time: 72, duration: 24, text: "漫步在林间小道，听泉水叮咚" },
-  { time: 96, duration: 26, text: "看天空白云流动，惬意舒适" },
-  { time: 122, duration: 26, text: "伴着动听的音乐，沉浸其中" },
-  { time: 148, duration: 24, text: "随心聆听每一刻美好旋律" },
-  { time: 172, duration: 14, text: "音乐停歇，余音仍在耳畔回响" }
-];
+let LYRICS_DATA = [];
 
 // 全局移动端幽灵穿透（Ghost Click）防范拦截引擎
 let ghostClickBlockUntil = 0;
