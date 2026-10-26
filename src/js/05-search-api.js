@@ -471,9 +471,6 @@ async function playOnlineTrack(idx) {
     updateSongRowCover(libSong);
   }
 
-  // 5. 异步拉取歌词
-  fetchLyricForSong(item.lyric_id || item.id, trackObj.title, item.source || 'netease');
-
   persistData();
   renderSongList();
   renderVinylDiscs();
