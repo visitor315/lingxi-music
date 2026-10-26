@@ -14,13 +14,11 @@ let appliedActiveIdx = -99;
 
 let isLyricLoadingTransition = false;
 
-/* 宣纸水墨过场动画：呈现温润微光呼吸动效，杜绝未分词的普通长句提前粗暴上屏闪烁 */
+/* 纯净歌词加载占位：直接呈现一行普通歌词“歌词正在加载中…”，期间隐藏所有其他歌词 */
 function showLyricTransitionAnimation(song) {
   isLyricLoadingTransition = true;
-  const title = (song && song.title) ? song.title : '灵犀音乐';
-  const artist = (song && song.artist) ? song.artist : '随心听';
 
-  // 1. 唱片机下方预览歌词区域：优雅水墨过场动效
+  // 1. 唱片机下方预览歌词区域：只留一行普通歌词，彻底隐藏副歌词
   const previewMain = document.getElementById('previewMainLyric');
   const previewSub = document.getElementById('previewSubLyric');
   const track = document.getElementById('previewScrollTrack');
@@ -30,34 +28,37 @@ function showLyricTransitionAnimation(song) {
   }
   if (previewMain) {
     previewMain.style.transition = 'none';
-    previewMain.style.opacity = '1';
+    previewMain.style.opacity = '0.7';
     previewMain.classList.remove('pending');
-    previewMain.innerHTML = `<div class="lyric-loading-transition"><span class="lyric-loading-dot"></span><span class="lyric-loading-text">正在排版灵犀逐字词轴</span><span class="lyric-loading-dot"></span></div>`;
+    previewMain.innerHTML = '<span class="lyric-text-body">歌词正在加载中…</span>';
   }
   if (previewSub) {
     previewSub.style.transition = 'none';
     previewSub.style.transform = 'none';
-    previewSub.style.color = '';
-    previewSub.style.opacity = '0.55';
-    previewSub.textContent = `${title} - ${artist}`;
+    previewSub.style.display = 'none';
+    previewSub.textContent = '';
   }
 
-  // 2. 全屏纯歌词滚动容器：素雅水墨呼吸占位
+  // 2. 全屏纯歌词滚动容器：隐藏其他歌词，仅居中显示这一行
   const container = document.getElementById('lyricsItemsList');
   if (container) {
-    container.innerHTML = `<div class="lyric-loading-full-wrap"><div class="lyric-loading-transition"><span class="lyric-loading-dot"></span><span class="lyric-loading-text">正在排版灵犀逐字词轴</span><span class="lyric-loading-dot"></span></div><div class="lyric-loading-sub-text">${title} - ${artist}</div></div>`;
+    container.innerHTML = '<div class="lyric-line-item active" style="pointer-events:none; opacity:0.7;"><span class="lyric-text-body">歌词正在加载中…</span></div>';
   }
 
-  // 3. 桌面与原生悬浮歌词占位
+  // 3. 桌面与原生悬浮歌词同步为纯净加载行
   if (window.AndroidBridge && window.AndroidBridge.setNativeLyrics) {
     try {
-      window.AndroidBridge.setNativeLyrics(JSON.stringify([{ time: 0, text: `${title} - ${artist}` }]));
+      window.AndroidBridge.setNativeLyrics(JSON.stringify([{ time: 0, text: '歌词正在加载中…' }]));
     } catch(e) {}
   }
 }
 
 function initLyricsList() {
   isLyricLoadingTransition = false;
+  const previewSub = document.getElementById('previewSubLyric');
+  if (previewSub) {
+    previewSub.style.display = '';
+  }
   const container = document.getElementById('lyricsItemsList');
   container.innerHTML = LYRICS_DATA.map((item, idx) => `
     <div class="lyric-line-item" data-time="${item.time}" data-index="${idx}" id="lyricLine${idx}" onclick="seekToLyricLineByIndex(${idx}, event)">
