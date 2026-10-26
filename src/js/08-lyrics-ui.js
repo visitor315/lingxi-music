@@ -12,7 +12,52 @@ let activeLyricLineEl = null;
 let previewMainLyricEl = null;
 let appliedActiveIdx = -99;
 
+let isLyricLoadingTransition = false;
+
+/* 宣纸水墨过场动画：呈现温润微光呼吸动效，杜绝未分词的普通长句提前粗暴上屏闪烁 */
+function showLyricTransitionAnimation(song) {
+  isLyricLoadingTransition = true;
+  const title = (song && song.title) ? song.title : '灵犀音乐';
+  const artist = (song && song.artist) ? song.artist : '随心听';
+
+  // 1. 唱片机下方预览歌词区域：优雅水墨过场动效
+  const previewMain = document.getElementById('previewMainLyric');
+  const previewSub = document.getElementById('previewSubLyric');
+  const track = document.getElementById('previewScrollTrack');
+  if (track) {
+    track.style.transition = 'none';
+    track.style.transform = 'translateY(0)';
+  }
+  if (previewMain) {
+    previewMain.style.transition = 'none';
+    previewMain.style.opacity = '1';
+    previewMain.classList.remove('pending');
+    previewMain.innerHTML = `<div class="lyric-loading-transition"><span class="lyric-loading-dot"></span><span class="lyric-loading-text">正在排版灵犀逐字词轴</span><span class="lyric-loading-dot"></span></div>`;
+  }
+  if (previewSub) {
+    previewSub.style.transition = 'none';
+    previewSub.style.transform = 'none';
+    previewSub.style.color = '';
+    previewSub.style.opacity = '0.55';
+    previewSub.textContent = `${title} - ${artist}`;
+  }
+
+  // 2. 全屏纯歌词滚动容器：素雅水墨呼吸占位
+  const container = document.getElementById('lyricsItemsList');
+  if (container) {
+    container.innerHTML = `<div class="lyric-loading-full-wrap"><div class="lyric-loading-transition"><span class="lyric-loading-dot"></span><span class="lyric-loading-text">正在排版灵犀逐字词轴</span><span class="lyric-loading-dot"></span></div><div class="lyric-loading-sub-text">${title} - ${artist}</div></div>`;
+  }
+
+  // 3. 桌面与原生悬浮歌词占位
+  if (window.AndroidBridge && window.AndroidBridge.setNativeLyrics) {
+    try {
+      window.AndroidBridge.setNativeLyrics(JSON.stringify([{ time: 0, text: `${title} - ${artist}` }]));
+    } catch(e) {}
+  }
+}
+
 function initLyricsList() {
+  isLyricLoadingTransition = false;
   const container = document.getElementById('lyricsItemsList');
   container.innerHTML = LYRICS_DATA.map((item, idx) => `
     <div class="lyric-line-item" data-time="${item.time}" data-index="${idx}" id="lyricLine${idx}" onclick="seekToLyricLineByIndex(${idx}, event)">

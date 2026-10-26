@@ -405,34 +405,29 @@ function playSongAtQueue(idx) {
     applySongCoverToUI(song.cover);
   }
 
-  // 2. 立即重置为当前曲目占位歌词，彻底消除曲目切换瞬间显示上一首旧歌词的视觉不同步
-  LYRICS_DATA = [{ time: 0, text: (song.title || '灵犀音乐') + ' - ' + (song.artist || '随心听') }];
-  lastActiveIdx = -1;
-  displayedPreviewIdx = -1;
-  initLyricsList();
-  syncCurrentLyricToDesktop();
-
-  // 恢复或加载正式歌词（词级逐字优先；存量普通 LRC 先用后后台升级为 KRC 词级时间轴）
+  // 2. 歌词恢复与加载（优质词级逐字优先直接上屏，未完成逐字分词时优雅呈现水墨过场动效）
   const cachedLrc = song.lrc || getCachedLyric(song.title, song.artist);
-  if (cachedLrc) {
-    const parsed = parseLrc(cachedLrc);
-    if (parsed && parsed.length) {
-      LYRICS_DATA = parsed;
-      lastActiveIdx = -1;
-      displayedPreviewIdx = -1;
-      initLyricsList();
-      syncCurrentLyricToDesktop();
-      const hasWordLyric = parsed.some(l => l.words && l.words.length > 0);
-      if (!hasWordLyric) {
-        // 存量普通 LRC：缓存文本本身就是网易云锚点，直接传给升级链路
-        upgradeLyricToWordLevel(song, cachedLrc);
-      } else if (!cachedLrc.includes('[krc-anchor:5]')) {
-        // 历史遗留的未对齐 KRC 缓存：重新走锚点对齐（带 3 天冷却）
-        upgradeLyricToWordLevel(song, '');
-      }
-    }
+  const parsed = cachedLrc ? parseLrc(cachedLrc) : null;
+  const hasWordLyric = parsed && parsed.length && parsed.some(l => l.words && l.words.length > 0);
+  const isUpToDateAnchor = cachedLrc && cachedLrc.includes('[krc-anchor:5]');
+
+  if (hasWordLyric && isUpToDateAnchor) {
+    // 命中最新的高质量商业/逐字词轴：秒级直接呈现，排版绝对确定稳定
+    isLyricLoadingTransition = false;
+    LYRICS_DATA = parsed;
+    lastActiveIdx = -1;
+    displayedPreviewIdx = -1;
+    initLyricsList();
+    syncCurrentLyricToDesktop();
   } else {
-    loadBestAvailableLyric(song);
+    // 存量普通单行 LRC、旧缓存或无缓存：绝不提前刷上屏幕导致一长句排版！
+    // 立即启动宣纸水墨过场微光动效，后台优先拉取 QRC / KRC 商业逐字排版
+    showLyricTransitionAnimation(song);
+    if (cachedLrc && !hasWordLyric) {
+      upgradeLyricToWordLevel(song, cachedLrc);
+    } else {
+      loadBestAvailableLyric(song);
+    }
   }
 
   // 3. 音频流加载与播放

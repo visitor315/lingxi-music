@@ -1702,6 +1702,46 @@ white-space: nowrap; text-overflow: ellipsis; max-width: 100%; overflow: hidden;
 opacity: 0.55;
 transform: none !important;
 }
+/* 宣纸水墨过场动画：逐字词轴排版与加载 */
+@keyframes lyricBreathe {
+0%, 100% { opacity: 0.35; transform: scale(0.97); }
+50% { opacity: 0.95; transform: scale(1); }
+}
+.lyric-loading-transition {
+display: inline-flex;
+align-items: center;
+justify-content: center;
+gap: 8px;
+font-size: 14px;
+font-weight: 500;
+color: var(--brand-blue);
+animation: lyricBreathe 1.8s ease-in-out infinite;
+letter-spacing: 0.6px;
+user-select: none;
+}
+.lyric-loading-dot {
+width: 4px;
+height: 4px;
+border-radius: 50%;
+background: var(--brand-blue);
+display: inline-block;
+opacity: 0.8;
+}
+.lyric-loading-full-wrap {
+display: flex;
+flex-direction: column;
+align-items: center;
+justify-content: center;
+gap: 12px;
+padding: 80px 0;
+width: 100%;
+}
+.lyric-loading-sub-text {
+font-size: 13px;
+color: var(--ink-light);
+opacity: 0.55;
+letter-spacing: 0.4px;
+}
 /* 纯歌词容器 */
 .pure-lyrics-scroll-container {
 position: absolute; top: 20px; bottom: 20px; left: 0; right: 0; display: none; opacity: 0; overflow-y: auto;
@@ -5626,34 +5666,29 @@ function playSongAtQueue(idx) {
     applySongCoverToUI(song.cover);
   }
 
-  // 2. 立即重置为当前曲目占位歌词，彻底消除曲目切换瞬间显示上一首旧歌词的视觉不同步
-  LYRICS_DATA = [{ time: 0, text: (song.title || '灵犀音乐') + ' - ' + (song.artist || '随心听') }];
-  lastActiveIdx = -1;
-  displayedPreviewIdx = -1;
-  initLyricsList();
-  syncCurrentLyricToDesktop();
-
-  // 恢复或加载正式歌词（词级逐字优先；存量普通 LRC 先用后后台升级为 KRC 词级时间轴）
+  // 2. 歌词恢复与加载（优质词级逐字优先直接上屏，未完成逐字分词时优雅呈现水墨过场动效）
   const cachedLrc = song.lrc || getCachedLyric(song.title, song.artist);
-  if (cachedLrc) {
-    const parsed = parseLrc(cachedLrc);
-    if (parsed && parsed.length) {
-      LYRICS_DATA = parsed;
-      lastActiveIdx = -1;
-      displayedPreviewIdx = -1;
-      initLyricsList();
-      syncCurrentLyricToDesktop();
-      const hasWordLyric = parsed.some(l => l.words && l.words.length > 0);
-      if (!hasWordLyric) {
-        // 存量普通 LRC：缓存文本本身就是网易云锚点，直接传给升级链路
-        upgradeLyricToWordLevel(song, cachedLrc);
-      } else if (!cachedLrc.includes('[krc-anchor:5]')) {
-        // 历史遗留的未对齐 KRC 缓存：重新走锚点对齐（带 3 天冷却）
-        upgradeLyricToWordLevel(song, '');
-      }
-    }
+  const parsed = cachedLrc ? parseLrc(cachedLrc) : null;
+  const hasWordLyric = parsed && parsed.length && parsed.some(l => l.words && l.words.length > 0);
+  const isUpToDateAnchor = cachedLrc && cachedLrc.includes('[krc-anchor:5]');
+
+  if (hasWordLyric && isUpToDateAnchor) {
+    // 命中最新的高质量商业/逐字词轴：秒级直接呈现，排版绝对确定稳定
+    isLyricLoadingTransition = false;
+    LYRICS_DATA = parsed;
+    lastActiveIdx = -1;
+    displayedPreviewIdx = -1;
+    initLyricsList();
+    syncCurrentLyricToDesktop();
   } else {
-    loadBestAvailableLyric(song);
+    // 存量普通单行 LRC、旧缓存或无缓存：绝不提前刷上屏幕导致一长句排版！
+    // 立即启动宣纸水墨过场微光动效，后台优先拉取 QRC / KRC 商业逐字排版
+    showLyricTransitionAnimation(song);
+    if (cachedLrc && !hasWordLyric) {
+      upgradeLyricToWordLevel(song, cachedLrc);
+    } else {
+      loadBestAvailableLyric(song);
+    }
   }
 
   // 3. 音频流加载与播放
@@ -6857,6 +6892,17 @@ async function upgradeLyricToWordLevel(song, anchorRawHint) {
   // 3. 两种逐字源均落空时才记入冷却表
   if (!wordLrcText) {
     markKrcAttempt(song);
+    if (anchorRawHint) {
+      const fallbackParsed = parseLrc(anchorRawHint);
+      if (fallbackParsed && fallbackParsed.length) {
+        isLyricLoadingTransition = false;
+        LYRICS_DATA = fallbackParsed;
+        lastActiveIdx = -1;
+        displayedPreviewIdx = -1;
+        initLyricsList();
+        syncCurrentLyricToDesktop();
+      }
+    }
     return;
   }
 
@@ -6867,6 +6913,7 @@ async function upgradeLyricToWordLevel(song, anchorRawHint) {
   const anchorRaw = anchorRawHint || await fetchAnchorRawLrc(song);
   const merged = anchorRaw ? mergeKrcWithAnchorLyric(wordLrcText, anchorRaw, song.duration || 0) : { text: wordLrcText, matched: 0 };
   const finalText = merged.matched > 0 ? '[krc-anchor:5]\n' + merged.text : wordLrcText;
+  isLyricLoadingTransition = false;
   LYRICS_DATA = parseLrc(finalText) || parsed;
   lastActiveIdx = -1;
   displayedPreviewIdx = -1;
@@ -7126,6 +7173,7 @@ function markKrcAttempt(song) {
 async function fetchLyricForSong(songId, songTitle, source = 'netease') {
   const rawLrc = await fetchRawLrcFromNet(songId, songTitle, source);
   if (rawLrc) {
+    isLyricLoadingTransition = false;
     const parsed = parseLrc(rawLrc);
     if (parsed && parsed.length) {
       LYRICS_DATA = parsed;
@@ -10616,7 +10664,52 @@ let activeLyricLineEl = null;
 let previewMainLyricEl = null;
 let appliedActiveIdx = -99;
 
+let isLyricLoadingTransition = false;
+
+/* 宣纸水墨过场动画：呈现温润微光呼吸动效，杜绝未分词的普通长句提前粗暴上屏闪烁 */
+function showLyricTransitionAnimation(song) {
+  isLyricLoadingTransition = true;
+  const title = (song && song.title) ? song.title : '灵犀音乐';
+  const artist = (song && song.artist) ? song.artist : '随心听';
+
+  // 1. 唱片机下方预览歌词区域：优雅水墨过场动效
+  const previewMain = document.getElementById('previewMainLyric');
+  const previewSub = document.getElementById('previewSubLyric');
+  const track = document.getElementById('previewScrollTrack');
+  if (track) {
+    track.style.transition = 'none';
+    track.style.transform = 'translateY(0)';
+  }
+  if (previewMain) {
+    previewMain.style.transition = 'none';
+    previewMain.style.opacity = '1';
+    previewMain.classList.remove('pending');
+    previewMain.innerHTML = `<div class="lyric-loading-transition"><span class="lyric-loading-dot"></span><span class="lyric-loading-text">正在排版灵犀逐字词轴</span><span class="lyric-loading-dot"></span></div>`;
+  }
+  if (previewSub) {
+    previewSub.style.transition = 'none';
+    previewSub.style.transform = 'none';
+    previewSub.style.color = '';
+    previewSub.style.opacity = '0.55';
+    previewSub.textContent = `${title} - ${artist}`;
+  }
+
+  // 2. 全屏纯歌词滚动容器：素雅水墨呼吸占位
+  const container = document.getElementById('lyricsItemsList');
+  if (container) {
+    container.innerHTML = `<div class="lyric-loading-full-wrap"><div class="lyric-loading-transition"><span class="lyric-loading-dot"></span><span class="lyric-loading-text">正在排版灵犀逐字词轴</span><span class="lyric-loading-dot"></span></div><div class="lyric-loading-sub-text">${title} - ${artist}</div></div>`;
+  }
+
+  // 3. 桌面与原生悬浮歌词占位
+  if (window.AndroidBridge && window.AndroidBridge.setNativeLyrics) {
+    try {
+      window.AndroidBridge.setNativeLyrics(JSON.stringify([{ time: 0, text: `${title} - ${artist}` }]));
+    } catch(e) {}
+  }
+}
+
 function initLyricsList() {
+  isLyricLoadingTransition = false;
   const container = document.getElementById('lyricsItemsList');
   container.innerHTML = LYRICS_DATA.map((item, idx) => `
     <div class="lyric-line-item" data-time="${item.time}" data-index="${idx}" id="lyricLine${idx}" onclick="seekToLyricLineByIndex(${idx}, event)">

@@ -821,6 +821,17 @@ async function upgradeLyricToWordLevel(song, anchorRawHint) {
   // 3. 两种逐字源均落空时才记入冷却表
   if (!wordLrcText) {
     markKrcAttempt(song);
+    if (anchorRawHint) {
+      const fallbackParsed = parseLrc(anchorRawHint);
+      if (fallbackParsed && fallbackParsed.length) {
+        isLyricLoadingTransition = false;
+        LYRICS_DATA = fallbackParsed;
+        lastActiveIdx = -1;
+        displayedPreviewIdx = -1;
+        initLyricsList();
+        syncCurrentLyricToDesktop();
+      }
+    }
     return;
   }
 
@@ -831,6 +842,7 @@ async function upgradeLyricToWordLevel(song, anchorRawHint) {
   const anchorRaw = anchorRawHint || await fetchAnchorRawLrc(song);
   const merged = anchorRaw ? mergeKrcWithAnchorLyric(wordLrcText, anchorRaw, song.duration || 0) : { text: wordLrcText, matched: 0 };
   const finalText = merged.matched > 0 ? '[krc-anchor:5]\n' + merged.text : wordLrcText;
+  isLyricLoadingTransition = false;
   LYRICS_DATA = parseLrc(finalText) || parsed;
   lastActiveIdx = -1;
   displayedPreviewIdx = -1;
@@ -1090,6 +1102,7 @@ function markKrcAttempt(song) {
 async function fetchLyricForSong(songId, songTitle, source = 'netease') {
   const rawLrc = await fetchRawLrcFromNet(songId, songTitle, source);
   if (rawLrc) {
+    isLyricLoadingTransition = false;
     const parsed = parseLrc(rawLrc);
     if (parsed && parsed.length) {
       LYRICS_DATA = parsed;
