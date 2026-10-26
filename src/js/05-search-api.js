@@ -1149,7 +1149,11 @@ async function fetchAnchorRawLrc(song) {
    3. 若为异母带（如版本翻录/前奏长短不同），启动逐段平滑插值对齐，保证全曲合拍 */
 function mergeKrcWithAnchorLyric(krcText, anchorRaw, audioDurSec) {
   if (!anchorRaw) return { text: krcText, matched: 0 };
-  const norm = (s) => (s || '').replace(/[\s'’‘""“”（）()\[\]【】\-—~～,，.。!！?？:：;；、\u00b7]/g, '').toLowerCase();
+  const stripSingerPrefix = (s) => (s || '')
+    .replace(/^[\(（\[【]\s*[^()（）\[\]【】]{1,8}\s*[\)）\]】]\s*[:：]?/g, '')
+    .replace(/^[^\s:：]{1,8}[:：]\s*/g, '')
+    .trim();
+  const norm = (s) => stripSingerPrefix(s).replace(/[\s'’‘""“”（）()\[\]【】\-—~～,，.。!！?？:：;；、\u00b7]/g, '').toLowerCase();
   const isCreditOrMeta = (s) => /^(作词|作曲|编曲|混音|吉他|贝斯|鼓|录音|制作|发行|出品|策划|文案|母带|演唱|原唱|翻唱|伴唱|和声|题字|美工|海报|特别支持|曲绘|pv)/.test(s);
   const timeTagRe = /\[(\d{1,2}):(\d{2})(?:\.(\d{1,3}))?\]/g;
 
@@ -1211,7 +1215,7 @@ function mergeKrcWithAnchorLyric(krcText, anchorRaw, audioDurSec) {
       const deltaSec = a.time - p.origStart / 1000;
       if (Math.abs(deltaSec) > 10) continue;
 
-      if (a.nk === p.nk || a.nk.startsWith(p.nk)) {
+      if (a.nk === p.nk || a.nk.startsWith(p.nk) || p.nk.startsWith(a.nk)) {
         p.anchorSec = a.time;
         p.newStart = Math.round(a.time * 1000);
         break;

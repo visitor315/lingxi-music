@@ -83,8 +83,9 @@ function extractSingerPrefix(text) {
 
 function formatLyricItemHtml(item) {
   if (!item) return '';
-  const text = item.text || item.cleanText || '';
-  return `<span class="lyric-text-body">${escapeHtml(text)}</span>`;
+  const tag = item.singerTag ? `<span class="lyric-singer-tag">${escapeHtml(item.singerTag)}</span>` : '';
+  const text = item.cleanText || item.text || '';
+  return `${tag}<span class="lyric-text-body">${escapeHtml(text)}</span>`;
 }
 
 function parseLineWords(text, lineStartTime) {
