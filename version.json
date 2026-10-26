@@ -1,6 +1,6 @@
 {
-  "versionCode": 100,
-  "versionName": "2.6.7",
-  "changelog": "1. 商业级逐字歌词引擎：集成 QRC 与 KRC 词级时间轴，发音起唱与停顿自然契合，彻底告别冒头与生硬跳跃；\n2. 歌词加载体验优化：全新极简歌词装载过渡状态，隐藏存量长句闪现，排版纯净雅致；\n3. 歌曲智能核验与防串流：强化歌名与歌手归一化多重校验，全面校准发现页底库音源与专辑，杜绝跨曲错配；\n4. 缓存智能自愈机制：自动检测并清除异常存量歌词缓存，播放更省心。",
-  "downloadUrl": "https://ghfast.top/https://github.com/visitor315/lingxi-music/releases/download/v2.6.7/LingXiMusic.apk"
+  "versionCode": 101,
+  "versionName": "2.6.8",
+  "changelog": "1. 歌词状态与判定重构：彻底肃清演示歌词残留，优化切歌首毫秒瞬时清空与唱片区同步重置，无词或超时确定性收敛为“暂无歌词”；\n2. 歌词一次定稿装载：彻底废除后台二次刷屏与跳动，智能清洗过滤前奏制作人与混音幕后名单，直奔清爽歌词正文；\n3. 合唱曲目标签物理隔离：针对多歌手合唱歌曲（如锦鲤抄），剥离歌手标识并独立展示，逐字填色零延迟精准契合；\n4. 本地音乐内嵌解析增强：支持直接解析本地音频内嵌歌词（USLT），无词本地歌曲直接显示暂无歌词，绝不串歌。",
+  "downloadUrl": "https://ghfast.top/https://github.com/visitor315/lingxi-music/releases/download/v2.6.8/LingXiMusic.apk"
 }
