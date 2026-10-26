@@ -413,8 +413,8 @@ function playSongAtQueue(idx) {
   const hasWordLyric = parsed && parsed.length && parsed.some(l => l.words && l.words.length > 0);
   const isUpToDateAnchor = cachedLrc && cachedLrc.includes('[krc-anchor:8]');
 
-  if (hasWordLyric && isUpToDateAnchor) {
-    // 命中最新的高质量商业/逐字词轴：秒级直接呈现，排版绝对确定稳定
+  if (cachedLrc && parsed && parsed.length > 0) {
+    // 命中有效歌词缓存（普通版或逐字版）：一次性直接秒级上屏，绝不再二次刷屏重绘！
     isLyricLoadingTransition = false;
     LYRICS_DATA = parsed;
     lastActiveIdx = -1;
@@ -422,20 +422,16 @@ function playSongAtQueue(idx) {
     initLyricsList();
     syncCurrentLyricToDesktop();
   } else if (song.isLocal && !cachedLrc) {
-    // 本地导入歌曲且未内嵌/无本地歌词缓存：绝不拖延、绝不跟随上一首，立即呈现干净的暂无歌词状态
+    // 本地导入歌曲且未内嵌歌词：绝不跟随上一首，立即呈现干净的暂无歌词状态
     setNoLyricsState(song, '此歌曲暂无同步歌词');
     const cleanTitle = (typeof formatCleanTitle === 'function') ? formatCleanTitle(song.title || '') : (song.title || '');
     if (cleanTitle && cleanTitle !== '未知曲目' && cleanTitle.length >= 2) {
       loadBestAvailableLyric(song);
     }
   } else {
-    // 存量普通单行 LRC、旧缓存或无缓存：启动宣纸水墨过场微光动效，后台优先拉取逐字排版
+    // 无缓存曲目：启动优雅过场，一次性统筹定稿，绝不二次刷屏
     showLyricTransitionAnimation(song);
-    if (cachedLrc && !hasWordLyric) {
-      upgradeLyricToWordLevel(song, cachedLrc);
-    } else {
-      loadBestAvailableLyric(song);
-    }
+    loadBestAvailableLyric(song);
   }
 
   // 3. 音频流加载与播放

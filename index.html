@@ -5624,8 +5624,8 @@ function playSongAtQueue(idx) {
   const hasWordLyric = parsed && parsed.length && parsed.some(l => l.words && l.words.length > 0);
   const isUpToDateAnchor = cachedLrc && cachedLrc.includes('[krc-anchor:8]');
 
-  if (hasWordLyric && isUpToDateAnchor) {
-    // 命中最新的高质量商业/逐字词轴：秒级直接呈现，排版绝对确定稳定
+  if (cachedLrc && parsed && parsed.length > 0) {
+    // 命中有效歌词缓存（普通版或逐字版）：一次性直接秒级上屏，绝不再二次刷屏重绘！
     isLyricLoadingTransition = false;
     LYRICS_DATA = parsed;
     lastActiveIdx = -1;
@@ -5633,20 +5633,16 @@ function playSongAtQueue(idx) {
     initLyricsList();
     syncCurrentLyricToDesktop();
   } else if (song.isLocal && !cachedLrc) {
-    // 本地导入歌曲且未内嵌/无本地歌词缓存：绝不拖延、绝不跟随上一首，立即呈现干净的暂无歌词状态
+    // 本地导入歌曲且未内嵌歌词：绝不跟随上一首，立即呈现干净的暂无歌词状态
     setNoLyricsState(song, '此歌曲暂无同步歌词');
     const cleanTitle = (typeof formatCleanTitle === 'function') ? formatCleanTitle(song.title || '') : (song.title || '');
     if (cleanTitle && cleanTitle !== '未知曲目' && cleanTitle.length >= 2) {
       loadBestAvailableLyric(song);
     }
   } else {
-    // 存量普通单行 LRC、旧缓存或无缓存：启动宣纸水墨过场微光动效，后台优先拉取逐字排版
+    // 无缓存曲目：启动优雅过场，一次性统筹定稿，绝不二次刷屏
     showLyricTransitionAnimation(song);
-    if (cachedLrc && !hasWordLyric) {
-      upgradeLyricToWordLevel(song, cachedLrc);
-    } else {
-      loadBestAvailableLyric(song);
-    }
+    loadBestAvailableLyric(song);
   }
 
   // 3. 音频流加载与播放
@@ -5989,6 +5985,10 @@ function parseLrc(lrcText) {
       const parsedWords = parseLineWords(rawContent, timeInSec);
       const cleanLineRaw = rawContent.replace(/<[^>]+>/g, '').replace(/\([^)]+\)/g, '').trim();
       const parsedPrefix = extractSingerPrefix(cleanLineRaw);
+      // 过滤前奏区域大段堆砌的混音/母带/和声等幕后制作人报幕名单
+      if (timeInSec < 20 && /^(?:编曲|制作人|制作|和声编写|和声|伴唱|录音师|录音|混音师|混音|母带工程师|母带|吉他|贝斯|鼓手|键盘|弦乐|企划|统筹|监制|出品|发行|版权|OP|SP|录音室|混音室|母带室)\s*[:：]/i.test(cleanLineRaw)) {
+        continue;
+      }
       items.push({
         time: timeInSec,
         text: cleanLineRaw,
@@ -6020,6 +6020,10 @@ function parseLrc(lrcText) {
       const cleanLineRaw = rawContent.replace(/<[^>]+>/g, '').replace(/\([^)]+\)/g, '').trim();
       const parsedPrefix = extractSingerPrefix(cleanLineRaw);
 
+      // 过滤前奏区域大段堆砌的混音/母带/和声等幕后制作人报幕名单
+      if (timeInSec < 20 && /^(?:编曲|制作人|制作|和声编写|和声|伴唱|录音师|录音|混音师|混音|母带工程师|母带|吉他|贝斯|鼓手|键盘|弦乐|企划|统筹|监制|出品|发行|版权|OP|SP|录音室|混音室|母带室)\s*[:：]/i.test(cleanLineRaw)) {
+        continue;
+      }
       items.push({
         time: timeInSec,
         text: cleanLineRaw,
@@ -7012,38 +7016,44 @@ async function upgradeLyricToWordLevel(song, anchorRawHint) {
   persistData();
 }
 
-/* 最优歌词极速装载：直源极速拉取优先（0.3秒上屏），后台静默升级逐字，最长 2.5 秒全局硬性熔断 */
+/* 最优歌词一次性定稿装载：直源极速拉取优先，逐字备选，一次定案绝不二次刷屏跳动 */
 async function loadBestAvailableLyric(song) {
   if (!song) return;
   const currentSongSnapshot = song;
 
-  // 全局硬性看门狗：最长 2.5 秒，若未能装填出任何歌词，强制收敛为“暂无歌词”，绝不永久加载！
-  const masterTimeout = setTimeout(() => {
-    if (isLyricLoadingTransition) {
-      const cur = currentPlaybackQueue[currentIndex] || currentSongSnapshot;
-      setNoLyricsState(cur, '此歌曲暂无同步歌词');
-    }
-  }, 2500);
-
   try {
-    // 1. 若为在线曲目（具备 onlineId），先极速拉取直源歌词（通常仅需 200-400ms）
+    // 1. 若当前歌曲已经具备有效歌词（例如换源时已有歌词），直接保持，绝不重拉重刷！
+    const existingLrc = currentSongSnapshot.lrc || getCachedLyric(currentSongSnapshot.title, currentSongSnapshot.artist);
+    if (existingLrc) {
+      const parsed = parseLrc(existingLrc);
+      if (parsed && parsed.length) {
+        isLyricLoadingTransition = false;
+        LYRICS_DATA = parsed;
+        lastActiveIdx = -1;
+        displayedPreviewIdx = -1;
+        initLyricsList();
+        syncCurrentLyricToDesktop();
+        return;
+      }
+    }
+
+    // 2. 优先拉取直源歌词（在线曲目具备 onlineId，网易云直查仅需 200-300ms）
     let directLrc = '';
-    if (song.onlineId) {
+    if (currentSongSnapshot.onlineId) {
       try {
-        directLrc = await fetchRawLrcFromNet(song.onlineId, song.title, song.source || 'netease', song.artist);
+        directLrc = await fetchRawLrcFromNet(currentSongSnapshot.onlineId, currentSongSnapshot.title, currentSongSnapshot.source || 'netease', currentSongSnapshot.artist);
       } catch(e) {}
     }
 
     const curSong = currentPlaybackQueue[currentIndex];
-    if (!curSong || (curSong.id !== song.id && curSong.title !== song.title)) {
+    if (!curSong || (curSong.id !== currentSongSnapshot.id && curSong.title !== currentSongSnapshot.title)) {
       return;
     }
 
-    // 若直源歌词已秒级拉取成功，立即解除加载状态并上屏！
+    // 若直源歌词拉取成功，一次定稿直接上屏，绝不在后台再次触发二次刷屏！
     if (directLrc) {
       const parsedDirect = parseLrc(directLrc);
       if (parsedDirect && parsedDirect.length) {
-        clearTimeout(masterTimeout);
         isLyricLoadingTransition = false;
         LYRICS_DATA = parsedDirect;
         lastActiveIdx = -1;
@@ -7053,24 +7063,20 @@ async function loadBestAvailableLyric(song) {
         curSong.lrc = directLrc;
         saveLyricToCache(curSong.title, curSong.artist, directLrc);
         persistData();
-
-        // 在后台静默尝试升级为 QRC/KRC 逐字，绝不阻塞当前界面显示
-        upgradeLyricToWordLevel(curSong, directLrc);
         return;
       }
     }
 
-    // 2. 若直源无歌词（如本地曲目或无 onlineId），尝试快速匹配 QRC/KRC 逐字
-    if (song.title && !isKrcRecentlyAttempted(song)) {
-      let wordLrcText = await fetchQrcWordLyric(song.title, song.artist, song.duration || 0);
+    // 3. 若直源无歌词，尝试快速检索 QQ 音乐 / 酷狗商业逐字词轴
+    if (currentSongSnapshot.title && !isKrcRecentlyAttempted(currentSongSnapshot)) {
+      let wordLrcText = await fetchQrcWordLyric(currentSongSnapshot.title, currentSongSnapshot.artist, currentSongSnapshot.duration || 0);
       if (!wordLrcText) {
-        wordLrcText = await fetchKrcWordLyric(song.title, song.artist, song.duration || 0);
+        wordLrcText = await fetchKrcWordLyric(currentSongSnapshot.title, currentSongSnapshot.artist, currentSongSnapshot.duration || 0);
       }
       const stillActive = currentPlaybackQueue[currentIndex];
-      if (wordLrcText && stillActive && (stillActive.id === song.id || stillActive.title === song.title)) {
+      if (wordLrcText && stillActive && (stillActive.id === currentSongSnapshot.id || stillActive.title === currentSongSnapshot.title)) {
         const parsed = parseLrc(wordLrcText);
         if (parsed && parsed.length && parsed.some(l => l.words && l.words.length > 0)) {
-          clearTimeout(masterTimeout);
           isLyricLoadingTransition = false;
           LYRICS_DATA = parsed;
           lastActiveIdx = -1;
@@ -7085,9 +7091,9 @@ async function loadBestAvailableLyric(song) {
       }
     }
 
-    // 3. 兜底通用反查
-    if (song.title) {
-      await fetchLyricForSong(song.onlineId || '', song.title, song.source || 'netease', song.artist);
+    // 4. 兜底全网反查（例如歌名反查网易云）
+    if (currentSongSnapshot.title) {
+      await fetchLyricForSong(currentSongSnapshot.onlineId || '', currentSongSnapshot.title, currentSongSnapshot.source || 'netease', currentSongSnapshot.artist);
     } else {
       setNoLyricsState(curSong, '此歌曲暂无同步歌词');
     }
@@ -7096,7 +7102,6 @@ async function loadBestAvailableLyric(song) {
     const cur = currentPlaybackQueue[currentIndex] || currentSongSnapshot;
     setNoLyricsState(cur, '此歌曲暂无同步歌词');
   } finally {
-    clearTimeout(masterTimeout);
     if (isLyricLoadingTransition) {
       const cur = currentPlaybackQueue[currentIndex] || currentSongSnapshot;
       setNoLyricsState(cur, '此歌曲暂无同步歌词');
@@ -11002,7 +11007,7 @@ function showLyricTransitionAnimation(song) {
       const s = currentPlaybackQueue[currentIndex] || song;
       setNoLyricsState(s, '此歌曲暂无同步歌词');
     }
-  }, 2500);
+  }, 4000);
 }
 
 function initLyricsList() {
@@ -11087,7 +11092,7 @@ function startAutoCenterCountdown() {
   autoCenterTimer = setTimeout(() => {
     isUserInteractingWithLyrics = false;
     scrollActiveLyricToCenter();
-  }, 2500);
+  }, 4000);
 }
 
 function openPureLyricsView() {
@@ -12751,7 +12756,12 @@ async function tryResolveAlternativeFullTrack(song) {
       if (candidate.cover && !song.cover) song.cover = candidate.cover;
       persistData();
 
-      loadBestAvailableLyric(song);
+      // 关键防抖：如果当前曲目已经有歌词在播放，切音源时保留歌词，绝不重拉重刷导致闪现“暂无歌词”！
+      const alreadyHasLyrics = (song.lrc && song.lrc.includes('[')) ||
+        (LYRICS_DATA && LYRICS_DATA.length > 0 && !LYRICS_DATA[0].text.includes('暂无同步歌词'));
+      if (!alreadyHasLyrics) {
+        loadBestAvailableLyric(song);
+      }
 
       const curSec = (typeof currentSec === 'number' && currentSec > 0 && currentSec < 35) ? currentSec : 0;
       if (isNativeAudioSupported) {

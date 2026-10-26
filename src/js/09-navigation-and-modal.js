@@ -975,7 +975,12 @@ async function tryResolveAlternativeFullTrack(song) {
       if (candidate.cover && !song.cover) song.cover = candidate.cover;
       persistData();
 
-      loadBestAvailableLyric(song);
+      // 关键防抖：如果当前曲目已经有歌词在播放，切音源时保留歌词，绝不重拉重刷导致闪现“暂无歌词”！
+      const alreadyHasLyrics = (song.lrc && song.lrc.includes('[')) ||
+        (LYRICS_DATA && LYRICS_DATA.length > 0 && !LYRICS_DATA[0].text.includes('暂无同步歌词'));
+      if (!alreadyHasLyrics) {
+        loadBestAvailableLyric(song);
+      }
 
       const curSec = (typeof currentSec === 'number' && currentSec > 0 && currentSec < 35) ? currentSec : 0;
       if (isNativeAudioSupported) {

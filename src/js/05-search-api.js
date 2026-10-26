@@ -936,38 +936,44 @@ async function upgradeLyricToWordLevel(song, anchorRawHint) {
   persistData();
 }
 
-/* 最优歌词极速装载：直源极速拉取优先（0.3秒上屏），后台静默升级逐字，最长 2.5 秒全局硬性熔断 */
+/* 最优歌词一次性定稿装载：直源极速拉取优先，逐字备选，一次定案绝不二次刷屏跳动 */
 async function loadBestAvailableLyric(song) {
   if (!song) return;
   const currentSongSnapshot = song;
 
-  // 全局硬性看门狗：最长 2.5 秒，若未能装填出任何歌词，强制收敛为“暂无歌词”，绝不永久加载！
-  const masterTimeout = setTimeout(() => {
-    if (isLyricLoadingTransition) {
-      const cur = currentPlaybackQueue[currentIndex] || currentSongSnapshot;
-      setNoLyricsState(cur, '此歌曲暂无同步歌词');
-    }
-  }, 2500);
-
   try {
-    // 1. 若为在线曲目（具备 onlineId），先极速拉取直源歌词（通常仅需 200-400ms）
+    // 1. 若当前歌曲已经具备有效歌词（例如换源时已有歌词），直接保持，绝不重拉重刷！
+    const existingLrc = currentSongSnapshot.lrc || getCachedLyric(currentSongSnapshot.title, currentSongSnapshot.artist);
+    if (existingLrc) {
+      const parsed = parseLrc(existingLrc);
+      if (parsed && parsed.length) {
+        isLyricLoadingTransition = false;
+        LYRICS_DATA = parsed;
+        lastActiveIdx = -1;
+        displayedPreviewIdx = -1;
+        initLyricsList();
+        syncCurrentLyricToDesktop();
+        return;
+      }
+    }
+
+    // 2. 优先拉取直源歌词（在线曲目具备 onlineId，网易云直查仅需 200-300ms）
     let directLrc = '';
-    if (song.onlineId) {
+    if (currentSongSnapshot.onlineId) {
       try {
-        directLrc = await fetchRawLrcFromNet(song.onlineId, song.title, song.source || 'netease', song.artist);
+        directLrc = await fetchRawLrcFromNet(currentSongSnapshot.onlineId, currentSongSnapshot.title, currentSongSnapshot.source || 'netease', currentSongSnapshot.artist);
       } catch(e) {}
     }
 
     const curSong = currentPlaybackQueue[currentIndex];
-    if (!curSong || (curSong.id !== song.id && curSong.title !== song.title)) {
+    if (!curSong || (curSong.id !== currentSongSnapshot.id && curSong.title !== currentSongSnapshot.title)) {
       return;
     }
 
-    // 若直源歌词已秒级拉取成功，立即解除加载状态并上屏！
+    // 若直源歌词拉取成功，一次定稿直接上屏，绝不在后台再次触发二次刷屏！
     if (directLrc) {
       const parsedDirect = parseLrc(directLrc);
       if (parsedDirect && parsedDirect.length) {
-        clearTimeout(masterTimeout);
         isLyricLoadingTransition = false;
         LYRICS_DATA = parsedDirect;
         lastActiveIdx = -1;
@@ -977,24 +983,20 @@ async function loadBestAvailableLyric(song) {
         curSong.lrc = directLrc;
         saveLyricToCache(curSong.title, curSong.artist, directLrc);
         persistData();
-
-        // 在后台静默尝试升级为 QRC/KRC 逐字，绝不阻塞当前界面显示
-        upgradeLyricToWordLevel(curSong, directLrc);
         return;
       }
     }
 
-    // 2. 若直源无歌词（如本地曲目或无 onlineId），尝试快速匹配 QRC/KRC 逐字
-    if (song.title && !isKrcRecentlyAttempted(song)) {
-      let wordLrcText = await fetchQrcWordLyric(song.title, song.artist, song.duration || 0);
+    // 3. 若直源无歌词，尝试快速检索 QQ 音乐 / 酷狗商业逐字词轴
+    if (currentSongSnapshot.title && !isKrcRecentlyAttempted(currentSongSnapshot)) {
+      let wordLrcText = await fetchQrcWordLyric(currentSongSnapshot.title, currentSongSnapshot.artist, currentSongSnapshot.duration || 0);
       if (!wordLrcText) {
-        wordLrcText = await fetchKrcWordLyric(song.title, song.artist, song.duration || 0);
+        wordLrcText = await fetchKrcWordLyric(currentSongSnapshot.title, currentSongSnapshot.artist, currentSongSnapshot.duration || 0);
       }
       const stillActive = currentPlaybackQueue[currentIndex];
-      if (wordLrcText && stillActive && (stillActive.id === song.id || stillActive.title === song.title)) {
+      if (wordLrcText && stillActive && (stillActive.id === currentSongSnapshot.id || stillActive.title === currentSongSnapshot.title)) {
         const parsed = parseLrc(wordLrcText);
         if (parsed && parsed.length && parsed.some(l => l.words && l.words.length > 0)) {
-          clearTimeout(masterTimeout);
           isLyricLoadingTransition = false;
           LYRICS_DATA = parsed;
           lastActiveIdx = -1;
@@ -1009,9 +1011,9 @@ async function loadBestAvailableLyric(song) {
       }
     }
 
-    // 3. 兜底通用反查
-    if (song.title) {
-      await fetchLyricForSong(song.onlineId || '', song.title, song.source || 'netease', song.artist);
+    // 4. 兜底全网反查（例如歌名反查网易云）
+    if (currentSongSnapshot.title) {
+      await fetchLyricForSong(currentSongSnapshot.onlineId || '', currentSongSnapshot.title, currentSongSnapshot.source || 'netease', currentSongSnapshot.artist);
     } else {
       setNoLyricsState(curSong, '此歌曲暂无同步歌词');
     }
@@ -1020,7 +1022,6 @@ async function loadBestAvailableLyric(song) {
     const cur = currentPlaybackQueue[currentIndex] || currentSongSnapshot;
     setNoLyricsState(cur, '此歌曲暂无同步歌词');
   } finally {
-    clearTimeout(masterTimeout);
     if (isLyricLoadingTransition) {
       const cur = currentPlaybackQueue[currentIndex] || currentSongSnapshot;
       setNoLyricsState(cur, '此歌曲暂无同步歌词');

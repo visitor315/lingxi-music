@@ -126,7 +126,7 @@ function showLyricTransitionAnimation(song) {
       const s = currentPlaybackQueue[currentIndex] || song;
       setNoLyricsState(s, '此歌曲暂无同步歌词');
     }
-  }, 2500);
+  }, 4000);
 }
 
 function initLyricsList() {
@@ -211,7 +211,7 @@ function startAutoCenterCountdown() {
   autoCenterTimer = setTimeout(() => {
     isUserInteractingWithLyrics = false;
     scrollActiveLyricToCenter();
-  }, 2500);
+  }, 4000);
 }
 
 function openPureLyricsView() {

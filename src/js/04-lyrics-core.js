@@ -172,6 +172,10 @@ function parseLrc(lrcText) {
       const parsedWords = parseLineWords(rawContent, timeInSec);
       const cleanLineRaw = rawContent.replace(/<[^>]+>/g, '').replace(/\([^)]+\)/g, '').trim();
       const parsedPrefix = extractSingerPrefix(cleanLineRaw);
+      // 过滤前奏区域大段堆砌的混音/母带/和声等幕后制作人报幕名单
+      if (timeInSec < 20 && /^(?:编曲|制作人|制作|和声编写|和声|伴唱|录音师|录音|混音师|混音|母带工程师|母带|吉他|贝斯|鼓手|键盘|弦乐|企划|统筹|监制|出品|发行|版权|OP|SP|录音室|混音室|母带室)\s*[:：]/i.test(cleanLineRaw)) {
+        continue;
+      }
       items.push({
         time: timeInSec,
         text: cleanLineRaw,
@@ -203,6 +207,10 @@ function parseLrc(lrcText) {
       const cleanLineRaw = rawContent.replace(/<[^>]+>/g, '').replace(/\([^)]+\)/g, '').trim();
       const parsedPrefix = extractSingerPrefix(cleanLineRaw);
 
+      // 过滤前奏区域大段堆砌的混音/母带/和声等幕后制作人报幕名单
+      if (timeInSec < 20 && /^(?:编曲|制作人|制作|和声编写|和声|伴唱|录音师|录音|混音师|混音|母带工程师|母带|吉他|贝斯|鼓手|键盘|弦乐|企划|统筹|监制|出品|发行|版权|OP|SP|录音室|混音室|母带室)\s*[:：]/i.test(cleanLineRaw)) {
+        continue;
+      }
       items.push({
         time: timeInSec,
         text: cleanLineRaw,
