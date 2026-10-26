@@ -488,7 +488,124 @@ async function playOnlineTrack(idx) {
   playSongAtQueue(0);
 }
 
-async function fetchLyricForSong(songId, songTitle, source = 'netease') {
+/* ============ 酷狗 KRC 词级逐字歌词引擎（毫秒级词时间轴，公开接口免鉴权） ============ */
+const KRC_XOR_KEY = [0x40, 0x47, 0x61, 0x77, 0x5E, 0x32, 0x74, 0x47, 0x51, 0x36, 0x31, 0x2D, 0xCE, 0xD2, 0x6E, 0x69];
+
+// 原生桥直连酷狗（无 CORS 限制）；纯浏览器环境走本地开发服务器的 /krcp 代理规避跨域
+function krcNetUrl(hostAndPath) {
+  if (window.AndroidBridge && window.AndroidBridge.fetchHttpAsync) {
+    return `http://${hostAndPath}`;
+  }
+  return `/krcp/${hostAndPath}`;
+}
+
+async function decodeKrcContent(base64Content) {
+  if (typeof DecompressionStream !== 'function') return '';
+  try {
+    const bin = atob(base64Content);
+    // 跳过 4 字节 krc1 魔数，余下按 16 字节密钥循环异或后 zlib 解压
+    const bytes = new Uint8Array(bin.length - 4);
+    for (let i = 0; i < bytes.length; i++) {
+      bytes[i] = bin.charCodeAt(i + 4) ^ KRC_XOR_KEY[i % 16];
+    }
+    const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate'));
+    return await new Response(stream).text();
+  } catch(e) {
+    console.warn('KRC decode failed:', e);
+    return '';
+  }
+}
+
+async function fetchKrcWordLyric(title, artist, durationSec) {
+  try {
+    const cleanTitle = (typeof formatCleanTitle === 'function') ? formatCleanTitle(title || '') : (title || '');
+    const cleanArtist = (typeof formatCleanArtist === 'function') ? formatCleanArtist(artist || '') : (artist || '');
+    if (!cleanTitle) return '';
+    const keyword = (cleanArtist && cleanArtist !== '未知歌手') ? `${cleanTitle} ${cleanArtist}` : cleanTitle;
+    const searchRes = await universalFetch(krcNetUrl('mobilecdn.kugou.com/api/v3/search/song?format=json&keyword=' + encodeURIComponent(keyword) + '&page=1&pagesize=8'), { timeout: 3000 });
+    if (!searchRes || !searchRes.ok) return '';
+    const searchData = await searchRes.json();
+    let info = ((searchData.data || {}).info || []).filter(s => !/live|现场|伴奏|翻唱|remix|dj/i.test(s.songname || ''));
+    if (!info.length) info = ((searchData.data || {}).info || []);
+    if (!info.length) return '';
+    let candidate = info[0];
+    if (durationSec > 0) {
+      const near = info.find(s => Math.abs((s.duration || 0) - durationSec) <= 8);
+      if (near) candidate = near;
+    }
+    await new Promise(r => setTimeout(r, 250));
+    const krcSearch = await universalFetch(krcNetUrl(`krcs.kugou.com/search?ver=1&man=yes&client=mobi&keyword=&duration=${(candidate.duration || 0) * 1000}&hash=${candidate.hash}`), { timeout: 3000 });
+    if (!krcSearch || !krcSearch.ok) return '';
+    const krcData = await krcSearch.json();
+    const krcCand = (krcData.candidates || [])[0];
+    if (!krcCand || !krcCand.id) return '';
+    await new Promise(r => setTimeout(r, 250));
+    const dl = await universalFetch(krcNetUrl(`krcs.kugou.com/download?ver=1&client=pc&id=${krcCand.id}&accesskey=${krcCand.accesskey}&fmt=krc&alpha=0`), { timeout: 3000 });
+    if (!dl || !dl.ok) return '';
+    const dlData = await dl.json();
+    if (!dlData || !dlData.content || dlData.fmt !== 'krc') return '';
+    const krcText = await decodeKrcContent(dlData.content);
+    return (krcText && /\[\d+,\d+\]/.test(krcText)) ? krcText : '';
+  } catch(e) {
+    console.warn('KRC word lyric fetch failed:', e);
+    return '';
+  }
+}
+
+/* 存量普通 LRC 后台升级：拉取词级 KRC，与网易云锚点逐行对齐后无缝替换当前歌词与缓存 */
+async function upgradeLyricToWordLevel(song, anchorRawHint) {
+  if (!song || !song.title) return;
+  if (isKrcRecentlyAttempted(song)) return;
+  markKrcAttempt(song);
+  const krcText = await fetchKrcWordLyric(song.title, song.artist, song.duration || 0);
+  if (!krcText) return;
+  const parsed = parseLrc(krcText);
+  if (!parsed || !parsed.length || !parsed.some(l => l.words && l.words.length > 0)) return;
+  const curSong = currentPlaybackQueue[currentIndex];
+  if (!curSong || (curSong.id !== song.id && curSong.title !== song.title)) return;
+  const anchorRaw = anchorRawHint || await fetchAnchorRawLrc(song);
+  const merged = anchorRaw ? mergeKrcWithAnchorLyric(krcText, anchorRaw) : { text: krcText, matched: 0 };
+  const finalText = merged.matched > 0 ? '[krc-anchor:2]\n' + merged.text : krcText;
+  LYRICS_DATA = parseLrc(finalText) || parsed;
+  lastActiveIdx = -1;
+  displayedPreviewIdx = -1;
+  initLyricsList();
+  syncCurrentLyricToDesktop();
+  saveLyricToCache(song.title, song.artist, finalText);
+  curSong.lrc = finalText;
+  persistData();
+}
+
+/* 无缓存歌曲的最优歌词装载：词级 KRC 与锚点对齐优先，失败回退全网普通 LRC 链路 */
+async function loadBestAvailableLyric(song) {
+  if (song.title && !isKrcRecentlyAttempted(song)) {
+    markKrcAttempt(song);
+    const krcText = await fetchKrcWordLyric(song.title, song.artist, song.duration || 0);
+    const curSong = currentPlaybackQueue[currentIndex];
+    if (krcText && curSong && (curSong.id === song.id || curSong.title === song.title)) {
+      const parsed = parseLrc(krcText);
+      if (parsed && parsed.length && parsed.some(l => l.words && l.words.length > 0)) {
+        const anchorRaw = await fetchAnchorRawLrc(song);
+        const merged = anchorRaw ? mergeKrcWithAnchorLyric(krcText, anchorRaw) : { text: krcText, matched: 0 };
+        const finalText = merged.matched > 0 ? '[krc-anchor:2]\n' + merged.text : krcText;
+        LYRICS_DATA = parseLrc(finalText) || parsed;
+        lastActiveIdx = -1;
+        displayedPreviewIdx = -1;
+        initLyricsList();
+        syncCurrentLyricToDesktop();
+        saveLyricToCache(song.title, song.artist, finalText);
+        curSong.lrc = finalText;
+        persistData();
+        return;
+      }
+    }
+  }
+  if (song.onlineId) fetchLyricForSong(song.onlineId, song.title, song.source || 'netease');
+  else if (song.title) fetchLyricForSong('', song.title, 'netease');
+}
+
+/* 纯净抓取网易云系普通 LRC 原文（不做任何 UI 副作用），供歌词链路与 KRC 锚点对齐复用 */
+async function fetchRawLrcFromNet(songId, songTitle, source = 'netease') {
   let rawLrc = '';
   try {
     const apiLrcUrl = `${currentApiBase}?types=lyric&id=${songId}&source=${source}`;
@@ -523,7 +640,121 @@ async function fetchLyricForSong(songId, songTitle, source = 'netease') {
       }
     } catch(e) {}
   }
+  return rawLrc;
+}
 
+/* 获取对齐锚点歌词：优先曲目自带网易云 id，缺失时按标题歌手反查网易云曲目 id */
+async function fetchAnchorRawLrc(song) {
+  if (!song) return '';
+  if (song.onlineId) {
+    const direct = await fetchRawLrcFromNet(song.onlineId, song.title, song.source || 'netease');
+    if (direct) return direct;
+  }
+  try {
+    const cleanTitle = (typeof formatCleanTitle === 'function') ? formatCleanTitle(song.title || '') : (song.title || '');
+    const cleanArtist = (typeof formatCleanArtist === 'function') ? formatCleanArtist(song.artist || '') : (song.artist || '');
+    if (!cleanTitle) return '';
+    const q = encodeURIComponent(`${cleanTitle} ${cleanArtist}`.trim());
+    const res = await universalFetch(`${currentApiBase}?types=search&source=netease&name=${q}&count=1&pages=1`, { timeout: 3000 });
+    if (res && res.ok) {
+      const arr = await res.json();
+      if (arr && arr[0] && arr[0].id) {
+        return await fetchRawLrcFromNet(arr[0].id, song.title, 'netease');
+      }
+    }
+  } catch(e) {}
+  return '';
+}
+
+/* KRC 双源对齐合并：酷狗 KRC 按发声起点打轴（字级卡拉OK轴），网易云 LRC 跟随自家音频。
+   两轴差值的中位数即母带错位量，整条 KRC 轴全局平移后，行起点保留酷狗的发声轴心；
+   匹配行不足 3 行时退回逐行贴合网易云时间。词偏移一律保持相对不变 */
+function mergeKrcWithAnchorLyric(krcText, anchorRaw) {
+  if (!anchorRaw) return { text: krcText, matched: 0 };
+  const norm = (s) => (s || '').replace(/[\s'’‘""“”（）()\[\]【】\-—~～,，.。!！?？:：;；、·]/g, '').toLowerCase();
+  const timeTagRe = /\[(\d{1,2}):(\d{2})(?:\.(\d{1,3}))?\]/g;
+  const anchorIndex = {};
+  anchorRaw.split('\n').forEach(line => {
+    line = line.trim();
+    if (!line) return;
+    timeTagRe.lastIndex = 0;
+    let m, times = [], lastEnd = 0;
+    while ((m = timeTagRe.exec(line)) !== null) {
+      times.push(parseInt(m[1], 10) * 60 + parseInt(m[2], 10) + (m[3] ? parseInt(String(m[3]).padEnd(3, '0'), 10) / 1000 : 0));
+      lastEnd = timeTagRe.lastIndex;
+    }
+    if (!times.length) return;
+    const nk = norm(line.slice(lastEnd));
+    if (!nk) return;
+    (anchorIndex[nk] = anchorIndex[nk] || []).push(times[0]);
+  });
+  if (!Object.keys(anchorIndex).length) return { text: krcText, matched: 0 };
+  const rawLines = krcText.split('\n');
+  const seen = {};
+  const parsedLines = rawLines.map(line => {
+    const km = line.match(/^\[(\d+),(\d+)\](.*)$/);
+    if (!km) return null;
+    const nk = norm(km[3].replace(/<[^>]*>/g, ''));
+    let anchorSec = null;
+    if (nk) {
+      const arr = anchorIndex[nk];
+      const idx = seen[nk] || 0;
+      if (arr && idx < arr.length) {
+        seen[nk] = idx + 1;
+        const t = arr[idx];
+        if (Math.abs(t - parseInt(km[1], 10) / 1000) < 15) anchorSec = t;
+      }
+    }
+    return { line, km, anchorSec };
+  });
+  const deltas = parsedLines.filter(p => p && p.anchorSec !== null)
+    .map(p => parseInt(p.km[1], 10) / 1000 - p.anchorSec)
+    .sort((a, b) => a - b);
+  const outLines = [];
+  let applied = 0;
+  if (deltas.length >= 3) {
+    // 全局母带偏移模式：中位数平移整条酷狗轴，保留其发声起点轴心
+    const median = deltas[Math.floor(deltas.length / 2)];
+    if (Math.abs(median) < 15) {
+      parsedLines.forEach(p => {
+        if (!p) { return; }
+        const newStart = Math.max(0, Math.round(parseInt(p.km[1], 10) - median * 1000));
+        outLines.push(`[${newStart},${p.km[2]}]${p.km[3]}`);
+        applied++;
+      });
+      return { text: outLines.join('\n'), matched: applied };
+    }
+  }
+  // 兜底：匹配行过少，逐行贴合网易云时间
+  parsedLines.forEach(p => {
+    if (!p || p.anchorSec === null) { outLines.push(p ? p.line : ''); return; }
+    outLines.push(`[${Math.round(p.anchorSec * 1000)},${p.km[2]}]${p.km[3]}`);
+    applied++;
+  });
+  return { text: outLines.join('\n'), matched: applied };
+}
+
+/* KRC 拉取失败冷却表：同一曲目 3 天内不重复尝试，避免每次播放空跑请求 */
+function krcAttemptKey(song) {
+  return ((song.title || '') + '_' + (song.artist || '')).toLowerCase().trim();
+}
+function isKrcRecentlyAttempted(song) {
+  try {
+    const m = JSON.parse(localStorage.getItem('krc_attempt_ttl_v2') || '{}');
+    const ts = m[krcAttemptKey(song)];
+    return ts && (Date.now() - ts < 3 * 24 * 3600 * 1000);
+  } catch(e) { return false; }
+}
+function markKrcAttempt(song) {
+  try {
+    const m = JSON.parse(localStorage.getItem('krc_attempt_ttl_v2') || '{}');
+    m[krcAttemptKey(song)] = Date.now();
+    localStorage.setItem('krc_attempt_ttl_v2', JSON.stringify(m));
+  } catch(e) {}
+}
+
+async function fetchLyricForSong(songId, songTitle, source = 'netease') {
+  const rawLrc = await fetchRawLrcFromNet(songId, songTitle, source);
   if (rawLrc) {
     const parsed = parseLrc(rawLrc);
     if (parsed && parsed.length) {

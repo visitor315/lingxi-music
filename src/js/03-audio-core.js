@@ -173,6 +173,28 @@ window.onNativeError = function(what, extra) {
   }
 };
 
+/* 浏览器直连环境一次性测量音频输出延迟并补偿进歌词基准（解码位置领先入耳约 50-150ms）；
+   原生 MediaPlayer 路径无法从 JS 测量，保持 0 由用户档位微调 */
+let audioLatencyMeasured = false;
+function measureAudioOutputLatency() {
+  if (audioLatencyMeasured || isNativeAudioSupported) return;
+  audioLatencyMeasured = true;
+  try {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return;
+    const ac = new AC();
+    const applyLatency = () => {
+      const lat = (typeof ac.outputLatency === 'number' && ac.outputLatency > 0.01 && ac.outputLatency < 0.3) ? ac.outputLatency : 0;
+      try { ac.close(); } catch(e) {}
+      if (lat > 0 && typeof LYRIC_AUDIO_OFFSET === 'number') {
+        LYRIC_AUDIO_OFFSET = Math.min(0.25, LYRIC_AUDIO_OFFSET + lat);
+      }
+    };
+    if (ac.state === 'running') applyLatency();
+    else ac.resume().then(applyLatency).catch(() => { try { ac.close(); } catch(e2) {} });
+  } catch(e) {}
+}
+
 function initAudioEngine() {
   audioPlayer.addEventListener('timeupdate', () => {
     if (isSeekingAudio) return; // 寻道解码期间屏蔽旧时间戳，防止选句时被旧进度强行扯回上一句
@@ -238,6 +260,7 @@ function initAudioEngine() {
     isPlaying = true;
     const song = currentPlaybackQueue[currentIndex];
     if (song) songRetryCounts[song.id] = 0;
+    measureAudioOutputLatency();
     updateUI();
     startLyricSmoothSync();
   });
@@ -389,7 +412,7 @@ function playSongAtQueue(idx) {
   initLyricsList();
   syncCurrentLyricToDesktop();
 
-  // 恢复或加载正式歌词（优先读取 song.lrc 或持久化缓存）
+  // 恢复或加载正式歌词（词级逐字优先；存量普通 LRC 先用后后台升级为 KRC 词级时间轴）
   const cachedLrc = song.lrc || getCachedLyric(song.title, song.artist);
   if (cachedLrc) {
     const parsed = parseLrc(cachedLrc);
@@ -399,11 +422,17 @@ function playSongAtQueue(idx) {
       displayedPreviewIdx = -1;
       initLyricsList();
       syncCurrentLyricToDesktop();
+      const hasWordLyric = parsed.some(l => l.words && l.words.length > 0);
+      if (!hasWordLyric) {
+        // 存量普通 LRC：缓存文本本身就是网易云锚点，直接传给升级链路
+        upgradeLyricToWordLevel(song, cachedLrc);
+      } else if (!cachedLrc.includes('[krc-anchor:2]')) {
+        // 历史遗留的未对齐 KRC 缓存：重新走锚点对齐（带 3 天冷却）
+        upgradeLyricToWordLevel(song, '');
+      }
     }
-  } else if (song.onlineId) {
-    fetchLyricForSong(song.onlineId, song.title, song.source || 'netease');
-  } else if (song.title) {
-    fetchLyricForSong('', song.title, 'netease');
+  } else {
+    loadBestAvailableLyric(song);
   }
 
   // 3. 音频流加载与播放

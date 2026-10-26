@@ -49,7 +49,7 @@ function syncCurrentLyricToDesktop() {
     }
     if (LYRICS_DATA && LYRICS_DATA.length > 0) {
       const rawTime = (typeof getAccuratePlaybackSec === 'function') ? getAccuratePlaybackSec() : currentSec;
-      const curTime = Math.max(0, rawTime + (typeof LYRIC_AUDIO_OFFSET === 'number' ? LYRIC_AUDIO_OFFSET : 0.15));
+      const curTime = Math.max(0, rawTime + (typeof LYRIC_AUDIO_OFFSET === 'number' ? LYRIC_AUDIO_OFFSET : 0.0));
       let matchIdx = (typeof findActiveLyricIndex === 'function') ? findActiveLyricIndex(curTime) : -1;
       if (matchIdx === -1) {
         for (let i = 0; i < LYRICS_DATA.length; i++) {

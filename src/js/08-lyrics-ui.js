@@ -310,11 +310,12 @@ function updateLyricProgress(forcedIdx) {
   updateLyricProgressSmooth(forcedIdx);
 }
 
-// 音频与歌词时间轴同步基准（借鉴洛雪音乐 lrc-file-parser 经验值，默认提前 150ms 抵消视知觉延迟与硬件音频缓冲延迟，支持持久化自定义）
+// 音频与歌词时间轴同步基准：默认零偏移，直连输出下填充与人声严格对位；
+// 蓝牙/车载等高延迟链路请在设置中切换补偿档位，支持持久化自定义
 let LYRIC_AUDIO_OFFSET = (function() {
   const saved = localStorage.getItem('lingxi_lyric_offset');
   if (saved !== null && !isNaN(parseFloat(saved))) return parseFloat(saved);
-  return 0.15;
+  return 0.0;
 })();
 
 function setLyricAudioOffset(val) {
@@ -323,23 +324,23 @@ function setLyricAudioOffset(val) {
 }
 
 const LYRIC_OFFSET_PRESETS = [
-  { val: 0.15, label: '提前 0.15 秒 (推荐 - 抵消蓝牙与视听延迟)' },
+  { val: 0.00, label: '标准 0.00 秒 (推荐 - 直连输出零延迟)' },
+  { val: 0.15, label: '提前 0.15 秒 (普通蓝牙耳机)' },
   { val: 0.25, label: '提前 0.25 秒 (高延迟蓝牙耳机)' },
   { val: 0.35, label: '提前 0.35 秒 (车载蓝牙或远距音箱)' },
-  { val: 0.00, label: '标准 0.00 秒 (零时延有线耳机)' },
   { val: -0.15, label: '延后 0.15 秒 (提前打轴音源)' }
 ];
 
 function updateLyricOffsetSettingUI() {
   const descEl = document.getElementById('lyricOffsetSettingDesc');
   if (!descEl) return;
-  const cur = (typeof LYRIC_AUDIO_OFFSET === 'number') ? LYRIC_AUDIO_OFFSET : 0.15;
+  const cur = (typeof LYRIC_AUDIO_OFFSET === 'number') ? LYRIC_AUDIO_OFFSET : 0.0;
   const found = LYRIC_OFFSET_PRESETS.find(p => Math.abs(p.val - cur) < 0.01);
   descEl.textContent = found ? found.label : `自定义：${cur > 0 ? '提前' : '延后'} ${Math.abs(cur).toFixed(2)} 秒`;
 }
 
 function cycleLyricOffsetSetting() {
-  const cur = (typeof LYRIC_AUDIO_OFFSET === 'number') ? LYRIC_AUDIO_OFFSET : 0.15;
+  const cur = (typeof LYRIC_AUDIO_OFFSET === 'number') ? LYRIC_AUDIO_OFFSET : 0.0;
   let idx = LYRIC_OFFSET_PRESETS.findIndex(p => Math.abs(p.val - cur) < 0.01);
   if (idx === -1) idx = 0;
   idx = (idx + 1) % LYRIC_OFFSET_PRESETS.length;

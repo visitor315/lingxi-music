@@ -77,8 +77,8 @@ function parseLineWords(text, lineStartTime) {
     return words;
   }
 
-  // 2. 匹配 KRC / LX 逐字格式: <offsetMs,durationMs>字
-  const krcWordRegex = /<(\d+),(\d+)>([^<]+)/g;
+  // 2. 匹配 KRC / LX 逐字格式: <offsetMs,durationMs>字 或 <offsetMs,durationMs,0>字
+  const krcWordRegex = /<(\d+),(\d+)(?:,\d+)?>([^<]+)/g;
   let krcMatches = [];
   while ((m = krcWordRegex.exec(text)) !== null) {
     const offsetMs = parseInt(m[1], 10);
@@ -110,6 +110,7 @@ function parseLineWords(text, lineStartTime) {
 
 function parseLrc(lrcText) {
   if (!lrcText || typeof lrcText !== 'string') return null;
+  lrcText = lrcText.replace(/^\uFEFF/, '');
   const lines = lrcText.split('\n');
   const items = [];
   const timeRegex = /\[(\d{2}):(\d{2})(?:\.(\d{2,3}))?\]/g;
@@ -117,6 +118,26 @@ function parseLrc(lrcText) {
   for (let line of lines) {
     line = line.trim();
     if (!line) continue;
+
+    // KRC 词级逐字行: [startMs,durMs]<off,dur,0>字...（毫秒行头，不走 mm:ss 正则）
+    const krcLineMatch = line.match(/^\[(\d+),(\d+)\](.*)$/);
+    if (krcLineMatch) {
+      const timeInSec = parseInt(krcLineMatch[1], 10) / 1000;
+      const rawContent = krcLineMatch[3].trim();
+      if (!rawContent) continue;
+      const parsedWords = parseLineWords(rawContent, timeInSec);
+      const cleanLineRaw = rawContent.replace(/<[^>]+>/g, '').replace(/\([^)]+\)/g, '').trim();
+      const parsedPrefix = extractSingerPrefix(cleanLineRaw);
+      items.push({
+        time: timeInSec,
+        text: cleanLineRaw,
+        singerTag: parsedPrefix.singerTag,
+        cleanText: parsedPrefix.cleanText,
+        words: parsedWords
+      });
+      continue;
+    }
+
     const rawContent = line.replace(timeRegex, '').trim();
     if (!rawContent) continue;
 
@@ -168,18 +189,22 @@ function parseLrc(lrcText) {
         items[i].interludeEndTime = items[i].time + exactVocalDur;
       }
     } else {
-      // 普通 LRC：基于人声吐字声学速率基准（每个字 0.30s + 0.35s 自然起伏）
+      // 普通 LRC（无词级时间轴）：按慢歌实际吐字节奏估算人声区间（每字约0.38秒），
+      // 填充到估算人声终点即满格，不硬铺到下一句拖尾；密集句仍铺满整段间隔；仅长间奏唱毕定格
+      const isLastLine = (i === items.length - 1);
       const cleanChars = (items[i].text || '').replace(/[^\u4e00-\u9fa5A-Za-z0-9]/g, '').length || (items[i].text || '').length || 4;
-      const naturalVocalTime = cleanChars * 0.30 + 0.35;
-      const maxAllowedVocalTime = Math.max(0.8, rawGap - Math.max(0.2, Math.min(0.45, rawGap * 0.12)));
-      const effectiveVocalDur = Math.min(naturalVocalTime, maxAllowedVocalTime);
-      items[i].duration = Math.max(0.8, effectiveVocalDur);
+      const estVocalTime = cleanChars * 0.38 + 0.6;
+      const spanGap = isLastLine ? 5.0 : rawGap;
+      const breathing = isLastLine ? 0 : Math.min(0.35, Math.max(0.15, rawGap * 0.08));
 
-      // 若两句实际间隔比唱词时长多出 1.5 秒以上，判定唱毕后进入伴奏/间奏
-      if (rawGap > items[i].duration + 1.5) {
+      if (!isLastLine && rawGap > 7.0) {
+        // 超过 7 秒的大间隔判定为吉他 Solo、长过门或纯音乐间奏：唱毕定格等待下一句
+        items[i].duration = Math.min(Math.max(1.2, estVocalTime), rawGap - 1.5);
         items[i].hasInterludeAfter = true;
-        items[i].interludeEndTime = (i < items.length - 1) ? items[i + 1].time : (items[i].time + items[i].duration + 4);
+        items[i].interludeEndTime = items[i + 1].time;
       } else {
+        // 常规演唱：估算人声时长与句间隔取小者，唱完即满格，下一句准时衔接
+        items[i].duration = Math.max(0.8, Math.min(spanGap - breathing, estVocalTime));
         items[i].hasInterludeAfter = false;
         items[i].interludeEndTime = items[i].time + items[i].duration;
       }
