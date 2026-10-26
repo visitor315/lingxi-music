@@ -340,6 +340,7 @@ function playSongAtQueue(idx) {
   const song = currentPlaybackQueue[currentIndex];
   if (!song) return;
   currentSec = 0;
+  if (typeof resetPlaybackClock === "function") resetPlaybackClock(0);
 
   // 发现页顶部推荐曲目联动：当前歌曲若为推荐曲目，唱片自动平滑滚入正方形卡片
   if (topRecommendedTracks && topRecommendedTracks.length > 0) {
@@ -573,6 +574,7 @@ function handleTrackEnd() {
 
   if (playMode === 'single') {
     currentSec = 0;
+  if (typeof resetPlaybackClock === "function") resetPlaybackClock(0);
     playSongAtQueue(currentIndex);
   } else if (playMode === 'random') {
     let next = Math.floor(Math.random() * currentPlaybackQueue.length);
@@ -586,6 +588,7 @@ function handleTrackEnd() {
     } else {
       isPlaying = false;
       currentSec = 0;
+  if (typeof resetPlaybackClock === "function") resetPlaybackClock(0);
       updateUI();
       toast('已播放至列表末尾');
     }

@@ -15,8 +15,25 @@ let appliedActiveIdx = -99;
 let isLyricLoadingTransition = false;
 
 /* 纯净歌词加载占位：直接呈现一行普通歌词“歌词正在加载中…”，期间隐藏所有其他歌词 */
+let lyricLoadingWatchdogTimer = null;
+
 function showLyricTransitionAnimation(song) {
   isLyricLoadingTransition = true;
+  if (lyricLoadingWatchdogTimer) clearTimeout(lyricLoadingWatchdogTimer);
+  // 保险看门狗：最长等待 4 秒，若因全网无歌词或接口超时未正常结束，自动降级解除加载状态
+  lyricLoadingWatchdogTimer = setTimeout(() => {
+    if (isLyricLoadingTransition) {
+      isLyricLoadingTransition = false;
+      const s = currentPlaybackQueue[currentIndex] || song;
+      LYRICS_DATA = [
+        { time: 0, duration: 6, text: `《${(s && s.title) || '当前歌曲'}》` },
+        { time: 6, duration: 15, text: "正在播放网络歌曲" },
+        { time: 21, duration: 25, text: "此歌曲暂无同步歌词" }
+      ];
+      lastActiveIdx = -1;
+      initLyricsList();
+    }
+  }, 4000);
 
   // 1. 唱片机下方预览歌词区域：只留一行普通歌词，彻底隐藏副歌词
   const previewMain = document.getElementById('previewMainLyric');
@@ -54,6 +71,10 @@ function showLyricTransitionAnimation(song) {
 }
 
 function initLyricsList() {
+  if (lyricLoadingWatchdogTimer) {
+    clearTimeout(lyricLoadingWatchdogTimer);
+    lyricLoadingWatchdogTimer = null;
+  }
   isLyricLoadingTransition = false;
   const previewSub = document.getElementById('previewSubLyric');
   if (previewSub) {
@@ -194,6 +215,7 @@ function seekToLyricLine(time, e, explicitIdx) {
   if (e && e.stopPropagation) e.stopPropagation();
   isUserInteractingWithLyrics = false;
   currentSec = Number(time) || 0;
+  resetPlaybackClock(currentSec);
 
   // 锁定寻道状态，防止底层解码器在缓冲准备阶段触发旧时间戳将进度篡改回上一句
   isSeekingAudio = true;
@@ -258,30 +280,77 @@ function stopBgLyricPolling() {
   }
 }
 
-let lastNativeSamplePos = -1;
-let lastNativeSamplePerf = 0;
+let smoothedPlaybackSec = 0;
+let lastSmoothedPerfTime = 0;
+let lastRawSamplePos = -1;
+
+function resetPlaybackClock(newTime) {
+  const t = (typeof newTime === 'number' && newTime >= 0) ? newTime : currentSec;
+  smoothedPlaybackSec = t;
+  lastSmoothedPerfTime = performance.now();
+  lastRawSamplePos = -1;
+  currentSec = t;
+}
 
 function getAccuratePlaybackSec() {
-  if (isSeekingAudio) return currentSec;
-  const now = performance.now();
-  if (isNativeAudioSupported && window.AndroidBridge && window.AndroidBridge.getNativePosition) {
-    const rawPos = window.AndroidBridge.getNativePosition();
-    if (typeof rawPos === 'number' && rawPos >= 0) {
-      if (rawPos !== lastNativeSamplePos) {
-        lastNativeSamplePos = rawPos;
-        lastNativeSamplePerf = now;
-        currentSec = rawPos;
-      } else if (isPlaying) {
-        // 底层 MediaPlayer 在采样间隔内尚未更新时，用高精度系统时钟线性前插平滑（上限0.5s，覆盖粗粒度采样机型）
-        const elapsedSinceSample = (now - lastNativeSamplePerf) / 1000;
-        if (elapsedSinceSample > 0 && elapsedSinceSample < 0.5) {
-          currentSec = rawPos + elapsedSinceSample;
-        }
-      }
-    }
-  } else if (!isNaN(audioPlayer.currentTime) && audioPlayer.currentTime >= 0) {
-    currentSec = audioPlayer.currentTime;
+  if (isSeekingAudio) {
+    smoothedPlaybackSec = currentSec;
+    lastSmoothedPerfTime = performance.now();
+    lastRawSamplePos = -1;
+    return currentSec;
   }
+
+  const now = performance.now();
+  let rawPos = -1;
+
+  if (isNativeAudioSupported && window.AndroidBridge && window.AndroidBridge.getNativePosition) {
+    try {
+      const p = window.AndroidBridge.getNativePosition();
+      if (typeof p === 'number' && p >= 0) rawPos = p;
+    } catch(e) {}
+  } else if (!isNaN(audioPlayer.currentTime) && audioPlayer.currentTime >= 0) {
+    rawPos = audioPlayer.currentTime;
+  }
+
+  if (rawPos < 0) return currentSec;
+
+  if (lastSmoothedPerfTime === 0 || lastRawSamplePos < 0) {
+    smoothedPlaybackSec = rawPos;
+    lastSmoothedPerfTime = now;
+    lastRawSamplePos = rawPos;
+    currentSec = rawPos;
+    return rawPos;
+  }
+
+  const dt = Math.max(0, Math.min(0.1, (now - lastSmoothedPerfTime) / 1000));
+  lastSmoothedPerfTime = now;
+
+  const isActuallyPlaying = isPlaying || (!isNativeAudioSupported && audioPlayer && !audioPlayer.paused);
+  if (!isActuallyPlaying) {
+    smoothedPlaybackSec = rawPos;
+    currentSec = rawPos;
+    return rawPos;
+  }
+
+  // 物理高精连续前向推进：每帧按真实高精度时钟 dt 匀速前行，从数学上根除阶梯停顿
+  smoothedPlaybackSec += dt;
+
+  // 硬件时钟对齐校验：温柔吸收硬件时钟微小漂移，杜绝倒退与突跳
+  const diff = rawPos - smoothedPlaybackSec;
+  if (Math.abs(diff) > 0.6) {
+    // 拖动进度条或硬件重定位：立即同步
+    smoothedPlaybackSec = rawPos;
+  } else if (rawPos !== lastRawSamplePos) {
+    lastRawSamplePos = rawPos;
+    smoothedPlaybackSec += diff * 0.25;
+  }
+
+  // 单调性保证：正常播放中时间绝对禁止倒流
+  if (smoothedPlaybackSec < currentSec && Math.abs(rawPos - currentSec) < 0.6) {
+    smoothedPlaybackSec = currentSec;
+  }
+
+  currentSec = smoothedPlaybackSec;
   return currentSec;
 }
 
@@ -526,13 +595,13 @@ function updateLyricProgressSmooth(forcedIdx, sampledSec) {
   let activeLine = activeLyricLineEl;
   if (!activeLine) activeLine = document.querySelector('.lyric-line-item.active');
   if (activeLine) {
-    activeLine.style.setProperty('--fill-pct', `${fillPct.toFixed(1)}%`);
+    activeLine.style.setProperty('--fill-pct', `${fillPct.toFixed(2)}%`);
   }
   if (!previewMainLyricEl) previewMainLyricEl = document.getElementById('previewMainLyric');
   const previewMain = previewMainLyricEl;
   if (previewMain) {
     previewMain.classList.remove('pending');
-    previewMain.style.setProperty('--fill-pct', `${fillPct.toFixed(1)}%`);
+    previewMain.style.setProperty('--fill-pct', `${fillPct.toFixed(2)}%`);
   }
 }
 

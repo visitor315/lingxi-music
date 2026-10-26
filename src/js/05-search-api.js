@@ -714,11 +714,15 @@ async function fetchQrcWordLyric(title, artist, durationSec) {
     if (!cleanCandidates.length) cleanCandidates = list;
 
     // 强规则过滤：必须满足歌名与歌手归一化匹配，坚决拒绝与歌名完全无关的曲目！
+    const titleHintMatch = String(title || '').match(/[\(（]([^\)）]{2,8})[\)）]/);
+    const titleHint = titleHintMatch ? norm(titleHintMatch[1]) : '';
+
     const validCandidates = cleanCandidates.filter(s => {
       const sn = norm(s.songname || '');
       const sa = norm((s.singer || []).map(x => x.name).join(''));
       const isTitleMatch = (sn === nt) || (sn.includes(nt)) || (nt.includes(sn));
-      const isArtistMatch = !na || (sa.includes(na)) || (na.includes(sa)) || !sa;
+      const isArtistMatch = !na || (sa.includes(na)) || (na.includes(sa)) || !sa ||
+                            (titleHint && (sa.includes(titleHint) || titleHint.includes(sa)));
       return isTitleMatch && isArtistMatch;
     });
     if (!validCandidates.length) return '';
@@ -807,11 +811,15 @@ async function fetchKrcWordLyric(title, artist, durationSec) {
     if (!allInfo.length) return '';
 
     // 强规则过滤：歌名与歌手归一化双重核验，彻底拦截酷狗把《演员》等无关热门推荐当做歌词源！
+    const titleHintMatch = String(title || '').match(/[\(（]([^\)）]{2,8})[\)）]/);
+    const titleHint = titleHintMatch ? norm(titleHintMatch[1]) : '';
+
     const validCandidates = allInfo.filter(s => {
       const sn = norm(s.songname || '');
       const sa = norm(s.singername || '');
       const isTitleMatch = (sn === nt) || (sn.includes(nt)) || (nt.includes(sn));
-      const isArtistMatch = !na || (sa.includes(na)) || (na.includes(sa)) || !sa;
+      const isArtistMatch = !na || (sa.includes(na)) || (na.includes(sa)) || !sa ||
+                            (titleHint && (sa.includes(titleHint) || titleHint.includes(sa)));
       const isNotBadRemix = !/伴奏|dj|remix/i.test(s.songname || '');
       return isTitleMatch && isArtistMatch && isNotBadRemix;
     });
@@ -926,46 +934,81 @@ async function loadBestAvailableLyric(song) {
       markKrcAttempt(song);
     }
   }
-  if (song.onlineId) fetchLyricForSong(song.onlineId, song.title, song.source || 'netease');
-  else if (song.title) fetchLyricForSong('', song.title, 'netease');
+  if (song.onlineId) fetchLyricForSong(song.onlineId, song.title, song.source || 'netease', song.artist);
+  else if (song.title) fetchLyricForSong('', song.title, 'netease', song.artist);
 }
 
 /* 纯净抓取网易云系普通 LRC 原文（不做任何 UI 副作用），供歌词链路与 KRC 锚点对齐复用 */
-async function fetchRawLrcFromNet(songId, songTitle, source = 'netease') {
+async function fetchRawLrcFromNet(songId, songTitle, source = 'netease', artistName = '') {
   let rawLrc = '';
-  try {
-    const apiLrcUrl = `${currentApiBase}?types=lyric&id=${songId}&source=${source}`;
-    const res = await universalFetch(apiLrcUrl, { timeout: 2500 });
-    if (res.ok) {
-      const data = await res.json();
-      if (data && data.lyric) {
-        rawLrc = data.lyric;
-      }
-    }
-  } catch(e) {
-    console.warn("Primary lyric fetch failed, trying fallback", e);
-  }
-
-  if (!rawLrc) {
+  if (songId) {
     try {
-      const lyricApi = `https://music.163.com/api/song/lyric?id=${songId}&lv=1&kv=1&tv=-1`;
-      const res = await universalFetch(lyricApi, { timeout: 2500 });
-      if (res.ok) {
+      const apiLrcUrl = `${currentApiBase}?types=lyric&id=${songId}&source=${source}`;
+      const res = await universalFetch(apiLrcUrl, { timeout: 3500 });
+      if (res && res.ok) {
         const data = await res.json();
-        if (data && data.lrc && data.lrc.lyric) rawLrc = data.lrc.lyric;
+        if (data && data.lyric && typeof data.lyric === 'string' && data.lyric.includes('[')) {
+          rawLrc = data.lyric;
+        }
+      }
+    } catch(e) {}
+
+    if (!rawLrc) {
+      try {
+        const lyricApi = `https://music.163.com/api/song/lyric?id=${songId}&lv=1&kv=1&tv=-1`;
+        const res = await universalFetch(lyricApi, { timeout: 3000 });
+        if (res && res.ok) {
+          const data = await res.json();
+          if (data && data.lrc && data.lrc.lyric && data.lrc.lyric.includes('[')) {
+            rawLrc = data.lrc.lyric;
+          }
+        }
+      } catch(e) {}
+    }
+
+    if (!rawLrc) {
+      try {
+        const res = await universalFetch(`https://api.injahow.cn/meting/?server=${source}&type=lrc&id=${songId}`, { timeout: 3000 });
+        if (res && res.ok) {
+          const text = await res.text();
+          if (text && text.includes('[') && !text.includes('请求次数已达上限')) rawLrc = text;
+        }
+      } catch(e) {}
+    }
+  }
+
+  // 关键兜底：如果直查无果（或 songId 缺失/失效/小众翻唱源），按歌名与歌手全网反查网易云对应歌词！
+  if (!rawLrc && songTitle) {
+    try {
+      const cleanTitle = (typeof formatCleanTitle === 'function') ? formatCleanTitle(songTitle) : songTitle;
+      const cleanArtist = (typeof formatCleanArtist === 'function') ? formatCleanArtist(artistName || '') : (artistName || '');
+      const q = encodeURIComponent(`${cleanTitle} ${cleanArtist}`.trim());
+      const searchUrl = `${currentApiBase}?types=search&source=netease&name=${q}&count=5&pages=1`;
+      const sRes = await universalFetch(searchUrl, { timeout: 3500 });
+      if (sRes && sRes.ok) {
+        const list = await sRes.json();
+        if (Array.isArray(list) && list.length > 0) {
+          for (const item of list) {
+            const candId = item.id || item.url_id;
+            if (candId && String(candId) !== String(songId)) {
+              try {
+                const candLrcUrl = `${currentApiBase}?types=lyric&id=${candId}&source=netease`;
+                const cRes = await universalFetch(candLrcUrl, { timeout: 3000 });
+                if (cRes && cRes.ok) {
+                  const cData = await cRes.json();
+                  if (cData && cData.lyric && typeof cData.lyric === 'string' && cData.lyric.includes('[')) {
+                    rawLrc = cData.lyric;
+                    break;
+                  }
+                }
+              } catch(e) {}
+            }
+          }
+        }
       }
     } catch(e) {}
   }
 
-  if (!rawLrc && songId) {
-    try {
-      const res = await universalFetch(`https://api.injahow.cn/meting/?server=${source}&type=lrc&id=${songId}`, { timeout: 2500 });
-      if (res.ok) {
-        const text = await res.text();
-        if (text && text.includes('[')) rawLrc = text;
-      }
-    } catch(e) {}
-  }
   return rawLrc;
 }
 
@@ -1142,53 +1185,60 @@ function markKrcAttempt(song) {
   } catch(e) {}
 }
 
-async function fetchLyricForSong(songId, songTitle, source = 'netease') {
-  const curSong = currentPlaybackQueue[currentIndex];
-  // 严禁逆向降级：若当前歌曲已拥有高质量商业/逐字词轴（QRC / KRC），坚决禁止普通长句覆盖！
-  if (curSong && curSong.lrc && curSong.lrc.includes('<') && (curSong.lrc.includes('[krc-anchor:') || (LYRICS_DATA && LYRICS_DATA.some(l => l.words && l.words.length > 0)))) {
-    return;
-  }
-  const rawLrc = await fetchRawLrcFromNet(songId, songTitle, source);
-  if (rawLrc) {
-    // 异步返回时再次核验：避免与正规 QRC 竞态造成覆盖
-    const activeSong = currentPlaybackQueue[currentIndex];
-    if (!activeSong) return;
-    const cleanActiveTitle = (typeof formatCleanTitle === 'function') ? formatCleanTitle(activeSong.title || '') : (activeSong.title || '');
-    const cleanReqTitle = (typeof formatCleanTitle === 'function') ? formatCleanTitle(songTitle || '') : (songTitle || '');
-    if (cleanReqTitle && cleanActiveTitle && cleanActiveTitle.toLowerCase().trim() !== cleanReqTitle.toLowerCase().trim()) {
+async function fetchLyricForSong(songId, songTitle, source = 'netease', songArtist = '') {
+  try {
+    const curSong = currentPlaybackQueue[currentIndex];
+    // 严禁逆向降级：若当前歌曲已拥有高质量商业/逐字词轴（QRC / KRC），坚决禁止普通长句覆盖！
+    if (curSong && curSong.lrc && curSong.lrc.includes('<') && (curSong.lrc.includes('[krc-anchor:') || (LYRICS_DATA && LYRICS_DATA.some(l => l.words && l.words.length > 0)))) {
+      isLyricLoadingTransition = false;
       return;
     }
-    if (activeSong && activeSong.lrc && activeSong.lrc.includes('<') && activeSong.lrc.includes('[krc-anchor:')) {
-      return;
-    }
-    isLyricLoadingTransition = false;
-    const parsed = parseLrc(rawLrc);
-    if (parsed && parsed.length) {
-      LYRICS_DATA = parsed;
-      lastActiveIdx = -1;
-      initLyricsList();
-      if (activeSong) {
-        activeSong.lrc = rawLrc;
-        if (!activeSong.cover && songId) {
-          activeSong.cover = `https://api.injahow.cn/meting/?server=${source}&type=pic&id=${songId}`;
-          applySongCoverToUI(activeSong.cover);
-          updateUI();
-        }
-        saveLyricToCache(activeSong.title, activeSong.artist, rawLrc);
-        persistData();
+    const rawLrc = await fetchRawLrcFromNet(songId, songTitle, source, songArtist || (curSong ? curSong.artist : ''));
+    if (rawLrc) {
+      const activeSong = currentPlaybackQueue[currentIndex];
+      if (!activeSong) return;
+      const cleanActiveTitle = (typeof formatCleanTitle === 'function') ? formatCleanTitle(activeSong.title || '') : (activeSong.title || '');
+      const cleanReqTitle = (typeof formatCleanTitle === 'function') ? formatCleanTitle(songTitle || '') : (songTitle || '');
+      if (cleanReqTitle && cleanActiveTitle && cleanActiveTitle.toLowerCase().trim() !== cleanReqTitle.toLowerCase().trim()) {
+        return;
       }
-      return;
+      if (activeSong && activeSong.lrc && activeSong.lrc.includes('<') && activeSong.lrc.includes('[krc-anchor:')) {
+        return;
+      }
+      isLyricLoadingTransition = false;
+      const parsed = parseLrc(rawLrc);
+      if (parsed && parsed.length) {
+        LYRICS_DATA = parsed;
+        lastActiveIdx = -1;
+        initLyricsList();
+        if (activeSong) {
+          activeSong.lrc = rawLrc;
+          if (!activeSong.cover && songId) {
+            activeSong.cover = `https://api.injahow.cn/meting/?server=${source}&type=pic&id=${songId}`;
+            applySongCoverToUI(activeSong.cover);
+            updateUI();
+          }
+          saveLyricToCache(activeSong.title, activeSong.artist, rawLrc);
+          persistData();
+        }
+        return;
+      }
     }
-  }
 
-  // 默认简雅歌词占位
-  LYRICS_DATA = [
-    { time: 0, duration: 6, text: `《${songTitle}》` },
-    { time: 6, duration: 15, text: "正在播放网络歌曲" },
-    { time: 21, duration: 25, text: "此歌曲暂无同步歌词" }
-  ];
-  lastActiveIdx = -1;
-  initLyricsList();
+    // 默认简雅歌词占位（坚决解除过渡加载状态）
+    isLyricLoadingTransition = false;
+    LYRICS_DATA = [
+      { time: 0, duration: 6, text: `《${songTitle || '当前歌曲'}》` },
+      { time: 6, duration: 15, text: "正在播放网络歌曲" },
+      { time: 21, duration: 25, text: "此歌曲暂无同步歌词" }
+    ];
+    lastActiveIdx = -1;
+    initLyricsList();
+  } catch(err) {
+    console.warn("fetchLyricForSong error:", err);
+  } finally {
+    isLyricLoadingTransition = false;
+  }
 }
 
 let currentAppliedCoverUrl = null;

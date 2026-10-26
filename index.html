@@ -5562,6 +5562,7 @@ function playSongAtQueue(idx) {
   const song = currentPlaybackQueue[currentIndex];
   if (!song) return;
   currentSec = 0;
+  if (typeof resetPlaybackClock === "function") resetPlaybackClock(0);
 
   // 发现页顶部推荐曲目联动：当前歌曲若为推荐曲目，唱片自动平滑滚入正方形卡片
   if (topRecommendedTracks && topRecommendedTracks.length > 0) {
@@ -5795,6 +5796,7 @@ function handleTrackEnd() {
 
   if (playMode === 'single') {
     currentSec = 0;
+  if (typeof resetPlaybackClock === "function") resetPlaybackClock(0);
     playSongAtQueue(currentIndex);
   } else if (playMode === 'random') {
     let next = Math.floor(Math.random() * currentPlaybackQueue.length);
@@ -5808,6 +5810,7 @@ function handleTrackEnd() {
     } else {
       isPlaying = false;
       currentSec = 0;
+  if (typeof resetPlaybackClock === "function") resetPlaybackClock(0);
       updateUI();
       toast('已播放至列表末尾');
     }
@@ -6791,11 +6794,15 @@ async function fetchQrcWordLyric(title, artist, durationSec) {
     if (!cleanCandidates.length) cleanCandidates = list;
 
     // 强规则过滤：必须满足歌名与歌手归一化匹配，坚决拒绝与歌名完全无关的曲目！
+    const titleHintMatch = String(title || '').match(/[\(（]([^\)）]{2,8})[\)）]/);
+    const titleHint = titleHintMatch ? norm(titleHintMatch[1]) : '';
+
     const validCandidates = cleanCandidates.filter(s => {
       const sn = norm(s.songname || '');
       const sa = norm((s.singer || []).map(x => x.name).join(''));
       const isTitleMatch = (sn === nt) || (sn.includes(nt)) || (nt.includes(sn));
-      const isArtistMatch = !na || (sa.includes(na)) || (na.includes(sa)) || !sa;
+      const isArtistMatch = !na || (sa.includes(na)) || (na.includes(sa)) || !sa ||
+                            (titleHint && (sa.includes(titleHint) || titleHint.includes(sa)));
       return isTitleMatch && isArtistMatch;
     });
     if (!validCandidates.length) return '';
@@ -6884,11 +6891,15 @@ async function fetchKrcWordLyric(title, artist, durationSec) {
     if (!allInfo.length) return '';
 
     // 强规则过滤：歌名与歌手归一化双重核验，彻底拦截酷狗把《演员》等无关热门推荐当做歌词源！
+    const titleHintMatch = String(title || '').match(/[\(（]([^\)）]{2,8})[\)）]/);
+    const titleHint = titleHintMatch ? norm(titleHintMatch[1]) : '';
+
     const validCandidates = allInfo.filter(s => {
       const sn = norm(s.songname || '');
       const sa = norm(s.singername || '');
       const isTitleMatch = (sn === nt) || (sn.includes(nt)) || (nt.includes(sn));
-      const isArtistMatch = !na || (sa.includes(na)) || (na.includes(sa)) || !sa;
+      const isArtistMatch = !na || (sa.includes(na)) || (na.includes(sa)) || !sa ||
+                            (titleHint && (sa.includes(titleHint) || titleHint.includes(sa)));
       const isNotBadRemix = !/伴奏|dj|remix/i.test(s.songname || '');
       return isTitleMatch && isArtistMatch && isNotBadRemix;
     });
@@ -7003,46 +7014,81 @@ async function loadBestAvailableLyric(song) {
       markKrcAttempt(song);
     }
   }
-  if (song.onlineId) fetchLyricForSong(song.onlineId, song.title, song.source || 'netease');
-  else if (song.title) fetchLyricForSong('', song.title, 'netease');
+  if (song.onlineId) fetchLyricForSong(song.onlineId, song.title, song.source || 'netease', song.artist);
+  else if (song.title) fetchLyricForSong('', song.title, 'netease', song.artist);
 }
 
 /* 纯净抓取网易云系普通 LRC 原文（不做任何 UI 副作用），供歌词链路与 KRC 锚点对齐复用 */
-async function fetchRawLrcFromNet(songId, songTitle, source = 'netease') {
+async function fetchRawLrcFromNet(songId, songTitle, source = 'netease', artistName = '') {
   let rawLrc = '';
-  try {
-    const apiLrcUrl = `${currentApiBase}?types=lyric&id=${songId}&source=${source}`;
-    const res = await universalFetch(apiLrcUrl, { timeout: 2500 });
-    if (res.ok) {
-      const data = await res.json();
-      if (data && data.lyric) {
-        rawLrc = data.lyric;
-      }
-    }
-  } catch(e) {
-    console.warn("Primary lyric fetch failed, trying fallback", e);
-  }
-
-  if (!rawLrc) {
+  if (songId) {
     try {
-      const lyricApi = `https://music.163.com/api/song/lyric?id=${songId}&lv=1&kv=1&tv=-1`;
-      const res = await universalFetch(lyricApi, { timeout: 2500 });
-      if (res.ok) {
+      const apiLrcUrl = `${currentApiBase}?types=lyric&id=${songId}&source=${source}`;
+      const res = await universalFetch(apiLrcUrl, { timeout: 3500 });
+      if (res && res.ok) {
         const data = await res.json();
-        if (data && data.lrc && data.lrc.lyric) rawLrc = data.lrc.lyric;
+        if (data && data.lyric && typeof data.lyric === 'string' && data.lyric.includes('[')) {
+          rawLrc = data.lyric;
+        }
+      }
+    } catch(e) {}
+
+    if (!rawLrc) {
+      try {
+        const lyricApi = `https://music.163.com/api/song/lyric?id=${songId}&lv=1&kv=1&tv=-1`;
+        const res = await universalFetch(lyricApi, { timeout: 3000 });
+        if (res && res.ok) {
+          const data = await res.json();
+          if (data && data.lrc && data.lrc.lyric && data.lrc.lyric.includes('[')) {
+            rawLrc = data.lrc.lyric;
+          }
+        }
+      } catch(e) {}
+    }
+
+    if (!rawLrc) {
+      try {
+        const res = await universalFetch(`https://api.injahow.cn/meting/?server=${source}&type=lrc&id=${songId}`, { timeout: 3000 });
+        if (res && res.ok) {
+          const text = await res.text();
+          if (text && text.includes('[') && !text.includes('请求次数已达上限')) rawLrc = text;
+        }
+      } catch(e) {}
+    }
+  }
+
+  // 关键兜底：如果直查无果（或 songId 缺失/失效/小众翻唱源），按歌名与歌手全网反查网易云对应歌词！
+  if (!rawLrc && songTitle) {
+    try {
+      const cleanTitle = (typeof formatCleanTitle === 'function') ? formatCleanTitle(songTitle) : songTitle;
+      const cleanArtist = (typeof formatCleanArtist === 'function') ? formatCleanArtist(artistName || '') : (artistName || '');
+      const q = encodeURIComponent(`${cleanTitle} ${cleanArtist}`.trim());
+      const searchUrl = `${currentApiBase}?types=search&source=netease&name=${q}&count=5&pages=1`;
+      const sRes = await universalFetch(searchUrl, { timeout: 3500 });
+      if (sRes && sRes.ok) {
+        const list = await sRes.json();
+        if (Array.isArray(list) && list.length > 0) {
+          for (const item of list) {
+            const candId = item.id || item.url_id;
+            if (candId && String(candId) !== String(songId)) {
+              try {
+                const candLrcUrl = `${currentApiBase}?types=lyric&id=${candId}&source=netease`;
+                const cRes = await universalFetch(candLrcUrl, { timeout: 3000 });
+                if (cRes && cRes.ok) {
+                  const cData = await cRes.json();
+                  if (cData && cData.lyric && typeof cData.lyric === 'string' && cData.lyric.includes('[')) {
+                    rawLrc = cData.lyric;
+                    break;
+                  }
+                }
+              } catch(e) {}
+            }
+          }
+        }
       }
     } catch(e) {}
   }
 
-  if (!rawLrc && songId) {
-    try {
-      const res = await universalFetch(`https://api.injahow.cn/meting/?server=${source}&type=lrc&id=${songId}`, { timeout: 2500 });
-      if (res.ok) {
-        const text = await res.text();
-        if (text && text.includes('[')) rawLrc = text;
-      }
-    } catch(e) {}
-  }
   return rawLrc;
 }
 
@@ -7219,53 +7265,60 @@ function markKrcAttempt(song) {
   } catch(e) {}
 }
 
-async function fetchLyricForSong(songId, songTitle, source = 'netease') {
-  const curSong = currentPlaybackQueue[currentIndex];
-  // 严禁逆向降级：若当前歌曲已拥有高质量商业/逐字词轴（QRC / KRC），坚决禁止普通长句覆盖！
-  if (curSong && curSong.lrc && curSong.lrc.includes('<') && (curSong.lrc.includes('[krc-anchor:') || (LYRICS_DATA && LYRICS_DATA.some(l => l.words && l.words.length > 0)))) {
-    return;
-  }
-  const rawLrc = await fetchRawLrcFromNet(songId, songTitle, source);
-  if (rawLrc) {
-    // 异步返回时再次核验：避免与正规 QRC 竞态造成覆盖
-    const activeSong = currentPlaybackQueue[currentIndex];
-    if (!activeSong) return;
-    const cleanActiveTitle = (typeof formatCleanTitle === 'function') ? formatCleanTitle(activeSong.title || '') : (activeSong.title || '');
-    const cleanReqTitle = (typeof formatCleanTitle === 'function') ? formatCleanTitle(songTitle || '') : (songTitle || '');
-    if (cleanReqTitle && cleanActiveTitle && cleanActiveTitle.toLowerCase().trim() !== cleanReqTitle.toLowerCase().trim()) {
+async function fetchLyricForSong(songId, songTitle, source = 'netease', songArtist = '') {
+  try {
+    const curSong = currentPlaybackQueue[currentIndex];
+    // 严禁逆向降级：若当前歌曲已拥有高质量商业/逐字词轴（QRC / KRC），坚决禁止普通长句覆盖！
+    if (curSong && curSong.lrc && curSong.lrc.includes('<') && (curSong.lrc.includes('[krc-anchor:') || (LYRICS_DATA && LYRICS_DATA.some(l => l.words && l.words.length > 0)))) {
+      isLyricLoadingTransition = false;
       return;
     }
-    if (activeSong && activeSong.lrc && activeSong.lrc.includes('<') && activeSong.lrc.includes('[krc-anchor:')) {
-      return;
-    }
-    isLyricLoadingTransition = false;
-    const parsed = parseLrc(rawLrc);
-    if (parsed && parsed.length) {
-      LYRICS_DATA = parsed;
-      lastActiveIdx = -1;
-      initLyricsList();
-      if (activeSong) {
-        activeSong.lrc = rawLrc;
-        if (!activeSong.cover && songId) {
-          activeSong.cover = `https://api.injahow.cn/meting/?server=${source}&type=pic&id=${songId}`;
-          applySongCoverToUI(activeSong.cover);
-          updateUI();
-        }
-        saveLyricToCache(activeSong.title, activeSong.artist, rawLrc);
-        persistData();
+    const rawLrc = await fetchRawLrcFromNet(songId, songTitle, source, songArtist || (curSong ? curSong.artist : ''));
+    if (rawLrc) {
+      const activeSong = currentPlaybackQueue[currentIndex];
+      if (!activeSong) return;
+      const cleanActiveTitle = (typeof formatCleanTitle === 'function') ? formatCleanTitle(activeSong.title || '') : (activeSong.title || '');
+      const cleanReqTitle = (typeof formatCleanTitle === 'function') ? formatCleanTitle(songTitle || '') : (songTitle || '');
+      if (cleanReqTitle && cleanActiveTitle && cleanActiveTitle.toLowerCase().trim() !== cleanReqTitle.toLowerCase().trim()) {
+        return;
       }
-      return;
+      if (activeSong && activeSong.lrc && activeSong.lrc.includes('<') && activeSong.lrc.includes('[krc-anchor:')) {
+        return;
+      }
+      isLyricLoadingTransition = false;
+      const parsed = parseLrc(rawLrc);
+      if (parsed && parsed.length) {
+        LYRICS_DATA = parsed;
+        lastActiveIdx = -1;
+        initLyricsList();
+        if (activeSong) {
+          activeSong.lrc = rawLrc;
+          if (!activeSong.cover && songId) {
+            activeSong.cover = `https://api.injahow.cn/meting/?server=${source}&type=pic&id=${songId}`;
+            applySongCoverToUI(activeSong.cover);
+            updateUI();
+          }
+          saveLyricToCache(activeSong.title, activeSong.artist, rawLrc);
+          persistData();
+        }
+        return;
+      }
     }
-  }
 
-  // 默认简雅歌词占位
-  LYRICS_DATA = [
-    { time: 0, duration: 6, text: `《${songTitle}》` },
-    { time: 6, duration: 15, text: "正在播放网络歌曲" },
-    { time: 21, duration: 25, text: "此歌曲暂无同步歌词" }
-  ];
-  lastActiveIdx = -1;
-  initLyricsList();
+    // 默认简雅歌词占位（坚决解除过渡加载状态）
+    isLyricLoadingTransition = false;
+    LYRICS_DATA = [
+      { time: 0, duration: 6, text: `《${songTitle || '当前歌曲'}》` },
+      { time: 6, duration: 15, text: "正在播放网络歌曲" },
+      { time: 21, duration: 25, text: "此歌曲暂无同步歌词" }
+    ];
+    lastActiveIdx = -1;
+    initLyricsList();
+  } catch(err) {
+    console.warn("fetchLyricForSong error:", err);
+  } finally {
+    isLyricLoadingTransition = false;
+  }
 }
 
 let currentAppliedCoverUrl = null;
@@ -9142,10 +9195,17 @@ function syncProgress(sampledSec) {
   const song = currentPlaybackQueue[currentIndex];
   let duration = (song && song.duration > 0) ? song.duration : 180;
   if (isNativeAudioSupported) {
-    const nd = window.AndroidBridge.getNativeDuration ? window.AndroidBridge.getNativeDuration() : 0;
-    if (nd > 0) {
-      const realDur = Math.floor(nd);
-      // 若原生解码上报真实音频流时长与元数据不符，以底层流真实时长为准动态校准
+    const nowPerf = performance.now();
+    if (!window._lastNativeCheckPerf || nowPerf - window._lastNativeCheckPerf > 500) {
+      window._lastNativeCheckPerf = nowPerf;
+      const nd = window.AndroidBridge.getNativeDuration ? window.AndroidBridge.getNativeDuration() : 0;
+      if (nd > 0) {
+        window._cachedNativeDuration = Math.floor(nd);
+      }
+      window._cachedNativePrepared = window.AndroidBridge.isNativePrepared ? window.AndroidBridge.isNativePrepared() : false;
+    }
+    const realDur = window._cachedNativeDuration || 0;
+    if (realDur > 0) {
       if (song && Math.abs(song.duration - realDur) >= 1) {
         song.duration = realDur;
         const totalTimeEl = document.getElementById('totalTime');
@@ -9154,12 +9214,11 @@ function syncProgress(sampledSec) {
       duration = realDur;
     }
     if (!isSeekingAudio) {
-      // 优先复用帧循环的单次插值采样；自行采样时也走插值引擎，严禁用粗糙原始位置覆盖已平滑的 currentSec 造成回跳
       const np = (typeof sampledSec === 'number' && sampledSec >= 0)
         ? sampledSec
-        : ((typeof getAccuratePlaybackSec === 'function') ? getAccuratePlaybackSec() : (window.AndroidBridge.getNativePosition ? window.AndroidBridge.getNativePosition() : currentSec));
+        : ((typeof getAccuratePlaybackSec === 'function') ? getAccuratePlaybackSec() : currentSec);
       if (typeof np === 'number' && np >= 0) {
-        const hasPrepared = window.AndroidBridge.isNativePrepared ? window.AndroidBridge.isNativePrepared() : false;
+        const hasPrepared = (typeof window._cachedNativePrepared === 'boolean') ? window._cachedNativePrepared : true;
         if (hasPrepared || np <= duration) {
           currentSec = np;
         } else {
@@ -10731,8 +10790,25 @@ let appliedActiveIdx = -99;
 let isLyricLoadingTransition = false;
 
 /* 纯净歌词加载占位：直接呈现一行普通歌词“歌词正在加载中…”，期间隐藏所有其他歌词 */
+let lyricLoadingWatchdogTimer = null;
+
 function showLyricTransitionAnimation(song) {
   isLyricLoadingTransition = true;
+  if (lyricLoadingWatchdogTimer) clearTimeout(lyricLoadingWatchdogTimer);
+  // 保险看门狗：最长等待 4 秒，若因全网无歌词或接口超时未正常结束，自动降级解除加载状态
+  lyricLoadingWatchdogTimer = setTimeout(() => {
+    if (isLyricLoadingTransition) {
+      isLyricLoadingTransition = false;
+      const s = currentPlaybackQueue[currentIndex] || song;
+      LYRICS_DATA = [
+        { time: 0, duration: 6, text: `《${(s && s.title) || '当前歌曲'}》` },
+        { time: 6, duration: 15, text: "正在播放网络歌曲" },
+        { time: 21, duration: 25, text: "此歌曲暂无同步歌词" }
+      ];
+      lastActiveIdx = -1;
+      initLyricsList();
+    }
+  }, 4000);
 
   // 1. 唱片机下方预览歌词区域：只留一行普通歌词，彻底隐藏副歌词
   const previewMain = document.getElementById('previewMainLyric');
@@ -10770,6 +10846,10 @@ function showLyricTransitionAnimation(song) {
 }
 
 function initLyricsList() {
+  if (lyricLoadingWatchdogTimer) {
+    clearTimeout(lyricLoadingWatchdogTimer);
+    lyricLoadingWatchdogTimer = null;
+  }
   isLyricLoadingTransition = false;
   const previewSub = document.getElementById('previewSubLyric');
   if (previewSub) {
@@ -10910,6 +10990,7 @@ function seekToLyricLine(time, e, explicitIdx) {
   if (e && e.stopPropagation) e.stopPropagation();
   isUserInteractingWithLyrics = false;
   currentSec = Number(time) || 0;
+  resetPlaybackClock(currentSec);
 
   // 锁定寻道状态，防止底层解码器在缓冲准备阶段触发旧时间戳将进度篡改回上一句
   isSeekingAudio = true;
@@ -10974,30 +11055,77 @@ function stopBgLyricPolling() {
   }
 }
 
-let lastNativeSamplePos = -1;
-let lastNativeSamplePerf = 0;
+let smoothedPlaybackSec = 0;
+let lastSmoothedPerfTime = 0;
+let lastRawSamplePos = -1;
+
+function resetPlaybackClock(newTime) {
+  const t = (typeof newTime === 'number' && newTime >= 0) ? newTime : currentSec;
+  smoothedPlaybackSec = t;
+  lastSmoothedPerfTime = performance.now();
+  lastRawSamplePos = -1;
+  currentSec = t;
+}
 
 function getAccuratePlaybackSec() {
-  if (isSeekingAudio) return currentSec;
-  const now = performance.now();
-  if (isNativeAudioSupported && window.AndroidBridge && window.AndroidBridge.getNativePosition) {
-    const rawPos = window.AndroidBridge.getNativePosition();
-    if (typeof rawPos === 'number' && rawPos >= 0) {
-      if (rawPos !== lastNativeSamplePos) {
-        lastNativeSamplePos = rawPos;
-        lastNativeSamplePerf = now;
-        currentSec = rawPos;
-      } else if (isPlaying) {
-        // 底层 MediaPlayer 在采样间隔内尚未更新时，用高精度系统时钟线性前插平滑（上限0.5s，覆盖粗粒度采样机型）
-        const elapsedSinceSample = (now - lastNativeSamplePerf) / 1000;
-        if (elapsedSinceSample > 0 && elapsedSinceSample < 0.5) {
-          currentSec = rawPos + elapsedSinceSample;
-        }
-      }
-    }
-  } else if (!isNaN(audioPlayer.currentTime) && audioPlayer.currentTime >= 0) {
-    currentSec = audioPlayer.currentTime;
+  if (isSeekingAudio) {
+    smoothedPlaybackSec = currentSec;
+    lastSmoothedPerfTime = performance.now();
+    lastRawSamplePos = -1;
+    return currentSec;
   }
+
+  const now = performance.now();
+  let rawPos = -1;
+
+  if (isNativeAudioSupported && window.AndroidBridge && window.AndroidBridge.getNativePosition) {
+    try {
+      const p = window.AndroidBridge.getNativePosition();
+      if (typeof p === 'number' && p >= 0) rawPos = p;
+    } catch(e) {}
+  } else if (!isNaN(audioPlayer.currentTime) && audioPlayer.currentTime >= 0) {
+    rawPos = audioPlayer.currentTime;
+  }
+
+  if (rawPos < 0) return currentSec;
+
+  if (lastSmoothedPerfTime === 0 || lastRawSamplePos < 0) {
+    smoothedPlaybackSec = rawPos;
+    lastSmoothedPerfTime = now;
+    lastRawSamplePos = rawPos;
+    currentSec = rawPos;
+    return rawPos;
+  }
+
+  const dt = Math.max(0, Math.min(0.1, (now - lastSmoothedPerfTime) / 1000));
+  lastSmoothedPerfTime = now;
+
+  const isActuallyPlaying = isPlaying || (!isNativeAudioSupported && audioPlayer && !audioPlayer.paused);
+  if (!isActuallyPlaying) {
+    smoothedPlaybackSec = rawPos;
+    currentSec = rawPos;
+    return rawPos;
+  }
+
+  // 物理高精连续前向推进：每帧按真实高精度时钟 dt 匀速前行，从数学上根除阶梯停顿
+  smoothedPlaybackSec += dt;
+
+  // 硬件时钟对齐校验：温柔吸收硬件时钟微小漂移，杜绝倒退与突跳
+  const diff = rawPos - smoothedPlaybackSec;
+  if (Math.abs(diff) > 0.6) {
+    // 拖动进度条或硬件重定位：立即同步
+    smoothedPlaybackSec = rawPos;
+  } else if (rawPos !== lastRawSamplePos) {
+    lastRawSamplePos = rawPos;
+    smoothedPlaybackSec += diff * 0.25;
+  }
+
+  // 单调性保证：正常播放中时间绝对禁止倒流
+  if (smoothedPlaybackSec < currentSec && Math.abs(rawPos - currentSec) < 0.6) {
+    smoothedPlaybackSec = currentSec;
+  }
+
+  currentSec = smoothedPlaybackSec;
   return currentSec;
 }
 
@@ -11242,13 +11370,13 @@ function updateLyricProgressSmooth(forcedIdx, sampledSec) {
   let activeLine = activeLyricLineEl;
   if (!activeLine) activeLine = document.querySelector('.lyric-line-item.active');
   if (activeLine) {
-    activeLine.style.setProperty('--fill-pct', `${fillPct.toFixed(1)}%`);
+    activeLine.style.setProperty('--fill-pct', `${fillPct.toFixed(2)}%`);
   }
   if (!previewMainLyricEl) previewMainLyricEl = document.getElementById('previewMainLyric');
   const previewMain = previewMainLyricEl;
   if (previewMain) {
     previewMain.classList.remove('pending');
-    previewMain.style.setProperty('--fill-pct', `${fillPct.toFixed(1)}%`);
+    previewMain.style.setProperty('--fill-pct', `${fillPct.toFixed(2)}%`);
   }
 }
 
@@ -13954,6 +14082,7 @@ function seekAudio(e) {
   if (!curSong) return;
   const duration = (curSong && curSong.duration > 0) ? curSong.duration : (!isNaN(audioPlayer.duration) && audioPlayer.duration > 0 ? audioPlayer.duration : 180);
   currentSec = ratio * duration;
+  if (typeof resetPlaybackClock === "function") resetPlaybackClock(currentSec);
   isSeekingAudio = true;
   if (!isNaN(audioPlayer.duration) && audioPlayer.duration > 0) {
     try {

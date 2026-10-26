@@ -1734,10 +1734,17 @@ function syncProgress(sampledSec) {
   const song = currentPlaybackQueue[currentIndex];
   let duration = (song && song.duration > 0) ? song.duration : 180;
   if (isNativeAudioSupported) {
-    const nd = window.AndroidBridge.getNativeDuration ? window.AndroidBridge.getNativeDuration() : 0;
-    if (nd > 0) {
-      const realDur = Math.floor(nd);
-      // 若原生解码上报真实音频流时长与元数据不符，以底层流真实时长为准动态校准
+    const nowPerf = performance.now();
+    if (!window._lastNativeCheckPerf || nowPerf - window._lastNativeCheckPerf > 500) {
+      window._lastNativeCheckPerf = nowPerf;
+      const nd = window.AndroidBridge.getNativeDuration ? window.AndroidBridge.getNativeDuration() : 0;
+      if (nd > 0) {
+        window._cachedNativeDuration = Math.floor(nd);
+      }
+      window._cachedNativePrepared = window.AndroidBridge.isNativePrepared ? window.AndroidBridge.isNativePrepared() : false;
+    }
+    const realDur = window._cachedNativeDuration || 0;
+    if (realDur > 0) {
       if (song && Math.abs(song.duration - realDur) >= 1) {
         song.duration = realDur;
         const totalTimeEl = document.getElementById('totalTime');
@@ -1746,12 +1753,11 @@ function syncProgress(sampledSec) {
       duration = realDur;
     }
     if (!isSeekingAudio) {
-      // 优先复用帧循环的单次插值采样；自行采样时也走插值引擎，严禁用粗糙原始位置覆盖已平滑的 currentSec 造成回跳
       const np = (typeof sampledSec === 'number' && sampledSec >= 0)
         ? sampledSec
-        : ((typeof getAccuratePlaybackSec === 'function') ? getAccuratePlaybackSec() : (window.AndroidBridge.getNativePosition ? window.AndroidBridge.getNativePosition() : currentSec));
+        : ((typeof getAccuratePlaybackSec === 'function') ? getAccuratePlaybackSec() : currentSec);
       if (typeof np === 'number' && np >= 0) {
-        const hasPrepared = window.AndroidBridge.isNativePrepared ? window.AndroidBridge.isNativePrepared() : false;
+        const hasPrepared = (typeof window._cachedNativePrepared === 'boolean') ? window._cachedNativePrepared : true;
         if (hasPrepared || np <= duration) {
           currentSec = np;
         } else {

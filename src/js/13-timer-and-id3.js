@@ -330,6 +330,7 @@ function seekAudio(e) {
   if (!curSong) return;
   const duration = (curSong && curSong.duration > 0) ? curSong.duration : (!isNaN(audioPlayer.duration) && audioPlayer.duration > 0 ? audioPlayer.duration : 180);
   currentSec = ratio * duration;
+  if (typeof resetPlaybackClock === "function") resetPlaybackClock(currentSec);
   isSeekingAudio = true;
   if (!isNaN(audioPlayer.duration) && audioPlayer.duration > 0) {
     try {
