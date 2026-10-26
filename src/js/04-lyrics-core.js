@@ -1,13 +1,57 @@
 /* ================== 标准 LRC 歌词时间轴解析器 ================== */
 
+/* 智能防错校验：核验歌词文本是否明显属于其他歌曲（防止历史错误缓存） */
+function isLyricContentMismatched(title, artist, lrcText) {
+  if (!title || !lrcText || typeof lrcText !== 'string') return false;
+  const norm = (s) => (s || '').replace(/[\s'’‘""“”（）()\[\]【】\-—~～,，.。!！?？:：;；、\u00b7]/g, '').toLowerCase();
+  const nt = norm(title);
+  if (!nt) return false;
+
+  // 1. 检查歌词头部标签 [ti:xxx]
+  const tiMatch = lrcText.match(/\[ti:\s*([^\]]+)\]/i);
+  if (tiMatch && tiMatch[1]) {
+    const ti = norm(tiMatch[1]);
+    if (ti && ti.length >= 2 && !ti.includes(nt) && !nt.includes(ti)) {
+      return true;
+    }
+  }
+
+  // 2. 检查前 8 行是否有明确标明的 "歌手 - 歌名" 或 "歌名 - 歌手"
+  const lines = lrcText.split('\n').slice(0, 8);
+  for (const line of lines) {
+    const cleanLine = line.replace(/\[[^\]]+\]/g, '').replace(/<[^>]+>/g, '').trim();
+    if (!cleanLine) continue;
+    const dashMatch = cleanLine.match(/^([^\-\—]+)[\-\—](.+)$/);
+    if (dashMatch) {
+      const part1 = norm(dashMatch[1]);
+      const part2 = norm(dashMatch[2]);
+      const isTitleInLine = (part1 && part1.length >= 2 && (nt.includes(part1) || part1.includes(nt))) ||
+                            (part2 && part2.length >= 2 && (nt.includes(part2) || part2.includes(nt)));
+      if (!isTitleInLine && !/作词|作曲|编曲|制作|词|曲/i.test(cleanLine)) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
 /* ================== 歌词持久化与多层缓存机制 ================== */
 function getCachedLyric(title, artist) {
   if (!title) return '';
   try {
     const cache = JSON.parse(localStorage.getItem('yyrc_lyrics_cache') || '{}');
     const key = (title + '_' + (artist || '')).toLowerCase().trim();
-    if (cache[key]) return cache[key];
-    return cache[title.toLowerCase().trim()] || '';
+    const lrc = cache[key] || cache[title.toLowerCase().trim()] || '';
+    if (!lrc) return '';
+
+    // 智能防污染：若缓存中残留了历史错配歌词（如存量残留的演员歌词），立即自愈清除
+    if (isLyricContentMismatched(title, artist, lrc)) {
+      delete cache[key];
+      delete cache[title.toLowerCase().trim()];
+      try { localStorage.setItem('yyrc_lyrics_cache', JSON.stringify(cache)); } catch(e) {}
+      return '';
+    }
+    return lrc;
   } catch(e) {
     return '';
   }

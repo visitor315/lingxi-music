@@ -409,7 +409,7 @@ function playSongAtQueue(idx) {
   const cachedLrc = song.lrc || getCachedLyric(song.title, song.artist);
   const parsed = cachedLrc ? parseLrc(cachedLrc) : null;
   const hasWordLyric = parsed && parsed.length && parsed.some(l => l.words && l.words.length > 0);
-  const isUpToDateAnchor = cachedLrc && cachedLrc.includes('[krc-anchor:7]');
+  const isUpToDateAnchor = cachedLrc && cachedLrc.includes('[krc-anchor:8]');
 
   if (hasWordLyric && isUpToDateAnchor) {
     // 命中最新的高质量商业/逐字词轴：秒级直接呈现，排版绝对确定稳定

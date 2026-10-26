@@ -702,7 +702,7 @@ async function fetchQrcWordLyric(title, artist, durationSec) {
     if (!list.length) return '';
 
     // 智能选取最匹配母带版本的歌曲 mid（过滤旧版/伴奏/翻唱，优先按真实时长严格对齐录音母带）
-    const norm = (s) => (s || '').replace(/[\s'’‘""“”（）()\[\]【】\-—~～,，.。!！?？:：;；、·]/g, '').toLowerCase();
+    const norm = (s) => (s || '').replace(/[\s'’‘""“”（）()\[\]【】\-—~～,，.。!！?？:：;；、\u00b7]/g, '').toLowerCase();
     const nt = norm(cleanTitle);
     const na = norm(cleanArtist);
 
@@ -713,24 +713,23 @@ async function fetchQrcWordLyric(title, artist, durationSec) {
     });
     if (!cleanCandidates.length) cleanCandidates = list;
 
+    // 强规则过滤：必须满足歌名与歌手归一化匹配，坚决拒绝与歌名完全无关的曲目！
+    const validCandidates = cleanCandidates.filter(s => {
+      const sn = norm(s.songname || '');
+      const sa = norm((s.singer || []).map(x => x.name).join(''));
+      const isTitleMatch = (sn === nt) || (sn.includes(nt)) || (nt.includes(sn));
+      const isArtistMatch = !na || (sa.includes(na)) || (na.includes(sa)) || !sa;
+      return isTitleMatch && isArtistMatch;
+    });
+    if (!validCandidates.length) return '';
+
     let picked = null;
     if (durationSec > 0) {
-      picked = cleanCandidates.find(s => {
-        const sn = norm(s.songname);
-        const sa = norm((s.singer || []).map(x => x.name).join(''));
-        const durMatch = Math.abs((s.interval || 0) - durationSec) <= 6;
-        return durMatch && (sn === nt || sn.includes(nt)) && (sa.includes(na) || na.includes(sa));
-      });
-      if (!picked) {
-        picked = cleanCandidates.find(s => Math.abs((s.interval || 0) - durationSec) <= 8);
-      }
+      picked = validCandidates.find(s => Math.abs((s.interval || 0) - durationSec) <= 6) ||
+               validCandidates.find(s => Math.abs((s.interval || 0) - durationSec) <= 12);
     }
     if (!picked) {
-      picked = cleanCandidates.find(s => {
-        const sn = norm(s.songname);
-        const sa = norm((s.singer || []).map(x => x.name).join(''));
-        return sn === nt && (sa.includes(na) || na.includes(sa));
-      }) || cleanCandidates[0];
+      picked = validCandidates[0];
     }
 
     if (!picked || !picked.songmid) return '';
@@ -800,14 +799,34 @@ async function fetchKrcWordLyric(title, artist, durationSec) {
     const searchRes = await universalFetch(krcNetUrl('mobilecdn.kugou.com/api/v3/search/song?format=json&keyword=' + encodeURIComponent(keyword) + '&page=1&pagesize=8'), { timeout: 3000 });
     if (!searchRes || !searchRes.ok) return '';
     const searchData = await searchRes.json();
-    let info = ((searchData.data || {}).info || []).filter(s => !/live|现场|伴奏|翻唱|remix|dj/i.test(s.songname || ''));
-    if (!info.length) info = ((searchData.data || {}).info || []);
-    if (!info.length) return '';
-    let candidate = info[0];
+    const norm = (s) => (s || '').replace(/[\s'’‘""“”（）()\[\]【】\-—~～,，.。!！?？:：;；、\u00b7]/g, '').toLowerCase();
+    const nt = norm(cleanTitle);
+    const na = norm(cleanArtist);
+
+    const allInfo = (searchData.data || {}).info || [];
+    if (!allInfo.length) return '';
+
+    // 强规则过滤：歌名与歌手归一化双重核验，彻底拦截酷狗把《演员》等无关热门推荐当做歌词源！
+    const validCandidates = allInfo.filter(s => {
+      const sn = norm(s.songname || '');
+      const sa = norm(s.singername || '');
+      const isTitleMatch = (sn === nt) || (sn.includes(nt)) || (nt.includes(sn));
+      const isArtistMatch = !na || (sa.includes(na)) || (na.includes(sa)) || !sa;
+      const isNotBadRemix = !/伴奏|dj|remix/i.test(s.songname || '');
+      return isTitleMatch && isArtistMatch && isNotBadRemix;
+    });
+    if (!validCandidates.length) return '';
+
+    // 优先过滤 live/现场，若过滤后还有满足候选则优先使用非 live
+    let studioCandidates = validCandidates.filter(s => !/live|现场/i.test(s.songname || ''));
+    if (!studioCandidates.length) studioCandidates = validCandidates;
+
+    let candidate = null;
     if (durationSec > 0) {
-      const near = info.find(s => Math.abs((s.duration || 0) - durationSec) <= 8);
-      if (near) candidate = near;
+      candidate = studioCandidates.find(s => Math.abs((s.duration || 0) - durationSec) <= 8) ||
+                  studioCandidates.find(s => Math.abs((s.duration || 0) - durationSec) <= 15);
     }
+    if (!candidate) candidate = studioCandidates[0];
     await new Promise(r => setTimeout(r, 250));
     const krcSearch = await universalFetch(krcNetUrl(`krcs.kugou.com/search?ver=1&man=yes&client=mobi&keyword=&duration=${(candidate.duration || 0) * 1000}&hash=${candidate.hash}`), { timeout: 3000 });
     if (!krcSearch || !krcSearch.ok) return '';
@@ -862,7 +881,7 @@ async function upgradeLyricToWordLevel(song, anchorRawHint) {
   if (!curSong || (curSong.id !== song.id && curSong.title !== song.title)) return;
   const anchorRaw = anchorRawHint || await fetchAnchorRawLrc(song);
   const merged = anchorRaw ? mergeKrcWithAnchorLyric(wordLrcText, anchorRaw, song.duration || 0) : { text: wordLrcText, matched: 0 };
-  const finalText = merged.matched > 0 ? '[krc-anchor:7]\n' + merged.text : wordLrcText;
+  const finalText = merged.matched > 0 ? '[krc-anchor:8]\n' + merged.text : wordLrcText;
   isLyricLoadingTransition = false;
   LYRICS_DATA = parseLrc(finalText) || parsed;
   lastActiveIdx = -1;
@@ -888,15 +907,18 @@ async function loadBestAvailableLyric(song) {
       const parsed = parseLrc(wordLrcText);
       if (parsed && parsed.length && parsed.some(l => l.words && l.words.length > 0)) {
         const anchorRaw = await fetchAnchorRawLrc(song);
+        const stillActive = currentPlaybackQueue[currentIndex];
+        if (!stillActive || (stillActive.id !== song.id && stillActive.title !== song.title)) return;
         const merged = anchorRaw ? mergeKrcWithAnchorLyric(wordLrcText, anchorRaw, song.duration || 0) : { text: wordLrcText, matched: 0 };
-        const finalText = merged.matched > 0 ? '[krc-anchor:7]\n' + merged.text : wordLrcText;
+        const finalText = merged.matched > 0 ? '[krc-anchor:8]\n' + merged.text : wordLrcText;
+        isLyricLoadingTransition = false;
         LYRICS_DATA = parseLrc(finalText) || parsed;
         lastActiveIdx = -1;
         displayedPreviewIdx = -1;
         initLyricsList();
         syncCurrentLyricToDesktop();
         saveLyricToCache(song.title, song.artist, finalText);
-        curSong.lrc = finalText;
+        stillActive.lrc = finalText;
         persistData();
         return;
       }
@@ -976,7 +998,7 @@ async function fetchAnchorRawLrc(song) {
    3. 若为异母带（如版本翻录/前奏长短不同），启动逐段平滑插值对齐，保证全曲合拍 */
 function mergeKrcWithAnchorLyric(krcText, anchorRaw, audioDurSec) {
   if (!anchorRaw) return { text: krcText, matched: 0 };
-  const norm = (s) => (s || '').replace(/[\s'’‘""“”（）()\[\]【】\-—~～,，.。!！?？:：;；、·]/g, '').toLowerCase();
+  const norm = (s) => (s || '').replace(/[\s'’‘""“”（）()\[\]【】\-—~～,，.。!！?？:：;；、\u00b7]/g, '').toLowerCase();
   const isCreditOrMeta = (s) => /^(作词|作曲|编曲|混音|吉他|贝斯|鼓|录音|制作|发行|出品|策划|文案|母带|演唱|原唱|翻唱|伴唱|和声|题字|美工|海报|特别支持|曲绘|pv)/.test(s);
   const timeTagRe = /\[(\d{1,2}):(\d{2})(?:\.(\d{1,3}))?\]/g;
 
@@ -1107,16 +1129,16 @@ function krcAttemptKey(song) {
 }
 function isKrcRecentlyAttempted(song) {
   try {
-    const m = JSON.parse(localStorage.getItem('krc_attempt_ttl_v7') || '{}');
+    const m = JSON.parse(localStorage.getItem('krc_attempt_ttl_v8') || '{}');
     const ts = m[krcAttemptKey(song)];
     return ts && (Date.now() - ts < 3 * 24 * 3600 * 1000);
   } catch(e) { return false; }
 }
 function markKrcAttempt(song) {
   try {
-    const m = JSON.parse(localStorage.getItem('krc_attempt_ttl_v7') || '{}');
+    const m = JSON.parse(localStorage.getItem('krc_attempt_ttl_v8') || '{}');
     m[krcAttemptKey(song)] = Date.now();
-    localStorage.setItem('krc_attempt_ttl_v7', JSON.stringify(m));
+    localStorage.setItem('krc_attempt_ttl_v8', JSON.stringify(m));
   } catch(e) {}
 }
 
@@ -1130,6 +1152,12 @@ async function fetchLyricForSong(songId, songTitle, source = 'netease') {
   if (rawLrc) {
     // 异步返回时再次核验：避免与正规 QRC 竞态造成覆盖
     const activeSong = currentPlaybackQueue[currentIndex];
+    if (!activeSong) return;
+    const cleanActiveTitle = (typeof formatCleanTitle === 'function') ? formatCleanTitle(activeSong.title || '') : (activeSong.title || '');
+    const cleanReqTitle = (typeof formatCleanTitle === 'function') ? formatCleanTitle(songTitle || '') : (songTitle || '');
+    if (cleanReqTitle && cleanActiveTitle && cleanActiveTitle.toLowerCase().trim() !== cleanReqTitle.toLowerCase().trim()) {
+      return;
+    }
     if (activeSong && activeSong.lrc && activeSong.lrc.includes('<') && activeSong.lrc.includes('[krc-anchor:')) {
       return;
     }
