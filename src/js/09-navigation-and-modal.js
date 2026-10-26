@@ -83,9 +83,7 @@ async function prefetchOnlineSongSource(song) {
       persistData();
       updateUI();
       renderSongList();
-      if (song.onlineId) {
-        fetchLyricForSong(song.onlineId, song.title, song.source);
-      }
+      // prefetch audio only, lyrics managed exclusively by loadBestAvailableLyric
     }
   } catch(e) {
     console.warn("Prefetch error:", e);
@@ -867,13 +865,10 @@ async function resolveAndPlayOnlineSong(song, isRetry = false, resumeSec = 0) {
     song.urlFetchedAt = Date.now();
     persistData();
 
-    // 4. 歌词与封面联动拉取
-    if (targetOnlineId) {
-      fetchLyricForSong(targetOnlineId, song.title, targetSource);
-      if (!song.cover) {
-        song.cover = `https://api.injahow.cn/meting/?server=${targetSource}&type=pic&id=${targetOnlineId}`;
-        applySongCoverToUI(song.cover);
-      }
+    // 4. 封面联动补全（歌词统一由 loadBestAvailableLyric 全权调度，严禁此处偷跑网易云长句覆盖 QRC）
+    if (targetOnlineId && !song.cover) {
+      song.cover = `https://api.injahow.cn/meting/?server=${targetSource}&type=pic&id=${targetOnlineId}`;
+      applySongCoverToUI(song.cover);
     }
 
     // 5. 播放音频流
@@ -980,7 +975,7 @@ async function tryResolveAlternativeFullTrack(song) {
       if (candidate.cover && !song.cover) song.cover = candidate.cover;
       persistData();
 
-      fetchLyricForSong(candidate.lyric_id || altId, song.title, altServer);
+      loadBestAvailableLyric(song);
 
       const curSec = (typeof currentSec === 'number' && currentSec > 0 && currentSec < 35) ? currentSec : 0;
       if (isNativeAudioSupported) {

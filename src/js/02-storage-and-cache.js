@@ -210,12 +210,13 @@ function init() {
     const initLrc = initialSong.lrc || getCachedLyric(initialSong.title, initialSong.artist);
     if (initLrc) {
       const parsed = parseLrc(initLrc);
-      if (parsed && parsed.length) {
+      // 仅当缓存拥有词级逐字时间轴（QRC / KRC）时才在上屏直接初始化，避免初始闪现单行长句
+      if (parsed && parsed.length && parsed.some(l => l.words && l.words.length > 0)) {
         LYRICS_DATA = parsed;
+        initLyricsList();
       }
     }
   }
-  initLyricsList();
   playMode = localStorage.getItem('yyrc_play_mode') || 'list';
   applyPlayModeUI(playMode);
   updateUI();

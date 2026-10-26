@@ -5017,12 +5017,13 @@ function init() {
     const initLrc = initialSong.lrc || getCachedLyric(initialSong.title, initialSong.artist);
     if (initLrc) {
       const parsed = parseLrc(initLrc);
-      if (parsed && parsed.length) {
+      // 仅当缓存拥有词级逐字时间轴（QRC / KRC）时才在上屏直接初始化，避免初始闪现单行长句
+      if (parsed && parsed.length && parsed.some(l => l.words && l.words.length > 0)) {
         LYRICS_DATA = parsed;
+        initLyricsList();
       }
     }
   }
-  initLyricsList();
   playMode = localStorage.getItem('yyrc_play_mode') || 'list';
   applyPlayModeUI(playMode);
   updateUI();
@@ -5630,7 +5631,7 @@ function playSongAtQueue(idx) {
   const cachedLrc = song.lrc || getCachedLyric(song.title, song.artist);
   const parsed = cachedLrc ? parseLrc(cachedLrc) : null;
   const hasWordLyric = parsed && parsed.length && parsed.some(l => l.words && l.words.length > 0);
-  const isUpToDateAnchor = cachedLrc && cachedLrc.includes('[krc-anchor:6]');
+  const isUpToDateAnchor = cachedLrc && cachedLrc.includes('[krc-anchor:7]');
 
   if (hasWordLyric && isUpToDateAnchor) {
     // 命中最新的高质量商业/逐字词轴：秒级直接呈现，排版绝对确定稳定
@@ -6894,7 +6895,7 @@ async function upgradeLyricToWordLevel(song, anchorRawHint) {
   if (!curSong || (curSong.id !== song.id && curSong.title !== song.title)) return;
   const anchorRaw = anchorRawHint || await fetchAnchorRawLrc(song);
   const merged = anchorRaw ? mergeKrcWithAnchorLyric(wordLrcText, anchorRaw, song.duration || 0) : { text: wordLrcText, matched: 0 };
-  const finalText = merged.matched > 0 ? '[krc-anchor:6]\n' + merged.text : wordLrcText;
+  const finalText = merged.matched > 0 ? '[krc-anchor:7]\n' + merged.text : wordLrcText;
   isLyricLoadingTransition = false;
   LYRICS_DATA = parseLrc(finalText) || parsed;
   lastActiveIdx = -1;
@@ -6921,7 +6922,7 @@ async function loadBestAvailableLyric(song) {
       if (parsed && parsed.length && parsed.some(l => l.words && l.words.length > 0)) {
         const anchorRaw = await fetchAnchorRawLrc(song);
         const merged = anchorRaw ? mergeKrcWithAnchorLyric(wordLrcText, anchorRaw, song.duration || 0) : { text: wordLrcText, matched: 0 };
-        const finalText = merged.matched > 0 ? '[krc-anchor:6]\n' + merged.text : wordLrcText;
+        const finalText = merged.matched > 0 ? '[krc-anchor:7]\n' + merged.text : wordLrcText;
         LYRICS_DATA = parseLrc(finalText) || parsed;
         lastActiveIdx = -1;
         displayedPreviewIdx = -1;
@@ -7139,37 +7140,46 @@ function krcAttemptKey(song) {
 }
 function isKrcRecentlyAttempted(song) {
   try {
-    const m = JSON.parse(localStorage.getItem('krc_attempt_ttl_v6') || '{}');
+    const m = JSON.parse(localStorage.getItem('krc_attempt_ttl_v7') || '{}');
     const ts = m[krcAttemptKey(song)];
     return ts && (Date.now() - ts < 3 * 24 * 3600 * 1000);
   } catch(e) { return false; }
 }
 function markKrcAttempt(song) {
   try {
-    const m = JSON.parse(localStorage.getItem('krc_attempt_ttl_v6') || '{}');
+    const m = JSON.parse(localStorage.getItem('krc_attempt_ttl_v7') || '{}');
     m[krcAttemptKey(song)] = Date.now();
-    localStorage.setItem('krc_attempt_ttl_v6', JSON.stringify(m));
+    localStorage.setItem('krc_attempt_ttl_v7', JSON.stringify(m));
   } catch(e) {}
 }
 
 async function fetchLyricForSong(songId, songTitle, source = 'netease') {
+  const curSong = currentPlaybackQueue[currentIndex];
+  // 严禁逆向降级：若当前歌曲已拥有高质量商业/逐字词轴（QRC / KRC），坚决禁止普通长句覆盖！
+  if (curSong && curSong.lrc && curSong.lrc.includes('<') && (curSong.lrc.includes('[krc-anchor:') || (LYRICS_DATA && LYRICS_DATA.some(l => l.words && l.words.length > 0)))) {
+    return;
+  }
   const rawLrc = await fetchRawLrcFromNet(songId, songTitle, source);
   if (rawLrc) {
+    // 异步返回时再次核验：避免与正规 QRC 竞态造成覆盖
+    const activeSong = currentPlaybackQueue[currentIndex];
+    if (activeSong && activeSong.lrc && activeSong.lrc.includes('<') && activeSong.lrc.includes('[krc-anchor:')) {
+      return;
+    }
     isLyricLoadingTransition = false;
     const parsed = parseLrc(rawLrc);
     if (parsed && parsed.length) {
       LYRICS_DATA = parsed;
       lastActiveIdx = -1;
       initLyricsList();
-      const curSong = currentPlaybackQueue[currentIndex];
-      if (curSong) {
-        curSong.lrc = rawLrc;
-        if (!curSong.cover && songId) {
-          curSong.cover = `https://api.injahow.cn/meting/?server=${source}&type=pic&id=${songId}`;
-          applySongCoverToUI(curSong.cover);
+      if (activeSong) {
+        activeSong.lrc = rawLrc;
+        if (!activeSong.cover && songId) {
+          activeSong.cover = `https://api.injahow.cn/meting/?server=${source}&type=pic&id=${songId}`;
+          applySongCoverToUI(activeSong.cover);
           updateUI();
         }
-        saveLyricToCache(curSong.title, curSong.artist, rawLrc);
+        saveLyricToCache(activeSong.title, activeSong.artist, rawLrc);
         persistData();
       }
       return;
@@ -11476,9 +11486,7 @@ async function prefetchOnlineSongSource(song) {
       persistData();
       updateUI();
       renderSongList();
-      if (song.onlineId) {
-        fetchLyricForSong(song.onlineId, song.title, song.source);
-      }
+      // prefetch audio only, lyrics managed exclusively by loadBestAvailableLyric
     }
   } catch(e) {
     console.warn("Prefetch error:", e);
@@ -12260,13 +12268,10 @@ async function resolveAndPlayOnlineSong(song, isRetry = false, resumeSec = 0) {
     song.urlFetchedAt = Date.now();
     persistData();
 
-    // 4. 歌词与封面联动拉取
-    if (targetOnlineId) {
-      fetchLyricForSong(targetOnlineId, song.title, targetSource);
-      if (!song.cover) {
-        song.cover = `https://api.injahow.cn/meting/?server=${targetSource}&type=pic&id=${targetOnlineId}`;
-        applySongCoverToUI(song.cover);
-      }
+    // 4. 封面联动补全（歌词统一由 loadBestAvailableLyric 全权调度，严禁此处偷跑网易云长句覆盖 QRC）
+    if (targetOnlineId && !song.cover) {
+      song.cover = `https://api.injahow.cn/meting/?server=${targetSource}&type=pic&id=${targetOnlineId}`;
+      applySongCoverToUI(song.cover);
     }
 
     // 5. 播放音频流
@@ -12373,7 +12378,7 @@ async function tryResolveAlternativeFullTrack(song) {
       if (candidate.cover && !song.cover) song.cover = candidate.cover;
       persistData();
 
-      fetchLyricForSong(candidate.lyric_id || altId, song.title, altServer);
+      loadBestAvailableLyric(song);
 
       const curSec = (typeof currentSec === 'number' && currentSec > 0 && currentSec < 35) ? currentSec : 0;
       if (isNativeAudioSupported) {

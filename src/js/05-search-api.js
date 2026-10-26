@@ -862,7 +862,7 @@ async function upgradeLyricToWordLevel(song, anchorRawHint) {
   if (!curSong || (curSong.id !== song.id && curSong.title !== song.title)) return;
   const anchorRaw = anchorRawHint || await fetchAnchorRawLrc(song);
   const merged = anchorRaw ? mergeKrcWithAnchorLyric(wordLrcText, anchorRaw, song.duration || 0) : { text: wordLrcText, matched: 0 };
-  const finalText = merged.matched > 0 ? '[krc-anchor:6]\n' + merged.text : wordLrcText;
+  const finalText = merged.matched > 0 ? '[krc-anchor:7]\n' + merged.text : wordLrcText;
   isLyricLoadingTransition = false;
   LYRICS_DATA = parseLrc(finalText) || parsed;
   lastActiveIdx = -1;
@@ -889,7 +889,7 @@ async function loadBestAvailableLyric(song) {
       if (parsed && parsed.length && parsed.some(l => l.words && l.words.length > 0)) {
         const anchorRaw = await fetchAnchorRawLrc(song);
         const merged = anchorRaw ? mergeKrcWithAnchorLyric(wordLrcText, anchorRaw, song.duration || 0) : { text: wordLrcText, matched: 0 };
-        const finalText = merged.matched > 0 ? '[krc-anchor:6]\n' + merged.text : wordLrcText;
+        const finalText = merged.matched > 0 ? '[krc-anchor:7]\n' + merged.text : wordLrcText;
         LYRICS_DATA = parseLrc(finalText) || parsed;
         lastActiveIdx = -1;
         displayedPreviewIdx = -1;
@@ -1107,37 +1107,46 @@ function krcAttemptKey(song) {
 }
 function isKrcRecentlyAttempted(song) {
   try {
-    const m = JSON.parse(localStorage.getItem('krc_attempt_ttl_v6') || '{}');
+    const m = JSON.parse(localStorage.getItem('krc_attempt_ttl_v7') || '{}');
     const ts = m[krcAttemptKey(song)];
     return ts && (Date.now() - ts < 3 * 24 * 3600 * 1000);
   } catch(e) { return false; }
 }
 function markKrcAttempt(song) {
   try {
-    const m = JSON.parse(localStorage.getItem('krc_attempt_ttl_v6') || '{}');
+    const m = JSON.parse(localStorage.getItem('krc_attempt_ttl_v7') || '{}');
     m[krcAttemptKey(song)] = Date.now();
-    localStorage.setItem('krc_attempt_ttl_v6', JSON.stringify(m));
+    localStorage.setItem('krc_attempt_ttl_v7', JSON.stringify(m));
   } catch(e) {}
 }
 
 async function fetchLyricForSong(songId, songTitle, source = 'netease') {
+  const curSong = currentPlaybackQueue[currentIndex];
+  // 严禁逆向降级：若当前歌曲已拥有高质量商业/逐字词轴（QRC / KRC），坚决禁止普通长句覆盖！
+  if (curSong && curSong.lrc && curSong.lrc.includes('<') && (curSong.lrc.includes('[krc-anchor:') || (LYRICS_DATA && LYRICS_DATA.some(l => l.words && l.words.length > 0)))) {
+    return;
+  }
   const rawLrc = await fetchRawLrcFromNet(songId, songTitle, source);
   if (rawLrc) {
+    // 异步返回时再次核验：避免与正规 QRC 竞态造成覆盖
+    const activeSong = currentPlaybackQueue[currentIndex];
+    if (activeSong && activeSong.lrc && activeSong.lrc.includes('<') && activeSong.lrc.includes('[krc-anchor:')) {
+      return;
+    }
     isLyricLoadingTransition = false;
     const parsed = parseLrc(rawLrc);
     if (parsed && parsed.length) {
       LYRICS_DATA = parsed;
       lastActiveIdx = -1;
       initLyricsList();
-      const curSong = currentPlaybackQueue[currentIndex];
-      if (curSong) {
-        curSong.lrc = rawLrc;
-        if (!curSong.cover && songId) {
-          curSong.cover = `https://api.injahow.cn/meting/?server=${source}&type=pic&id=${songId}`;
-          applySongCoverToUI(curSong.cover);
+      if (activeSong) {
+        activeSong.lrc = rawLrc;
+        if (!activeSong.cover && songId) {
+          activeSong.cover = `https://api.injahow.cn/meting/?server=${source}&type=pic&id=${songId}`;
+          applySongCoverToUI(activeSong.cover);
           updateUI();
         }
-        saveLyricToCache(curSong.title, curSong.artist, rawLrc);
+        saveLyricToCache(activeSong.title, activeSong.artist, rawLrc);
         persistData();
       }
       return;
