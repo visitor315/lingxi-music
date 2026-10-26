@@ -684,14 +684,14 @@ function qrcNetUrl(hostAndPath) {
 }
 
 /* 官方免签 QQ 音乐商业逐字歌词拉取全链路 */
-async function fetchQrcWordLyric(title, artist) {
+async function fetchQrcWordLyric(title, artist, durationSec) {
   try {
     const cleanTitle = (typeof formatCleanTitle === 'function') ? formatCleanTitle(title || '') : (title || '');
     const cleanArtist = (typeof formatCleanArtist === 'function') ? formatCleanArtist(artist || '') : (artist || '');
     if (!cleanTitle) return '';
 
     const q = encodeURIComponent(`${cleanTitle} ${cleanArtist}`.trim());
-    const searchUrl = qrcNetUrl(`c.y.qq.com/soso/fcgi-bin/client_search_cp?p=1&n=5&w=${q}&format=json`);
+    const searchUrl = qrcNetUrl(`c.y.qq.com/soso/fcgi-bin/client_search_cp?p=1&n=10&w=${q}&format=json`);
     const sRes = await universalFetch(searchUrl, {
       timeout: 3000,
       headers: { 'Referer': 'https://y.qq.com/' }
@@ -701,15 +701,37 @@ async function fetchQrcWordLyric(title, artist) {
     const list = (sData && sData.data && sData.data.song && sData.data.song.list) || [];
     if (!list.length) return '';
 
-    // 智能选取最匹配歌曲 mid（优先标题歌手完全吻合）
+    // 智能选取最匹配母带版本的歌曲 mid（过滤旧版/伴奏/翻唱，优先按真实时长严格对齐录音母带）
     const norm = (s) => (s || '').replace(/[\s'’‘""“”（）()\[\]【】\-—~～,，.。!！?？:：;；、·]/g, '').toLowerCase();
     const nt = norm(cleanTitle);
     const na = norm(cleanArtist);
-    let picked = list.find(s => {
-      const sn = norm(s.songname);
-      const sa = norm((s.singer || []).map(x => x.name).join(''));
-      return sn === nt && (sa.includes(na) || na.includes(sa));
-    }) || list[0];
+
+    let cleanCandidates = list.filter(s => {
+      const sn = s.songname || '';
+      if (/旧版|伴奏|翻唱|伤感版|片段|铃声/i.test(sn)) return false;
+      return true;
+    });
+    if (!cleanCandidates.length) cleanCandidates = list;
+
+    let picked = null;
+    if (durationSec > 0) {
+      picked = cleanCandidates.find(s => {
+        const sn = norm(s.songname);
+        const sa = norm((s.singer || []).map(x => x.name).join(''));
+        const durMatch = Math.abs((s.interval || 0) - durationSec) <= 6;
+        return durMatch && (sn === nt || sn.includes(nt)) && (sa.includes(na) || na.includes(sa));
+      });
+      if (!picked) {
+        picked = cleanCandidates.find(s => Math.abs((s.interval || 0) - durationSec) <= 8);
+      }
+    }
+    if (!picked) {
+      picked = cleanCandidates.find(s => {
+        const sn = norm(s.songname);
+        const sa = norm((s.singer || []).map(x => x.name).join(''));
+        return sn === nt && (sa.includes(na) || na.includes(sa));
+      }) || cleanCandidates[0];
+    }
 
     if (!picked || !picked.songmid) return '';
 
@@ -740,7 +762,6 @@ async function fetchQrcWordLyric(title, artist) {
     return '';
   }
 }
-
 
 /* ============ 酷狗 KRC 词级逐字歌词引擎（毫秒级词时间轴，公开接口免鉴权） ============ */
 const KRC_XOR_KEY = [0x40, 0x47, 0x61, 0x77, 0x5E, 0x32, 0x74, 0x47, 0x51, 0x36, 0x31, 0x2D, 0xCE, 0xD2, 0x6E, 0x69];
@@ -812,7 +833,7 @@ async function upgradeLyricToWordLevel(song, anchorRawHint) {
   if (isKrcRecentlyAttempted(song)) return;
 
   // 1. 优先尝试 QQ 音乐商业级 QRC 歌词（真发声轴，含小节发音留白，彻底杜绝首字冒头）
-  let wordLrcText = await fetchQrcWordLyric(song.title, song.artist);
+  let wordLrcText = await fetchQrcWordLyric(song.title, song.artist, song.duration || 0);
   // 2. 备选尝试酷狗 KRC 词级逐字歌词
   if (!wordLrcText) {
     wordLrcText = await fetchKrcWordLyric(song.title, song.artist, song.duration || 0);
@@ -841,7 +862,7 @@ async function upgradeLyricToWordLevel(song, anchorRawHint) {
   if (!curSong || (curSong.id !== song.id && curSong.title !== song.title)) return;
   const anchorRaw = anchorRawHint || await fetchAnchorRawLrc(song);
   const merged = anchorRaw ? mergeKrcWithAnchorLyric(wordLrcText, anchorRaw, song.duration || 0) : { text: wordLrcText, matched: 0 };
-  const finalText = merged.matched > 0 ? '[krc-anchor:5]\n' + merged.text : wordLrcText;
+  const finalText = merged.matched > 0 ? '[krc-anchor:6]\n' + merged.text : wordLrcText;
   isLyricLoadingTransition = false;
   LYRICS_DATA = parseLrc(finalText) || parsed;
   lastActiveIdx = -1;
@@ -857,7 +878,7 @@ async function upgradeLyricToWordLevel(song, anchorRawHint) {
 async function loadBestAvailableLyric(song) {
   if (song.title && !isKrcRecentlyAttempted(song)) {
     // 1. 优先尝试 QQ 音乐商业级 QRC
-    let wordLrcText = await fetchQrcWordLyric(song.title, song.artist);
+    let wordLrcText = await fetchQrcWordLyric(song.title, song.artist, song.duration || 0);
     // 2. 备选尝试酷狗 KRC
     if (!wordLrcText) {
       wordLrcText = await fetchKrcWordLyric(song.title, song.artist, song.duration || 0);
@@ -868,7 +889,7 @@ async function loadBestAvailableLyric(song) {
       if (parsed && parsed.length && parsed.some(l => l.words && l.words.length > 0)) {
         const anchorRaw = await fetchAnchorRawLrc(song);
         const merged = anchorRaw ? mergeKrcWithAnchorLyric(wordLrcText, anchorRaw, song.duration || 0) : { text: wordLrcText, matched: 0 };
-        const finalText = merged.matched > 0 ? '[krc-anchor:5]\n' + merged.text : wordLrcText;
+        const finalText = merged.matched > 0 ? '[krc-anchor:6]\n' + merged.text : wordLrcText;
         LYRICS_DATA = parseLrc(finalText) || parsed;
         lastActiveIdx = -1;
         displayedPreviewIdx = -1;
@@ -1086,16 +1107,16 @@ function krcAttemptKey(song) {
 }
 function isKrcRecentlyAttempted(song) {
   try {
-    const m = JSON.parse(localStorage.getItem('krc_attempt_ttl_v5') || '{}');
+    const m = JSON.parse(localStorage.getItem('krc_attempt_ttl_v6') || '{}');
     const ts = m[krcAttemptKey(song)];
     return ts && (Date.now() - ts < 3 * 24 * 3600 * 1000);
   } catch(e) { return false; }
 }
 function markKrcAttempt(song) {
   try {
-    const m = JSON.parse(localStorage.getItem('krc_attempt_ttl_v5') || '{}');
+    const m = JSON.parse(localStorage.getItem('krc_attempt_ttl_v6') || '{}');
     m[krcAttemptKey(song)] = Date.now();
-    localStorage.setItem('krc_attempt_ttl_v5', JSON.stringify(m));
+    localStorage.setItem('krc_attempt_ttl_v6', JSON.stringify(m));
   } catch(e) {}
 }
 
