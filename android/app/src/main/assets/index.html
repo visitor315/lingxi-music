@@ -5647,7 +5647,7 @@ function playSongAtQueue(idx) {
       if (!hasWordLyric) {
         // 存量普通 LRC：缓存文本本身就是网易云锚点，直接传给升级链路
         upgradeLyricToWordLevel(song, cachedLrc);
-      } else if (!cachedLrc.includes('[krc-anchor:4]')) {
+      } else if (!cachedLrc.includes('[krc-anchor:5]')) {
         // 历史遗留的未对齐 KRC 缓存：重新走锚点对齐（带 3 天冷却）
         upgradeLyricToWordLevel(song, '');
       }
@@ -6522,6 +6522,262 @@ async function playOnlineTrack(idx) {
   playSongAtQueue(0);
 }
 
+/* ============ QQ 音乐 QRC 商业级逐字歌词引擎（免签直连 + 3DES 解密） ============ */
+const QRC_DES_BLOCK_SIZE = 8;
+const QRC_KEY_1 = new TextEncoder().encode("!@#)(*$%");
+const QRC_KEY_2 = new TextEncoder().encode("123ZXC!@");
+const QRC_KEY_3 = new TextEncoder().encode("!@#)(NHL");
+
+const QRC_S_BOXES = [
+  [14,4,13,1,2,15,11,8,3,10,6,12,5,9,0,7,0,15,7,4,14,2,13,1,10,6,12,11,9,5,3,8,4,1,14,8,13,6,2,11,15,12,9,7,3,10,5,0,15,12,8,2,4,9,1,7,5,11,3,14,10,0,6,13],
+  [15,1,8,14,6,11,3,4,9,7,2,13,12,0,5,10,3,13,4,7,15,2,8,14,12,0,1,10,6,9,11,5,0,14,7,11,10,4,13,1,5,8,12,6,9,3,2,15,13,8,10,1,3,15,4,2,11,6,7,12,0,5,14,9],
+  [10,0,9,14,6,3,15,5,1,13,12,7,11,4,2,8,13,7,0,9,3,4,6,10,2,8,5,14,12,11,15,1,13,6,4,9,8,15,3,0,11,1,2,12,5,10,14,7,1,10,13,0,6,9,8,7,4,15,14,3,11,5,2,12],
+  [7,13,14,3,0,6,9,10,1,2,8,5,11,12,4,15,13,8,11,5,6,15,0,3,4,7,2,12,1,10,14,9,10,6,9,0,12,11,7,13,15,1,3,14,5,2,8,4,3,15,0,6,10,1,13,8,9,4,5,11,12,7,2,14],
+  [2,12,4,1,7,10,11,6,8,5,3,15,13,0,14,9,14,11,2,12,4,7,13,1,5,0,15,10,3,9,8,6,4,2,1,11,10,13,7,8,15,9,12,5,6,3,0,14,11,8,12,7,1,14,2,13,6,15,0,9,10,4,5,3],
+  [12,1,10,15,9,2,6,8,0,13,3,4,14,7,5,11,10,15,4,2,7,12,9,5,6,1,13,14,0,11,3,8,9,14,15,5,2,8,12,3,7,0,4,10,1,13,11,6,4,3,2,12,9,5,15,10,11,14,1,7,6,0,8,13],
+  [4,11,2,14,15,0,8,13,3,12,9,7,5,10,6,1,13,0,11,7,4,9,1,10,14,3,5,12,2,15,8,6,1,4,11,13,12,3,7,14,10,15,6,8,0,5,9,2,6,11,13,8,1,4,10,7,9,5,0,15,14,2,3,12],
+  [13,2,8,4,6,15,11,1,10,9,3,14,5,0,12,7,1,15,13,8,10,3,7,4,12,5,6,11,0,14,9,2,7,11,4,1,9,12,14,2,0,6,10,13,15,3,5,8,2,1,14,7,4,10,8,13,15,12,9,0,3,5,6,11]
+];
+
+function qrcPermuteFromKeyBytes(e) {
+  const t = new Uint8Array(48);
+  for (let r = 0; r < 48; ++r) {
+    const o = 8 * Math.floor(r / 6);
+    const n = Math.floor(r / 6) % 2 == 0 ? 1 : 2;
+    const a = (r + n) % 6;
+    const s = 1 << a;
+    t[r] = (e[o + a] & s) >> a;
+  }
+  return t;
+}
+
+class QrcSingleDesCodec {
+  constructor(keyBytes) {
+    this.keys = new Uint8Array(768);
+    for (let r = 0; r < 16; ++r) {
+      const o = qrcPermuteFromKeyBytes(keyBytes);
+      this.keys.set(o, 48 * r);
+    }
+  }
+  decryptBlock(src, out) {
+    const l = new Uint8Array(4);
+    const r = new Uint8Array(4);
+    l.set(src.subarray(0, 4));
+    r.set(src.subarray(4, 8));
+    for (let round = 15; round >= 0; --round) {
+      const roundKey = this.keys.subarray(round * 48, (round + 1) * 48);
+      const f = this._feistel(r, roundKey);
+      const nextR = new Uint8Array(4);
+      for (let j = 0; j < 4; ++j) nextR[j] = l[j] ^ f[j];
+      l.set(r);
+      r.set(nextR);
+    }
+    out.set(r, 0);
+    out.set(l, 4);
+  }
+  encryptBlock(src, out) {
+    const l = new Uint8Array(4);
+    const r = new Uint8Array(4);
+    l.set(src.subarray(0, 4));
+    r.set(src.subarray(4, 8));
+    for (let round = 0; round < 16; ++round) {
+      const roundKey = this.keys.subarray(round * 48, (round + 1) * 48);
+      const f = this._feistel(r, roundKey);
+      const nextR = new Uint8Array(4);
+      for (let j = 0; j < 4; ++j) nextR[j] = l[j] ^ f[j];
+      l.set(r);
+      r.set(nextR);
+    }
+    out.set(r, 0);
+    out.set(l, 4);
+  }
+  _feistel(halfBlock, roundKey) {
+    const expanded = new Uint8Array(48);
+    for (let i = 0; i < 48; ++i) {
+      const byteIdx = Math.floor(i / 8);
+      const bitIdx = i % 8;
+      expanded[i] = ((halfBlock[byteIdx] >> (7 - bitIdx)) & 1) ^ roundKey[i];
+    }
+    const sBoxOut = new Uint8Array(4);
+    for (let s = 0; s < 8; ++s) {
+      const chunk = expanded.subarray(s * 6, (s + 1) * 6);
+      const row = (chunk[0] << 1) | chunk[5];
+      const col = (chunk[1] << 3) | (chunk[2] << 2) | (chunk[3] << 1) | chunk[4];
+      const val = QRC_S_BOXES[s][row * 16 + col];
+      if (s % 2 === 0) sBoxOut[Math.floor(s / 2)] |= (val << 4);
+      else sBoxOut[Math.floor(s / 2)] |= (val & 0x0f);
+    }
+    return sBoxOut;
+  }
+}
+
+class QrcTripleDesCodec {
+  constructor(k1, k2, k3) {
+    this.c1 = new QrcSingleDesCodec(k1);
+    this.c2 = new QrcSingleDesCodec(k2);
+    this.c3 = new QrcSingleDesCodec(k3);
+  }
+  decryptBlock(src, out) {
+    const tmp1 = new Uint8Array(8);
+    const tmp2 = new Uint8Array(8);
+    this.c3.decryptBlock(src, tmp1);
+    this.c2.encryptBlock(tmp1, tmp2);
+    this.c1.decryptBlock(tmp2, out);
+  }
+}
+
+const QRC_CODEC = new QrcTripleDesCodec(QRC_KEY_1, QRC_KEY_2, QRC_KEY_3);
+
+function qrcHexToUint8Array(hex) {
+  const bytes = new Uint8Array(hex.length / 2);
+  for (let i = 0; i < hex.length; i += 2) {
+    bytes[i / 2] = parseInt(hex.substring(i, i + 2), 16);
+  }
+  return bytes;
+}
+
+async function decryptQrcString(encryptedHexString) {
+  if (!encryptedHexString || typeof encryptedHexString !== 'string') return '';
+  const encryptedBytes = qrcHexToUint8Array(encryptedHexString);
+  if (encryptedBytes.length % QRC_DES_BLOCK_SIZE !== 0) return '';
+  const decryptedData = new Uint8Array(encryptedBytes.length);
+  for (let i = 0; i < encryptedBytes.length; i += QRC_DES_BLOCK_SIZE) {
+    const chunk = encryptedBytes.subarray(i, i + QRC_DES_BLOCK_SIZE);
+    const outChunk = decryptedData.subarray(i, i + QRC_DES_BLOCK_SIZE);
+    QRC_CODEC.decryptBlock(chunk, outChunk);
+  }
+  let trailingZeros = 0;
+  for (let i = decryptedData.length - 1; i >= 0; i--) {
+    if (decryptedData[i] === 0) trailingZeros++;
+    else break;
+  }
+  const trimmed = decryptedData.subarray(0, decryptedData.length - trailingZeros);
+  try {
+    const stream = new Blob([trimmed]).stream().pipeThrough(new DecompressionStream('deflate'));
+    return await new Response(stream).text();
+  } catch(e) {
+    console.warn('QRC DecompressionStream failed:', e);
+    return '';
+  }
+}
+
+/* 将 QRC 文本格式（每字自带绝对时间戳）标准化转换为内部兼容的 KRC 逐字格式 */
+function convertQrcToKrcFormat(qrcText) {
+  if (!qrcText) return '';
+  const lines = qrcText.split('\n');
+  const out = [];
+
+  for (let rawLine of lines) {
+    let line = rawLine.trim();
+    if (!line) continue;
+    if (line.startsWith('<Lyric_') && line.includes('LyricContent="')) {
+      line = line.slice(line.indexOf('LyricContent="') + 'LyricContent="'.length);
+    }
+    if (line.endsWith('"/>') || line.endsWith('</LyricInfo>') || line.endsWith('</QrcInfos>')) {
+      line = line.replace(/\"\/>$|<\/LyricInfo>$|<\/QrcInfos>$/, '').trim();
+    }
+    if (!line || line.startsWith('<?xml') || line.startsWith('<Qrc') || line.startsWith('<Lyric')) continue;
+
+    const lm = line.match(/^\[(\d+),(\d+)\](.*)$/);
+    if (!lm) {
+      out.push(line);
+      continue;
+    }
+    const lineStart = parseInt(lm[1], 10);
+    const lineDur = parseInt(lm[2], 10);
+    const rest = lm[3];
+
+    // QRC 每字格式: word(wordStartMs,wordDurMs)
+    const wordRegex = /([^(]+)\((\d+),(\d+)\)/g;
+    let wm;
+    let newWords = '';
+    let hasWords = false;
+
+    while ((wm = wordRegex.exec(rest)) !== null) {
+      hasWords = true;
+      const wordText = wm[1];
+      const wordStart = parseInt(wm[2], 10);
+      const wordDur = parseInt(wm[3], 10);
+      const offset = Math.max(0, wordStart - lineStart);
+      newWords += `<${offset},${wordDur},0>${wordText}`;
+    }
+
+    if (hasWords) {
+      out.push(`[${lineStart},${lineDur}]${newWords}`);
+    } else {
+      out.push(line);
+    }
+  }
+
+  return out.join('\n');
+}
+
+/* 原生直连 / 浏览器代理 QQ 音乐 API 路径统一封装 */
+function qrcNetUrl(hostAndPath) {
+  if (window.AndroidBridge && window.AndroidBridge.fetchHttpAsync) {
+    return `https://${hostAndPath}`;
+  }
+  return `/krcp/${hostAndPath}`;
+}
+
+/* 官方免签 QQ 音乐商业逐字歌词拉取全链路 */
+async function fetchQrcWordLyric(title, artist) {
+  try {
+    const cleanTitle = (typeof formatCleanTitle === 'function') ? formatCleanTitle(title || '') : (title || '');
+    const cleanArtist = (typeof formatCleanArtist === 'function') ? formatCleanArtist(artist || '') : (artist || '');
+    if (!cleanTitle) return '';
+
+    const q = encodeURIComponent(`${cleanTitle} ${cleanArtist}`.trim());
+    const searchUrl = qrcNetUrl(`c.y.qq.com/soso/fcgi-bin/client_search_cp?p=1&n=5&w=${q}&format=json`);
+    const sRes = await universalFetch(searchUrl, {
+      timeout: 3000,
+      headers: { 'Referer': 'https://y.qq.com/' }
+    });
+    if (!sRes || !sRes.ok) return '';
+    const sData = await sRes.json();
+    const list = (sData && sData.data && sData.data.song && sData.data.song.list) || [];
+    if (!list.length) return '';
+
+    // 智能选取最匹配歌曲 mid（优先标题歌手完全吻合）
+    const norm = (s) => (s || '').replace(/[\s'’‘""“”（）()\[\]【】\-—~～,，.。!！?？:：;；、·]/g, '').toLowerCase();
+    const nt = norm(cleanTitle);
+    const na = norm(cleanArtist);
+    let picked = list.find(s => {
+      const sn = norm(s.songname);
+      const sa = norm((s.singer || []).map(x => x.name).join(''));
+      return sn === nt && (sa.includes(na) || na.includes(sa));
+    }) || list[0];
+
+    if (!picked || !picked.songmid) return '';
+
+    const payload = JSON.stringify({
+      'music.musichallSong.PlayLyricInfo': {
+        method: 'GetPlayLyricInfo',
+        module: 'music.musichallSong.PlayLyricInfo',
+        param: { songMID: picked.songmid, qrc: 1, crc: 1, type: 1 }
+      }
+    });
+
+    const lyricUrl = qrcNetUrl(`u.y.qq.com/cgi-bin/musicu.fcg?data=${encodeURIComponent(payload)}`);
+    const lRes = await universalFetch(lyricUrl, {
+      timeout: 3500,
+      headers: { 'Referer': 'https://y.qq.com/' }
+    });
+    if (!lRes || !lRes.ok) return '';
+    const lData = await lRes.json();
+    const hex = lData && lData['music.musichallSong.PlayLyricInfo'] && lData['music.musichallSong.PlayLyricInfo'].data && lData['music.musichallSong.PlayLyricInfo'].data.lyric;
+    if (!hex) return '';
+
+    const rawQrc = await decryptQrcString(hex);
+    if (!rawQrc) return '';
+
+    return convertQrcToKrcFormat(rawQrc);
+  } catch(e) {
+    console.warn('fetchQrcWordLyric failed:', e);
+    return '';
+  }
+}
+
 /* ============ 酷狗 KRC 词级逐字歌词引擎（毫秒级词时间轴，公开接口免鉴权） ============ */
 const KRC_XOR_KEY = [0x40, 0x47, 0x61, 0x77, 0x5E, 0x32, 0x74, 0x47, 0x51, 0x36, 0x31, 0x2D, 0xCE, 0xD2, 0x6E, 0x69];
 
@@ -6586,20 +6842,31 @@ async function fetchKrcWordLyric(title, artist, durationSec) {
   }
 }
 
-/* 存量普通 LRC 后台升级：拉取词级 KRC，与网易云锚点逐行对齐后无缝替换当前歌词与缓存 */
+/* 存量普通 LRC 后台升级：拉取商业/词级逐字歌词（QRC 优先，KRC 备选），与网易云锚点逐行对齐后无缝替换当前歌词与缓存 */
 async function upgradeLyricToWordLevel(song, anchorRawHint) {
   if (!song || !song.title) return;
   if (isKrcRecentlyAttempted(song)) return;
-  markKrcAttempt(song);
-  const krcText = await fetchKrcWordLyric(song.title, song.artist, song.duration || 0);
-  if (!krcText) return;
-  const parsed = parseLrc(krcText);
+
+  // 1. 优先尝试 QQ 音乐商业级 QRC 歌词（真发声轴，含小节发音留白，彻底杜绝首字冒头）
+  let wordLrcText = await fetchQrcWordLyric(song.title, song.artist);
+  // 2. 备选尝试酷狗 KRC 词级逐字歌词
+  if (!wordLrcText) {
+    wordLrcText = await fetchKrcWordLyric(song.title, song.artist, song.duration || 0);
+  }
+
+  // 3. 两种逐字源均落空时才记入冷却表
+  if (!wordLrcText) {
+    markKrcAttempt(song);
+    return;
+  }
+
+  const parsed = parseLrc(wordLrcText);
   if (!parsed || !parsed.length || !parsed.some(l => l.words && l.words.length > 0)) return;
   const curSong = currentPlaybackQueue[currentIndex];
   if (!curSong || (curSong.id !== song.id && curSong.title !== song.title)) return;
   const anchorRaw = anchorRawHint || await fetchAnchorRawLrc(song);
-  const merged = anchorRaw ? mergeKrcWithAnchorLyric(krcText, anchorRaw, song.duration || 0) : { text: krcText, matched: 0 };
-  const finalText = merged.matched > 0 ? '[krc-anchor:4]\n' + merged.text : krcText;
+  const merged = anchorRaw ? mergeKrcWithAnchorLyric(wordLrcText, anchorRaw, song.duration || 0) : { text: wordLrcText, matched: 0 };
+  const finalText = merged.matched > 0 ? '[krc-anchor:5]\n' + merged.text : wordLrcText;
   LYRICS_DATA = parseLrc(finalText) || parsed;
   lastActiveIdx = -1;
   displayedPreviewIdx = -1;
@@ -6610,18 +6877,22 @@ async function upgradeLyricToWordLevel(song, anchorRawHint) {
   persistData();
 }
 
-/* 无缓存歌曲的最优歌词装载：词级 KRC 与锚点对齐优先，失败回退全网普通 LRC 链路 */
+/* 无缓存歌曲的最优歌词装载：QRC 商业级逐字优先，酷狗 KRC 备选，失败回退全网普通 LRC 链路 */
 async function loadBestAvailableLyric(song) {
   if (song.title && !isKrcRecentlyAttempted(song)) {
-    markKrcAttempt(song);
-    const krcText = await fetchKrcWordLyric(song.title, song.artist, song.duration || 0);
+    // 1. 优先尝试 QQ 音乐商业级 QRC
+    let wordLrcText = await fetchQrcWordLyric(song.title, song.artist);
+    // 2. 备选尝试酷狗 KRC
+    if (!wordLrcText) {
+      wordLrcText = await fetchKrcWordLyric(song.title, song.artist, song.duration || 0);
+    }
     const curSong = currentPlaybackQueue[currentIndex];
-    if (krcText && curSong && (curSong.id === song.id || curSong.title === song.title)) {
-      const parsed = parseLrc(krcText);
+    if (wordLrcText && curSong && (curSong.id === song.id || curSong.title === song.title)) {
+      const parsed = parseLrc(wordLrcText);
       if (parsed && parsed.length && parsed.some(l => l.words && l.words.length > 0)) {
         const anchorRaw = await fetchAnchorRawLrc(song);
-        const merged = anchorRaw ? mergeKrcWithAnchorLyric(krcText, anchorRaw, song.duration || 0) : { text: krcText, matched: 0 };
-        const finalText = merged.matched > 0 ? '[krc-anchor:4]\n' + merged.text : krcText;
+        const merged = anchorRaw ? mergeKrcWithAnchorLyric(wordLrcText, anchorRaw, song.duration || 0) : { text: wordLrcText, matched: 0 };
+        const finalText = merged.matched > 0 ? '[krc-anchor:5]\n' + merged.text : wordLrcText;
         LYRICS_DATA = parseLrc(finalText) || parsed;
         lastActiveIdx = -1;
         displayedPreviewIdx = -1;
@@ -6632,6 +6903,8 @@ async function loadBestAvailableLyric(song) {
         persistData();
         return;
       }
+    } else if (!wordLrcText) {
+      markKrcAttempt(song);
     }
   }
   if (song.onlineId) fetchLyricForSong(song.onlineId, song.title, song.source || 'netease');
@@ -6837,16 +7110,16 @@ function krcAttemptKey(song) {
 }
 function isKrcRecentlyAttempted(song) {
   try {
-    const m = JSON.parse(localStorage.getItem('krc_attempt_ttl_v4') || '{}');
+    const m = JSON.parse(localStorage.getItem('krc_attempt_ttl_v5') || '{}');
     const ts = m[krcAttemptKey(song)];
     return ts && (Date.now() - ts < 3 * 24 * 3600 * 1000);
   } catch(e) { return false; }
 }
 function markKrcAttempt(song) {
   try {
-    const m = JSON.parse(localStorage.getItem('krc_attempt_ttl_v4') || '{}');
+    const m = JSON.parse(localStorage.getItem('krc_attempt_ttl_v5') || '{}');
     m[krcAttemptKey(song)] = Date.now();
-    localStorage.setItem('krc_attempt_ttl_v4', JSON.stringify(m));
+    localStorage.setItem('krc_attempt_ttl_v5', JSON.stringify(m));
   } catch(e) {}
 }
 

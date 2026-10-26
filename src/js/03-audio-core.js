@@ -426,7 +426,7 @@ function playSongAtQueue(idx) {
       if (!hasWordLyric) {
         // 存量普通 LRC：缓存文本本身就是网易云锚点，直接传给升级链路
         upgradeLyricToWordLevel(song, cachedLrc);
-      } else if (!cachedLrc.includes('[krc-anchor:4]')) {
+      } else if (!cachedLrc.includes('[krc-anchor:5]')) {
         // 历史遗留的未对齐 KRC 缓存：重新走锚点对齐（带 3 天冷却）
         upgradeLyricToWordLevel(song, '');
       }
