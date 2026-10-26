@@ -565,7 +565,7 @@ async function upgradeLyricToWordLevel(song, anchorRawHint) {
   if (!curSong || (curSong.id !== song.id && curSong.title !== song.title)) return;
   const anchorRaw = anchorRawHint || await fetchAnchorRawLrc(song);
   const merged = anchorRaw ? mergeKrcWithAnchorLyric(krcText, anchorRaw) : { text: krcText, matched: 0 };
-  const finalText = merged.matched > 0 ? '[krc-anchor:2]\n' + merged.text : krcText;
+  const finalText = merged.matched > 0 ? '[krc-anchor:3]\n' + merged.text : krcText;
   LYRICS_DATA = parseLrc(finalText) || parsed;
   lastActiveIdx = -1;
   displayedPreviewIdx = -1;
@@ -587,7 +587,7 @@ async function loadBestAvailableLyric(song) {
       if (parsed && parsed.length && parsed.some(l => l.words && l.words.length > 0)) {
         const anchorRaw = await fetchAnchorRawLrc(song);
         const merged = anchorRaw ? mergeKrcWithAnchorLyric(krcText, anchorRaw) : { text: krcText, matched: 0 };
-        const finalText = merged.matched > 0 ? '[krc-anchor:2]\n' + merged.text : krcText;
+        const finalText = merged.matched > 0 ? '[krc-anchor:3]\n' + merged.text : krcText;
         LYRICS_DATA = parseLrc(finalText) || parsed;
         lastActiveIdx = -1;
         displayedPreviewIdx = -1;
@@ -666,9 +666,9 @@ async function fetchAnchorRawLrc(song) {
   return '';
 }
 
-/* KRC 双源对齐合并：酷狗 KRC 按发声起点打轴（字级卡拉OK轴），网易云 LRC 跟随自家音频。
-   两轴差值的中位数即母带错位量，整条 KRC 轴全局平移后，行起点保留酷狗的发声轴心；
-   匹配行不足 3 行时退回逐行贴合网易云时间。词偏移一律保持相对不变 */
+/* KRC 双源逐段锚点对齐合并：按文本精准对位网易云 LRC 锚点，
+   对齐各行起唱时间，并对未匹配行（间奏/版权头）进行平滑线性插值映射，
+   消除跨母带速度漂移，保留字级卡拉OK节奏轴 */
 function mergeKrcWithAnchorLyric(krcText, anchorRaw) {
   if (!anchorRaw) return { text: krcText, matched: 0 };
   const norm = (s) => (s || '').replace(/[\s'’‘""“”（）()\[\]【】\-—~～,，.。!！?？:：;；、·]/g, '').toLowerCase();
@@ -689,49 +689,82 @@ function mergeKrcWithAnchorLyric(krcText, anchorRaw) {
     (anchorIndex[nk] = anchorIndex[nk] || []).push(times[0]);
   });
   if (!Object.keys(anchorIndex).length) return { text: krcText, matched: 0 };
+
   const rawLines = krcText.split('\n');
   const seen = {};
-  const parsedLines = rawLines.map(line => {
+  const parsedLines = [];
+  for (let rawLine of rawLines) {
+    const line = rawLine.trim();
+    if (!line) continue;
     const km = line.match(/^\[(\d+),(\d+)\](.*)$/);
-    if (!km) return null;
-    const nk = norm(km[3].replace(/<[^>]*>/g, ''));
+    if (!km) {
+      parsedLines.push({ isMeta: true, raw: line });
+      continue;
+    }
+    const origStart = parseInt(km[1], 10);
+    const origDur = parseInt(km[2], 10);
+    const content = km[3];
+    const cleanText = content.replace(/<[^>]*>/g, '').replace(/\([^)]*\)/g, '').trim();
+    const nk = norm(cleanText);
     let anchorSec = null;
-    if (nk) {
+    if (nk && anchorIndex[nk]) {
       const arr = anchorIndex[nk];
       const idx = seen[nk] || 0;
-      if (arr && idx < arr.length) {
+      if (idx < arr.length) {
         seen[nk] = idx + 1;
         const t = arr[idx];
-        if (Math.abs(t - parseInt(km[1], 10) / 1000) < 15) anchorSec = t;
+        if (Math.abs(t - origStart / 1000) < 15) {
+          anchorSec = t;
+        }
       }
     }
-    return { line, km, anchorSec };
-  });
-  const deltas = parsedLines.filter(p => p && p.anchorSec !== null)
-    .map(p => parseInt(p.km[1], 10) / 1000 - p.anchorSec)
-    .sort((a, b) => a - b);
-  const outLines = [];
-  let applied = 0;
-  if (deltas.length >= 3) {
-    // 全局母带偏移模式：中位数平移整条酷狗轴，保留其发声起点轴心
-    const median = deltas[Math.floor(deltas.length / 2)];
-    if (Math.abs(median) < 15) {
-      parsedLines.forEach(p => {
-        if (!p) { return; }
-        const newStart = Math.max(0, Math.round(parseInt(p.km[1], 10) - median * 1000));
-        outLines.push(`[${newStart},${p.km[2]}]${p.km[3]}`);
-        applied++;
-      });
-      return { text: outLines.join('\n'), matched: applied };
+    parsedLines.push({
+      isMeta: false,
+      origStart,
+      origDur,
+      content,
+      cleanText,
+      nk,
+      anchorSec,
+      newStart: anchorSec !== null ? Math.round(anchorSec * 1000) : null
+    });
+  }
+
+  const matchedEntries = parsedLines.map((p, idx) => ({ p, idx })).filter(x => !x.p.isMeta && x.p.anchorSec !== null);
+  if (matchedEntries.length < 3) {
+    return { text: krcText, matched: matchedEntries.length };
+  }
+
+  // 逐段锚点对齐与平滑插值：对于未匹配行，利用前后最近的锚点做线性映射，保证整首曲目无跳跃无漂移
+  for (let i = 0; i < parsedLines.length; i++) {
+    const p = parsedLines[i];
+    if (p.isMeta || p.newStart !== null) continue;
+    const prev = matchedEntries.filter(x => x.idx < i).pop();
+    const next = matchedEntries.find(x => x.idx > i);
+    if (prev && next) {
+      const denom = (next.p.origStart - prev.p.origStart);
+      const ratio = denom > 0 ? (p.origStart - prev.p.origStart) / denom : 0;
+      p.newStart = Math.round(prev.p.newStart + ratio * (next.p.newStart - prev.p.newStart));
+    } else if (prev) {
+      const delta = prev.p.origStart - prev.p.newStart;
+      p.newStart = Math.max(0, p.origStart - delta);
+    } else if (next) {
+      const delta = next.p.origStart - next.p.newStart;
+      p.newStart = Math.max(0, p.origStart - delta);
+    } else {
+      p.newStart = p.origStart;
     }
   }
-  // 兜底：匹配行过少，逐行贴合网易云时间
-  parsedLines.forEach(p => {
-    if (!p || p.anchorSec === null) { outLines.push(p ? p.line : ''); return; }
-    outLines.push(`[${Math.round(p.anchorSec * 1000)},${p.km[2]}]${p.km[3]}`);
-    applied++;
-  });
-  return { text: outLines.join('\n'), matched: applied };
+
+  const outLines = [];
+  for (const p of parsedLines) {
+    if (p.isMeta) {
+      outLines.push(p.raw);
+    } else {
+      outLines.push(`[${p.newStart},${p.origDur}]${p.content}`);
+    }
+  }
+  return { text: outLines.join('\n'), matched: matchedEntries.length };
 }
 
 /* KRC 拉取失败冷却表：同一曲目 3 天内不重复尝试，避免每次播放空跑请求 */
@@ -740,16 +773,16 @@ function krcAttemptKey(song) {
 }
 function isKrcRecentlyAttempted(song) {
   try {
-    const m = JSON.parse(localStorage.getItem('krc_attempt_ttl_v2') || '{}');
+    const m = JSON.parse(localStorage.getItem('krc_attempt_ttl_v3') || '{}');
     const ts = m[krcAttemptKey(song)];
     return ts && (Date.now() - ts < 3 * 24 * 3600 * 1000);
   } catch(e) { return false; }
 }
 function markKrcAttempt(song) {
   try {
-    const m = JSON.parse(localStorage.getItem('krc_attempt_ttl_v2') || '{}');
+    const m = JSON.parse(localStorage.getItem('krc_attempt_ttl_v3') || '{}');
     m[krcAttemptKey(song)] = Date.now();
-    localStorage.setItem('krc_attempt_ttl_v2', JSON.stringify(m));
+    localStorage.setItem('krc_attempt_ttl_v3', JSON.stringify(m));
   } catch(e) {}
 }
 
