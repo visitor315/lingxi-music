@@ -126,7 +126,7 @@ function showLyricTransitionAnimation(song) {
       const s = currentPlaybackQueue[currentIndex] || song;
       setNoLyricsState(s, '此歌曲暂无同步歌词');
     }
-  }, 3500);
+  }, 2500);
 }
 
 function initLyricsList() {

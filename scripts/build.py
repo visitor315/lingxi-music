@@ -210,6 +210,7 @@ def check_syntax():
             ['node', '-c', '-'],
             input=LAST_COMBINED_JS,
             text=True,
+            encoding='utf-8',
             capture_output=True,
             timeout=5
         )
