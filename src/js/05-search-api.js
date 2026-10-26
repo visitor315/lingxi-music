@@ -564,8 +564,8 @@ async function upgradeLyricToWordLevel(song, anchorRawHint) {
   const curSong = currentPlaybackQueue[currentIndex];
   if (!curSong || (curSong.id !== song.id && curSong.title !== song.title)) return;
   const anchorRaw = anchorRawHint || await fetchAnchorRawLrc(song);
-  const merged = anchorRaw ? mergeKrcWithAnchorLyric(krcText, anchorRaw) : { text: krcText, matched: 0 };
-  const finalText = merged.matched > 0 ? '[krc-anchor:3]\n' + merged.text : krcText;
+  const merged = anchorRaw ? mergeKrcWithAnchorLyric(krcText, anchorRaw, song.duration || 0) : { text: krcText, matched: 0 };
+  const finalText = merged.matched > 0 ? '[krc-anchor:4]\n' + merged.text : krcText;
   LYRICS_DATA = parseLrc(finalText) || parsed;
   lastActiveIdx = -1;
   displayedPreviewIdx = -1;
@@ -586,8 +586,8 @@ async function loadBestAvailableLyric(song) {
       const parsed = parseLrc(krcText);
       if (parsed && parsed.length && parsed.some(l => l.words && l.words.length > 0)) {
         const anchorRaw = await fetchAnchorRawLrc(song);
-        const merged = anchorRaw ? mergeKrcWithAnchorLyric(krcText, anchorRaw) : { text: krcText, matched: 0 };
-        const finalText = merged.matched > 0 ? '[krc-anchor:3]\n' + merged.text : krcText;
+        const merged = anchorRaw ? mergeKrcWithAnchorLyric(krcText, anchorRaw, song.duration || 0) : { text: krcText, matched: 0 };
+        const finalText = merged.matched > 0 ? '[krc-anchor:4]\n' + merged.text : krcText;
         LYRICS_DATA = parseLrc(finalText) || parsed;
         lastActiveIdx = -1;
         displayedPreviewIdx = -1;
@@ -666,14 +666,18 @@ async function fetchAnchorRawLrc(song) {
   return '';
 }
 
-/* KRC 双源逐段锚点对齐合并：按文本精准对位网易云 LRC 锚点，
-   对齐各行起唱时间，并对未匹配行（间奏/版权头）进行平滑线性插值映射，
-   消除跨母带速度漂移，保留字级卡拉OK节奏轴 */
-function mergeKrcWithAnchorLyric(krcText, anchorRaw) {
+/* KRC 双源智能锚点对齐合并：
+   1. 过滤假演职员打点，支持前后半句拆分匹配；
+   2. 智能母带一致性识别：若为同一官方母带，保护 KRC 真实真声发声轴心，拒绝向手工打轴的吸气声提前跑；
+   3. 若为异母带（如版本翻录/前奏长短不同），启动逐段平滑插值对齐，保证全曲合拍 */
+function mergeKrcWithAnchorLyric(krcText, anchorRaw, audioDurSec) {
   if (!anchorRaw) return { text: krcText, matched: 0 };
   const norm = (s) => (s || '').replace(/[\s'’‘""“”（）()\[\]【】\-—~～,，.。!！?？:：;；、·]/g, '').toLowerCase();
+  const isCreditOrMeta = (s) => /^(作词|作曲|编曲|混音|吉他|贝斯|鼓|录音|制作|发行|出品|策划|文案|母带|演唱|原唱|翻唱|伴唱|和声|题字|美工|海报|特别支持|曲绘|pv)/.test(s);
   const timeTagRe = /\[(\d{1,2}):(\d{2})(?:\.(\d{1,3}))?\]/g;
-  const anchorIndex = {};
+
+  // 1. 严格只收集真实演唱歌词行作锚点，彻底排除演职员假时间戳
+  const anchorLines = [];
   anchorRaw.split('\n').forEach(line => {
     line = line.trim();
     if (!line) return;
@@ -684,14 +688,16 @@ function mergeKrcWithAnchorLyric(krcText, anchorRaw) {
       lastEnd = timeTagRe.lastIndex;
     }
     if (!times.length) return;
-    const nk = norm(line.slice(lastEnd));
-    if (!nk) return;
-    (anchorIndex[nk] = anchorIndex[nk] || []).push(times[0]);
+    const text = line.slice(lastEnd).trim();
+    const nk = norm(text);
+    if (!nk || isCreditOrMeta(nk)) return;
+    anchorLines.push({ time: times[0], text, nk });
   });
-  if (!Object.keys(anchorIndex).length) return { text: krcText, matched: 0 };
 
+  if (!anchorLines.length) return { text: krcText, matched: 0 };
+
+  // 2. 解析 KRC 原始行
   const rawLines = krcText.split('\n');
-  const seen = {};
   const parsedLines = [];
   for (let rawLine of rawLines) {
     const line = rawLine.trim();
@@ -704,30 +710,36 @@ function mergeKrcWithAnchorLyric(krcText, anchorRaw) {
     const origStart = parseInt(km[1], 10);
     const origDur = parseInt(km[2], 10);
     const content = km[3];
-    const cleanText = content.replace(/<[^>]*>/g, '').replace(/\([^)]*\)/g, '').trim();
+    const cleanText = content.replace(/<[^>]*>/g, '').trim();
     const nk = norm(cleanText);
-    let anchorSec = null;
-    if (nk && anchorIndex[nk]) {
-      const arr = anchorIndex[nk];
-      const idx = seen[nk] || 0;
-      if (idx < arr.length) {
-        seen[nk] = idx + 1;
-        const t = arr[idx];
-        if (Math.abs(t - origStart / 1000) < 15) {
-          anchorSec = t;
-        }
-      }
-    }
+    const isCredit = isCreditOrMeta(nk);
     parsedLines.push({
       isMeta: false,
+      isCredit,
       origStart,
       origDur,
       content,
       cleanText,
       nk,
-      anchorSec,
-      newStart: anchorSec !== null ? Math.round(anchorSec * 1000) : null
+      anchorSec: null,
+      newStart: null
     });
+  }
+
+  // 3. 演唱歌词对位（同时支持完整匹配与前后半句拆分匹配）
+  for (let p of parsedLines) {
+    if (p.isMeta || p.isCredit || !p.nk) continue;
+    for (let j = 0; j < anchorLines.length; j++) {
+      const a = anchorLines[j];
+      const deltaSec = a.time - p.origStart / 1000;
+      if (Math.abs(deltaSec) > 10) continue;
+
+      if (a.nk === p.nk || a.nk.startsWith(p.nk)) {
+        p.anchorSec = a.time;
+        p.newStart = Math.round(a.time * 1000);
+        break;
+      }
+    }
   }
 
   const matchedEntries = parsedLines.map((p, idx) => ({ p, idx })).filter(x => !x.p.isMeta && x.p.anchorSec !== null);
@@ -735,7 +747,25 @@ function mergeKrcWithAnchorLyric(krcText, anchorRaw) {
     return { text: krcText, matched: matchedEntries.length };
   }
 
-  // 逐段锚点对齐与平滑插值：对于未匹配行，利用前后最近的锚点做线性映射，保证整首曲目无跳跃无漂移
+  // 4. 智能母带一致性与吸气声抢拍判定：
+  // 提取 KRC 音频时长
+  const totalM = krcText.match(/\[total:(\d+)\]/);
+  const krcDurSec = totalM ? Math.round(parseInt(totalM[1], 10) / 1000) : 0;
+  const audioDur = Math.round(audioDurSec || 0);
+  const durDiff = (audioDur > 0 && krcDurSec > 0) ? Math.abs(audioDur - krcDurSec) : 0;
+
+  const rawDeltas = matchedEntries.map(m => (m.p.origStart - m.p.newStart) / 1000);
+  const minD = Math.min(...rawDeltas);
+  const maxD = Math.max(...rawDeltas);
+  const spread = maxD - minD;
+
+  // 若音频时长高度一致（3秒内）且各行差值极差很小（小于2.0秒）：
+  // 确认为同一录音母带！此时手工打轴提前的0.5-0.8秒纯属吸气声抢跑，必须坚决保留 KRC 真实真声发声轴！
+  if (durDiff <= 3 && spread < 2.0) {
+    return { text: krcText, matched: matchedEntries.length };
+  }
+
+  // 若时长差大或跨句严重漂移（如起风了不同版本），启动精准逐段插值对齐
   for (let i = 0; i < parsedLines.length; i++) {
     const p = parsedLines[i];
     if (p.isMeta || p.newStart !== null) continue;
@@ -773,16 +803,16 @@ function krcAttemptKey(song) {
 }
 function isKrcRecentlyAttempted(song) {
   try {
-    const m = JSON.parse(localStorage.getItem('krc_attempt_ttl_v3') || '{}');
+    const m = JSON.parse(localStorage.getItem('krc_attempt_ttl_v4') || '{}');
     const ts = m[krcAttemptKey(song)];
     return ts && (Date.now() - ts < 3 * 24 * 3600 * 1000);
   } catch(e) { return false; }
 }
 function markKrcAttempt(song) {
   try {
-    const m = JSON.parse(localStorage.getItem('krc_attempt_ttl_v3') || '{}');
+    const m = JSON.parse(localStorage.getItem('krc_attempt_ttl_v4') || '{}');
     m[krcAttemptKey(song)] = Date.now();
-    localStorage.setItem('krc_attempt_ttl_v3', JSON.stringify(m));
+    localStorage.setItem('krc_attempt_ttl_v4', JSON.stringify(m));
   } catch(e) {}
 }
 
